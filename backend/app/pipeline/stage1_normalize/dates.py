@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from datetime import date, datetime, timedelta
 
-from app.pipeline.normalize import to_ascii_digits
+from app.pipeline.stage1_normalize.normalize import to_ascii_digits
 
 _TODAY = {"اليوم", "today", "lyom"}
 _YESTERDAY = {"امس", "أمس", "البارحة", "البارحه", "امبارح", "yesterday", "ams", "embareh"}

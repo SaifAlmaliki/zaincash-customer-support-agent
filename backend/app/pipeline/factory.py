@@ -5,11 +5,11 @@ from typing import Any
 
 from app.config import Settings
 from app.llm import GeminiStructuredLLM, StructuredLLM
-from app.pipeline.classify.gemini import GeminiClassifier, GeminiExtractor
-from app.pipeline.classify.jev import JevClassifier
-from app.pipeline.drafting import Drafter, NullDrafter
 from app.pipeline.graph import MODES, PipelineDeps, build_graph
-from app.pipeline.lookup import TransactionRepo
+from app.pipeline.stage2_classify.gemini import GeminiClassifier, GeminiExtractor
+from app.pipeline.stage2_classify.jev import JevClassifier
+from app.pipeline.stage4_lookup.lookup import TransactionRepo
+from app.pipeline.stage6_draft.drafting import Drafter, NullDrafter
 from app.taxonomy import load_taxonomy
 
 

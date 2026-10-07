@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from app.pipeline.dates import resolve_date
+from app.pipeline.stage1_normalize.dates import resolve_date
 from tests.helpers import RECEIVED  # Wednesday 2026-10-07
 
 

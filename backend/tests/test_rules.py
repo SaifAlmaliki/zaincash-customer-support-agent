@@ -1,5 +1,5 @@
 from app.pipeline.contracts import FIELD_NAMES, ExtractedField, LookupResult
-from app.pipeline.rules import decide, empty_ticket_decision, merge_reasons, note_for
+from app.pipeline.stage5_decide.rules import decide, empty_ticket_decision, merge_reasons, note_for
 from tests.fakes import make_output
 
 

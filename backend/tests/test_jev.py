@@ -1,9 +1,9 @@
 import pytest
 
-from app.pipeline.candidates import find_candidates
-from app.pipeline.classify.jev import NONE, JevClassifier
 from app.pipeline.contracts import FLAG_NAMES
-from app.pipeline.normalize import normalize
+from app.pipeline.stage1_normalize.candidates import find_candidates
+from app.pipeline.stage1_normalize.normalize import normalize
+from app.pipeline.stage2_classify.jev import NONE, JevClassifier
 from tests.fakes import FakeJevRunnable
 from tests.helpers import make_ticket
 

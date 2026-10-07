@@ -1,7 +1,11 @@
 from datetime import datetime
 
 from app.pipeline.contracts import FIELD_NAMES, ExtractedField
-from app.pipeline.lookup import InMemoryTransactionRepo, match_transaction, txn_from_dict
+from app.pipeline.stage4_lookup.lookup import (
+    InMemoryTransactionRepo,
+    match_transaction,
+    txn_from_dict,
+)
 from tests.helpers import BAGHDAD, RECEIVED
 
 CUSTOMER = "07809876543"

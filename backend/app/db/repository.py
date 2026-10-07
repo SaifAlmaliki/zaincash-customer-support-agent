@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.models import IncidentRow, RunRow, TicketResultRow, TicketRow, TransactionRow
 from app.pipeline.contracts import Ticket, TicketOutcome, TxnRecord
 from app.pipeline.graph import RunSummary
-from app.pipeline.lookup import parse_dt
-from app.pipeline.serialize import outcome_to_row
+from app.pipeline.io.serialize import outcome_to_row
+from app.pipeline.stage4_lookup.lookup import parse_dt
 
 
 def upsert_tickets(session: Session, tickets: Sequence[Ticket], *, source: str,

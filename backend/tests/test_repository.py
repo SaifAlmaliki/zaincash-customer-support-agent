@@ -18,7 +18,7 @@ from app.db.repository import (
 from app.db.session import make_engine, make_sessionmaker, reset_db
 from app.pipeline.contracts import Decision, TicketOutcome
 from app.pipeline.graph import summarize
-from app.pipeline.lookup import txn_from_dict
+from app.pipeline.stage4_lookup.lookup import txn_from_dict
 from tests.helpers import BAGHDAD, make_ticket
 
 pytestmark = pytest.mark.integration

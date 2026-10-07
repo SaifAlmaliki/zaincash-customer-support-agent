@@ -6,8 +6,6 @@ from collections.abc import Sequence
 from datetime import date, datetime
 
 from app.llm import LLMUnavailable
-from app.pipeline.candidates import TXN_FULL, normalize_phone, parse_amount
-from app.pipeline.classify.base import FieldExtractor
 from app.pipeline.contracts import (
     FIELD_NAMES,
     Candidates,
@@ -15,7 +13,9 @@ from app.pipeline.contracts import (
     FieldPick,
     NormalizedTicket,
 )
-from app.pipeline.dates import resolve_date
+from app.pipeline.stage1_normalize.candidates import TXN_FULL, normalize_phone, parse_amount
+from app.pipeline.stage1_normalize.dates import resolve_date
+from app.pipeline.stage2_classify.base import FieldExtractor
 
 _NO_PICK = FieldPick(None, 0.0, "none")
 WEAK_JEV_CONFIDENCE = 0.5

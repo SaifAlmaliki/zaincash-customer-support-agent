@@ -1,7 +1,7 @@
 import json
 
 from app.pipeline.contracts import Decision, ExtractedField, TicketOutcome
-from app.pipeline.serialize import outcome_to_dict, outcome_to_row
+from app.pipeline.io.serialize import outcome_to_dict, outcome_to_row
 from tests.fakes import make_output
 from tests.helpers import make_ticket
 

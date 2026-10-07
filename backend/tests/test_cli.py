@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 from app import cli
 from app.pipeline import factory
 from app.pipeline.graph import PipelineDeps, build_graph
-from app.pipeline.lookup import InMemoryTransactionRepo
+from app.pipeline.stage4_lookup.lookup import InMemoryTransactionRepo
 from app.taxonomy import load_taxonomy
 from tests.fakes import FakeClassifier, make_output
 

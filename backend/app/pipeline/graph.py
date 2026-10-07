@@ -14,15 +14,15 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import RetryPolicy
 
 from app.llm import LLMUnavailable
-from app.pipeline.candidates import find_candidates
-from app.pipeline.classify.base import Classifier, FieldExtractor
-from app.pipeline.classify.cascade import combine
 from app.pipeline.contracts import Ticket, TicketOutcome
-from app.pipeline.drafting import Drafter, NullDrafter
-from app.pipeline.extract import fill_gaps, finalize
-from app.pipeline.lookup import TransactionRepo, match_transaction
-from app.pipeline.normalize import normalize
-from app.pipeline.rules import decide, empty_ticket_decision, merge_reasons
+from app.pipeline.stage1_normalize.candidates import find_candidates
+from app.pipeline.stage1_normalize.normalize import normalize
+from app.pipeline.stage2_classify.base import Classifier, FieldExtractor
+from app.pipeline.stage2_classify.cascade import combine
+from app.pipeline.stage3_extract.extract import fill_gaps, finalize
+from app.pipeline.stage4_lookup.lookup import TransactionRepo, match_transaction
+from app.pipeline.stage5_decide.rules import decide, empty_ticket_decision, merge_reasons
+from app.pipeline.stage6_draft.drafting import Drafter, NullDrafter
 from app.pipeline.state import PipelineState
 from app.taxonomy import Taxonomy
 

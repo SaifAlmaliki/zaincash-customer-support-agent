@@ -1,11 +1,11 @@
 import pytest
 from langgraph.types import RetryPolicy
 
-from app.pipeline.classify.jev import JevClassifier
 from app.pipeline.contracts import DraftResult
-from app.pipeline.drafting import NullDrafter
 from app.pipeline.graph import PipelineDeps, build_graph, run_batch
-from app.pipeline.lookup import InMemoryTransactionRepo, txn_from_dict
+from app.pipeline.stage2_classify.jev import JevClassifier
+from app.pipeline.stage4_lookup.lookup import InMemoryTransactionRepo, txn_from_dict
+from app.pipeline.stage6_draft.drafting import NullDrafter
 from tests.fakes import FakeClassifier, FakeJevRunnable, make_output
 from tests.helpers import make_ticket
 

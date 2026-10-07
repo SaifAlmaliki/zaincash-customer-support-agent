@@ -17,8 +17,8 @@ from app.pipeline.contracts import (
     FieldPick,
     NormalizedTicket,
 )
-from app.pipeline.normalize import to_ascii_digits
-from app.pipeline.prompts import render_prompt
+from app.pipeline.stage1_normalize.normalize import to_ascii_digits
+from app.pipeline.stage2_classify.prompts import render_prompt
 from app.taxonomy import Taxonomy
 
 GEMINI_EXTRACT_CONFIDENCE = 0.6

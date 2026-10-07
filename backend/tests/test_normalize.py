@@ -1,4 +1,4 @@
-from app.pipeline.normalize import (
+from app.pipeline.stage1_normalize.normalize import (
     detect_arabizi,
     fold_arabic,
     has_latin_mix,

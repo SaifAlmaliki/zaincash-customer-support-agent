@@ -1,15 +1,15 @@
 import pytest
 
 from app.llm import LLMUnavailable
-from app.pipeline.candidates import find_candidates
-from app.pipeline.classify.gemini import (
+from app.pipeline.stage1_normalize.candidates import find_candidates
+from app.pipeline.stage1_normalize.normalize import normalize
+from app.pipeline.stage2_classify.gemini import (
     ExtractedSpan,
     GeminiAnalysis,
     GeminiClassifier,
     GeminiExtractor,
     GeminiFields,
 )
-from app.pipeline.normalize import normalize
 from tests.fakes import FakeStructuredLLM
 from tests.helpers import make_ticket
 

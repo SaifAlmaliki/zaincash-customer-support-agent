@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from app.pipeline.contracts import Candidate, Candidates
-from app.pipeline.normalize import to_ascii_digits
+from app.pipeline.stage1_normalize.normalize import to_ascii_digits
 
 MAX_CANDIDATES_PER_FIELD = 50  # Jev Choice allows at most 255 options
 MIN_BARE_AMOUNT = 250  # a number with no unit below this is not treated as an amount

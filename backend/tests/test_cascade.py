@@ -1,8 +1,8 @@
 import pytest
 
 from app.llm import LLMUnavailable
-from app.pipeline.classify.cascade import combine, merge_picks
 from app.pipeline.contracts import FieldPick
+from app.pipeline.stage2_classify.cascade import combine, merge_picks
 from tests.fakes import make_output
 
 

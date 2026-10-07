@@ -2,7 +2,7 @@ import pytest
 
 from app.config import Settings
 from app.pipeline.factory import ConfigError, build_pipeline, model_ids
-from app.pipeline.lookup import InMemoryTransactionRepo
+from app.pipeline.stage4_lookup.lookup import InMemoryTransactionRepo
 from tests.fakes import FakeJevRunnable, FakeStructuredLLM
 
 REPO = InMemoryTransactionRepo([])

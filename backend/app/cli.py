@@ -23,9 +23,9 @@ from app.ingest import load_jsonl, load_tickets
 from app.pipeline import factory
 from app.pipeline.contracts import Ticket
 from app.pipeline.graph import run_batch
-from app.pipeline.lookup import InMemoryTransactionRepo, txn_from_dict
-from app.pipeline.prompts import PROMPT_VERSION
-from app.pipeline.serialize import outcome_to_dict
+from app.pipeline.io.serialize import outcome_to_dict
+from app.pipeline.stage2_classify.prompts import PROMPT_VERSION
+from app.pipeline.stage4_lookup.lookup import InMemoryTransactionRepo, txn_from_dict
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="ZainCash support pipeline")
 
