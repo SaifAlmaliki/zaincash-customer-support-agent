@@ -2,8 +2,14 @@ import operator
 from typing import Annotated, TypedDict
 
 from app.pipeline.contracts import (
-    Candidates, ClassifierOutput, Decision, DraftResult, ExtractedField, LookupResult,
-    NormalizedTicket, Ticket,
+    Candidates,
+    ClassifierOutput,
+    Decision,
+    DraftResult,
+    ExtractedField,
+    LookupResult,
+    NormalizedTicket,
+    Ticket,
 )
 
 
