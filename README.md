@@ -70,6 +70,67 @@ Every path ends with a person approving the reply.
 
 The full design is in [`docs/superpowers/specs/2026-10-07-support-pipeline-design.md`](docs/superpowers/specs/2026-10-07-support-pipeline-design.md).
 
+## Quickstart (WSL Ubuntu, Docker Engine, uv)
+
+Run from the repository root in WSL:
+
+```bash
+test -f .env || cp .env.example .env
+# Set GOOGLE_API_KEY and TYPESAFE_API_KEY in .env before continuing.
+docker compose up -d db
+cd backend
+uv sync
+uv run support seed-db --transactions tests/fixtures/sample_transactions.jsonl \
+  --incidents tests/fixtures/sample_incidents.jsonl
+uv run support run-batch tests/fixtures/sample_tickets.jsonl --mode cascade --out ../out/run.json
+```
+
+`seed-db` creates the schema and loads the synthetic records. Postgres is exposed on host port **5433**.
+
+`--mode` is one of `jev`, `gemini` or `cascade` (the default). Add `--no-db --transactions <file>` to run without Postgres:
+
+```bash
+uv run support run-batch tests/fixtures/sample_tickets.jsonl --mode jev --no-db \
+  --transactions tests/fixtures/sample_transactions.jsonl --out ../out/smoke-jev.json
+```
+
+Ticket files can be `.jsonl`, `.json` or `.csv`. Each row needs `text`; `external_id`, `channel`, `customer_phone` and `received_at` are optional. `cascade` needs both API keys; `gemini` needs `GOOGLE_API_KEY`. `jev` needs `TYPESAFE_API_KEY` and can also use `GOOGLE_API_KEY` for fallback extraction.
+
+Run the checks from `backend/`:
+
+```bash
+uv run pytest -q
+uv run ruff check app tests
+```
+
+The Postgres integration tests need the database service running; they use the separate `support_test` database.
+
+### Corporate-network troubleshooting
+
+If Gemini fails with `CERTIFICATE_VERIFY_FAILED` and your organization’s trusted CA is already installed in Ubuntu, point the SDK at the system CA bundle before running the CLI:
+
+```bash
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+```
+
+A subsequent HTTP 403 HTML response from Zscaler means the network policy is blocking `generativelanguage.googleapis.com`. Approved access to that endpoint is needed before the Gemini smoke run can pass.
+
 ## Status
 
-Under construction. Setup instructions, evaluation results and the disclosure of every model and tool used will be added here as each part lands.
+The core pipeline and CLI are implemented. **Plan 1 Task 15 is partially verified:** the live Gemini check is blocked by the current network policy. Reply generation still uses `NullDrafter`; RAG drafting comes in Plan 3.
+
+Live smoke results on 2026-10-07:
+
+| Check | Result |
+|---|---|
+| Jev response shape (`jev-1.13.0`) | Passed; adapter and fake are compatible |
+| In-memory `jev` | 5 tickets, no failures |
+| In-memory `gemini` | All 5 failed TLS verification; a separate probe using the system CA bundle confirmed a Zscaler HTTP 403 policy block |
+| In-memory `cascade` | 5 tickets, no failures; all used Jev, so Gemini fallback was not exercised |
+| Database `cascade`, run twice | Runs 1 and 2 completed with 5 results each; 5 ticket rows total |
+
+The cascade fixture checks passed: S-001 was `failed_transfer`, matched its transaction and extracted **50,000 IQD**; S-002 escalated for `fraud_suspected` at **P1**; S-005 was `general_inquiry` at **P4**. Per-ticket outputs are saved locally to `out/smoke-{jev,gemini,cascade}.json`.
+
+After approved Gemini access is available, rerun the in-memory command above with `--mode gemini --out ../out/smoke-gemini.json` and confirm `total: 5` and `failed_ids: []` before closing Task 15.
+
+The remaining plans cover synthetic data and evaluation, RAG drafting, the review workspace, and the weekly report. Disclosure and failure-mode documentation land with Plan 5.

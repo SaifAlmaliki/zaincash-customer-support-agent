@@ -46,7 +46,7 @@ class RunRow(Base):
     degraded: Mapped[bool] = mapped_column(Boolean, default=False)
     counts: Mapped[dict] = mapped_column(JSONB, default=dict)
     total_cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
-    status: Mapped[str] = mapped_column(String(16), default="running")
+    status: Mapped[str] = mapped_column(String(32), default="running")
 
 
 class TicketResultRow(Base):
