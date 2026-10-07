@@ -8,27 +8,37 @@ Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation
 
 ```mermaid
 flowchart TD
-    A([Support tickets arrive<br/>paste · CSV/JSON upload · CLI batch]) --> B[Clean the text<br/>Arabic digits → 0-9, hide card numbers]
-    B --> C[Jev reads the ticket<br/>category · priority · red flags<br/>picks amount, date, phone, transaction ID]
-    C --> D{Is Jev confident?}
+    %% Nodes (declared first so every box shows its label)
+    A([Support tickets arrive<br/>paste · CSV/JSON upload · CLI batch])
+    B[Clean the text<br/>Arabic digits → 0-9, hide card numbers]
+    C[Jev reads the ticket<br/>category · priority · red flags<br/>picks amount, date, phone, transaction ID]
+    D{Is Jev confident?}
+    E[Gemini gives a second opinion<br/>asked 3 times]
+    F{Gemini confident<br/>and agrees?}
+    G[Look up the transaction<br/>in ZainCash records]
+    H[Route to the right team<br/>and set priority]
+    I{Any red flags?<br/>fraud · several issues · missing info<br/>transaction not found · amount mismatch}
+    J[AI agent drafts a reply in Iraqi Arabic<br/>using policy documents + transaction]
+    K{Draft passes safety checks?<br/>cites policy · no invented numbers<br/>never asks for OTP/PIN}
+    R[Ready for review]
+    X[Escalate to a human<br/>with a short note explaining why]
+    Q[Support agent reviews<br/>Approve · Edit · Reject]
+    Z([Agent sends the approved reply<br/>nothing is sent automatically])
+
+    %% Flow
+    A --> B --> C --> D
     D -- Yes --> G
-    D -- No --> E[Gemini gives a second opinion<br/>asked 3 times]
-    E --> F{Gemini confident<br/>and agrees?}
-    F -- Yes --> G[Look up the transaction<br/>in ZainCash records]
+    D -- No --> E --> F
+    F -- Yes --> G
     F -- No --> X
-
-    G --> H[Route to the right team<br/>and set priority]
-    H --> I{Any red flags?<br/>fraud · several issues · missing info<br/>transaction not found · amount mismatch}
+    G --> H --> I
     I -- Yes --> X
-    I -- No --> J[AI agent drafts a reply in Iraqi Arabic<br/>using policy documents + transaction]
-
-    J --> K{Draft passes safety checks?<br/>cites policy · no invented numbers<br/>never asks for OTP/PIN}
+    I -- No --> J --> K
     K -- No --> X
-    K -- Yes --> R[Ready for review]
-
-    X[Escalate to a human<br/>with a short note explaining why] --> Q
-    R --> Q[Support agent reviews<br/>Approve · Edit · Reject]
-    Q --> Z([Agent sends the approved reply<br/>nothing is sent automatically])
+    K -- Yes --> R
+    X --> Q
+    R --> Q
+    Q --> Z
 
     classDef terminal fill:#e8f5c8,stroke:#6b8f3c,color:#1a1a1a
     classDef decision fill:#d6ecff,stroke:#3b82f6,color:#1a1a1a
