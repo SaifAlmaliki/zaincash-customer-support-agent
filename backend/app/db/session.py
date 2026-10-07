@@ -1,0 +1,25 @@
+from __future__ import annotations
+
+from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.orm import sessionmaker
+
+from app.db.models import Base
+
+
+def make_engine(url: str) -> Engine:
+    return create_engine(url, pool_pre_ping=True)
+
+
+def make_sessionmaker(engine: Engine) -> sessionmaker:
+    return sessionmaker(engine, expire_on_commit=False)
+
+
+def init_db(engine: Engine) -> None:
+    with engine.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+    Base.metadata.create_all(engine)
+
+
+def reset_db(engine: Engine) -> None:
+    Base.metadata.drop_all(engine)
+    init_db(engine)

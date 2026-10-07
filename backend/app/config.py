@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     agent_max_tool_calls: int = 6
     agent_timeout_s: int = 30
 
-    database_url: str = "postgresql+psycopg://support:support@localhost:5432/support"
-    test_database_url: str = "postgresql+psycopg://support:support@localhost:5432/support_test"
+    database_url: str = "postgresql+psycopg://support:support@localhost:5433/support"
+    test_database_url: str = "postgresql+psycopg://support:support@localhost:5433/support_test"
     taxonomy_path: str = str(REPO_ROOT / "data" / "taxonomy.yaml")
 
     # USD per 1M tokens. Check current pricing before reporting costs.
