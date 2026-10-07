@@ -603,3 +603,26 @@ Tags without a fixed share: typos or voice-note style, angry customers, fraud, a
 | Synthetic tickets don't sound real | Native-speaker hand check, edge-case tags, and dropping or regenerating bad tickets |
 | Scope is too big for 1–2 weeks | Build order: pipeline and eval first, then the review UI, then the knowledge-base UI, then the weekly report |
 | No user research | Accepted gap in the "Problem & impact" score. Can be revisited later. |
+
+---
+
+## 14. Implementation notes (added 2026-10-07, before implementation started)
+
+The build follows the LangChain agent skills (`langchain-ai/langchain-skills`): `langchain-fundamentals`, `langgraph-decision-models`, `langchain-rag` and `langchain-dependencies`.
+
+None of the following changes the architecture above. They decide which libraries implement it.
+
+| Topic | Decision |
+|---|---|
+| Pipeline orchestration | The fixed stages in §6 become a **LangGraph `StateGraph`**. Each stage is one node. Routing between nodes (confident or not, which mode) is done by plain, testable Python functions. A batch runs with `graph.abatch(..., max_concurrency=PIPELINE_CONCURRENCY, return_exceptions=True)`. Per-node retries use LangGraph's `RetryPolicy`. This replaces the hand-written semaphore and retry loop described in §6.8. |
+| Jev access | `langchain-typesafe` (`TypeSafeClassifier`, a LangChain `Runnable`) is used instead of the raw `typesafe-sdk`. It is alpha, so it is pinned to `0.0.1a3` and wrapped behind our own `Classifier` interface. |
+| Gemini access | `langchain-google-genai`. Structured output uses `ChatGoogleGenerativeAI.with_structured_output(schema, method="json_schema", include_raw=True)`, so token usage is available for cost accounting. |
+| RAG (Plan 3) | `GoogleGenerativeAIEmbeddings` plus `langchain-postgres` `PGVector` |
+| Drafting agent (Plan 3) | `langchain.agents.create_agent` with `@tool` tools, middleware and a recursion limit |
+| Jev question text | Instructions and criteria are plain strings built from the taxonomy (`Category.describe()`), not nested JSON. This is the safest shape for the alpha wrapper. |
+| Jev priority | Read from the Score probability distribution (the most likely level), not by comparing `score` to an exact value. This follows the decision-models skill, which warns that `score` is an expected value. |
+| `T_GEM` default | `0.66` instead of `0.67`, so that 2 of 3 Gemini samples agreeing passes. That was the intent of the original value. |
+| Lookup status | The status `ambiguous` is added for when several transactions match. It escalates with reason `txn_ambiguous`. `date_mismatch` escalates too. |
+| Schema management | `Base.metadata.create_all` through `support init-db` instead of Alembic. All data is synthetic and resettable, so migrations add no value for the hackathon. |
+| CLI location | `backend/app/cli.py`, exposed as the `support` console script |
+| Dev environment | The repo lives in WSL (`~/dev/zaincash-support`, Ubuntu-24.04), with Docker Engine running in WSL. Commits stay local; nothing is pushed. |
