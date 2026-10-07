@@ -41,6 +41,7 @@ import {
   StatusBadge,
 } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
+import { loadQueue } from "@/lib/api"
 import { useWorkspace } from "@/lib/workspace"
 import {
   categories,
@@ -68,7 +69,8 @@ export function QueuePage() {
   const query = useResource<{ items: Result[]; total: number }>(
     isPreview ? null : `/results?limit=500${runId ? `&run_id=${runId}` : ""}`,
     workspace.revision,
-    10000
+    10000,
+    loadQueue
   )
   const rows = isPreview
     ? workspace.preview
@@ -366,9 +368,6 @@ export function QueuePage() {
               {filtered.length
                 ? `${currentPage * 8 + 1}–${Math.min((currentPage + 1) * 8, filtered.length)} of ${filtered.length} tickets`
                 : "0 tickets"}
-              {!isPreview && query.data && query.data.total > 500
-                ? ` · ${query.data.total} total; newest 500 loaded`
-                : ""}
             </span>
             <div>
               <span>

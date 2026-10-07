@@ -7,7 +7,12 @@ type Resource<T> = {
   loading: boolean
   path: string | null
 }
-export function useResource<T>(path: string | null, revision = 0, pollMs = 0) {
+export function useResource<T>(
+  path: string | null,
+  revision = 0,
+  pollMs = 0,
+  loader: (path: string, options: RequestInit) => Promise<T> = request
+) {
   const [state, update] = useReducer(
     (old: Resource<T>, next: Partial<Resource<T>>) => ({ ...old, ...next }),
     { data: null, error: null, loading: Boolean(path), path: null }
@@ -19,7 +24,7 @@ export function useResource<T>(path: string | null, revision = 0, pollMs = 0) {
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const data = await request<T>(path!, { signal: controller.signal })
+        const data = await loader(path!, { signal: controller.signal })
         if (!controller.signal.aborted)
           update({ data, loading: false, error: null, path })
       } catch (error) {
@@ -39,7 +44,7 @@ export function useResource<T>(path: string | null, revision = 0, pollMs = 0) {
       controller.abort()
       clearTimeout(timer)
     }
-  }, [path, revision, retry, pollMs])
+  }, [path, revision, retry, pollMs, loader])
   return {
     ...state,
     data: path === state.path ? state.data : null,

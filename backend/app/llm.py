@@ -1,9 +1,11 @@
 """Gemini structured-output adapter via OpenRouter behind a small protocol."""
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any, Generic, Protocol, TypeVar
 
+import httpx
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
@@ -57,7 +59,9 @@ class GeminiStructuredLLM:
                 temperature=temperature,
                 api_key=self._api_key,
                 timeout=int(self._timeout * 1000),  # ChatOpenRouter expects milliseconds.
-                max_retries=self._max_retries,
+                max_retries=0,
+                # None disables per-request SDK retries (0 alone leaves its hourly default).
+                model_kwargs={"retries": None},
             )
             self._cache[key] = chat.with_structured_output(
                 schema, method="json_schema", include_raw=True
@@ -65,10 +69,23 @@ class GeminiStructuredLLM:
         return self._cache[key]
 
     async def sample(self, prompt, schema, *, temperature, n=1):
-        results = await self._runnable(schema, temperature).abatch(
-            [prompt] * n, return_exceptions=True
-        )
+        runnable = self._runnable(schema, temperature)
+        results = await asyncio.gather(*(self._invoke(runnable, prompt) for _ in range(n)))
         return [self.to_sample(r) for r in results]
+
+    async def _invoke(self, runnable, prompt):
+        """Retry transient failures at most max_retries times per sample."""
+        for attempt in range(max(0, self._max_retries) + 1):
+            try:
+                return await runnable.ainvoke(prompt)
+            except Exception as exc:
+                status = getattr(exc, "status_code", None)
+                transient = isinstance(exc, httpx.TransportError) or (
+                    isinstance(status, int) and (status in (408, 429) or status >= 500)
+                )
+                if not transient or attempt >= self._max_retries:
+                    return exc
+                await asyncio.sleep(min(0.5 * 2**attempt, 8.0))
 
     def to_sample(self, result: Any) -> Sample:
         if isinstance(result, BaseException):

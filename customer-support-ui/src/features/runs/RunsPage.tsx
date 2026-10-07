@@ -188,7 +188,7 @@ export function RunDetailPage() {
           <Download size={16} />
           Export summary
         </Button>
-        <Button render={<Link to={`/?run=${run.id}`} />}>
+        <Button nativeButton={false} render={<Link to={`/?run=${run.id}`} />}>
           Review tickets
           <ArrowRight size={16} />
         </Button>

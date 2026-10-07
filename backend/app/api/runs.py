@@ -47,11 +47,19 @@ def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, 
         if previous and (previous.text != ticket.text or previous.customer_phone != ticket.customer_phone):
             raise HTTPException(409, f"Ticket {ticket.external_id} already exists with different content. Use a new ID.")
     stored = upsert_tickets(session, tickets, source="upload")
-    # Repeated IDs must use their stored timestamp too: relative dates cannot silently change on reruns.
-    stored = [Ticket(id=t.id, external_id=t.external_id, text=t.text, channel=t.channel,
-                     customer_phone=t.customer_phone,
-                     received_at=existing[t.external_id].received_at if t.external_id in existing else t.received_at)
-              for t in stored]
+    # ON CONFLICT can lose to an insert committed after the initial SELECT. Read the
+    # durable rows again before associating any prediction or source span with them.
+    persisted = {row.id: row for row in session.scalars(select(TicketRow).where(
+        TicketRow.id.in_([ticket.id for ticket in stored])
+    ).execution_options(populate_existing=True))}
+    for ticket in stored:
+        row = persisted[ticket.id]
+        if (row.text, row.customer_phone, row.channel) != (ticket.text, ticket.customer_phone, ticket.channel):
+            raise HTTPException(409, f"Ticket {ticket.external_id} was stored with different content. Use a new ID.")
+    # Existing timestamps are authoritative: relative dates must not change on rerun.
+    stored = [Ticket(id=row.id, external_id=row.external_id, text=row.text, channel=row.channel,
+                     customer_phone=row.customer_phone, received_at=row.received_at)
+              for ticket in stored for row in [persisted[ticket.id]]]
     run_id = create_run(session, mode=batch.mode, prompt_version=PROMPT_VERSION,
                         model_ids=model_ids(settings, batch.mode))
     run = session.get(RunRow, run_id)

@@ -70,3 +70,30 @@ def test_openrouter_reported_cost_takes_precedence_over_token_estimate(reported_
                           response_metadata={"cost": reported_cost})
     sample = _llm().to_sample({"raw": raw, "parsed": _S(x=1)})
     assert sample.cost_usd == reported_cost
+
+
+@pytest.mark.parametrize("max_retries, failure, expected_attempts", [
+    (0, 500, 1), (2, 500, 3), (2, 429, 3), (2, 401, 1),
+    (0, "transport", 1), (2, "transport", 3),
+])
+async def test_openrouter_retry_budget_is_bounded(monkeypatch, max_retries, failure, expected_attempts):
+    attempts = 0
+
+    async def send(_client, request, **_kwargs):
+        nonlocal attempts
+        attempts += 1
+        # Stop the old SDK's unbounded time-based retry loop without waiting minutes.
+        if attempts > expected_attempts:
+            raise AssertionError("request retry budget exceeded")
+        if failure == "transport":
+            raise httpx.ConnectError("connection unavailable", request=request)
+        return httpx.Response(failure, request=request,
+                              json={"error": {"code": failure, "message": "provider unavailable"}})
+
+    monkeypatch.setattr(httpx.AsyncClient, "send", send)
+    llm = GeminiStructuredLLM(api_key="test-key", model="google/gemini-3.8-flash",
+                             price_in_per_m=1, price_out_per_m=2, max_retries=max_retries)
+    [sample] = await llm.sample("Return x=7", _S, temperature=0, n=1)
+    assert attempts == expected_attempts
+    assert sample.parsed is None and sample.error
+    assert "retry budget exceeded" not in sample.error

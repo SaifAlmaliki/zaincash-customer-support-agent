@@ -301,8 +301,8 @@ export function NewBatchPage() {
                       {mode === "jev"
                         ? "TYPESAFE_API_KEY"
                         : mode === "gemini"
-                          ? "GOOGLE_API_KEY"
-                          : "GOOGLE_API_KEY and TYPESAFE_API_KEY"}{" "}
+                          ? "OPENROUTER_API_KEY"
+                          : "OPENROUTER_API_KEY and TYPESAFE_API_KEY"}{" "}
                       in the backend <code>.env</code>, then restart the API.
                     </p>
                     <Button variant="outline" onClick={workspace.refresh}>

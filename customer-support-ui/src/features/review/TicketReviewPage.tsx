@@ -273,7 +273,7 @@ export function TicketReviewPage() {
         title="Ticket not found"
         description="Return to the queue and select a ticket in this workspace."
       >
-        <Button render={<Link to="/" />}>Back to queue</Button>
+        <Button nativeButton={false} render={<Link to="/" />}>Back to queue</Button>
       </EmptyState>
     )
   return (
@@ -292,7 +292,7 @@ export function TicketReviewPage() {
       <div className="review-layout">
         <SourceEvidence result={result} />
         <ReviewEditor
-          key={`${workspace.mode}-${result.id}-${result.updated_at}`}
+          key={`${workspace.mode}-${result.id}`}
           result={result}
           onSaved={() => {
             query.reload()

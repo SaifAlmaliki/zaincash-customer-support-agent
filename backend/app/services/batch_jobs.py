@@ -41,19 +41,26 @@ async def process_batch(app, run_id, tickets, mode):
                                         error=f"{type(exc).__name__}: processing could not complete. Check server logs and retry.",
                                         draft=DraftResult(trace=tuple(trace)),
                                         latency_ms=round((perf_counter() - start) * 1000))
-            outcomes.append(outcome)
             with sf() as session:
                 save_outcomes(session, run_id, [outcome])
                 run = session.get(RunRow, run_id)
-                run.counts = summarize(outcomes).to_dict() | {"expected_total": len(tickets)}
+                checkpoint = summarize([*outcomes, outcome])
+                run.counts = checkpoint.to_dict() | {"expected_total": len(tickets)}
+                run.total_cost_usd = checkpoint.total_cost_usd
+                run.degraded = checkpoint.degraded
                 session.commit()
+            # Only durable results can contribute to progress, costs and summary counts.
+            outcomes.append(outcome)
 
-    await asyncio.gather(*(process(ticket) for ticket in tickets))
+    completed = await asyncio.gather(*(process(ticket) for ticket in tickets), return_exceptions=True)
+    persistence_failed = any(isinstance(item, BaseException) for item in completed)
     summary = summarize(outcomes)
     with sf() as session:
         run = session.get(RunRow, run_id)
-        run.status = "completed_with_errors" if summary.failed_ids else "completed"
+        run.status = "failed" if persistence_failed else "completed_with_errors" if summary.failed_ids else "completed"
         run.counts = summary.to_dict() | {"expected_total": len(tickets)}
+        if persistence_failed:
+            run.counts = run.counts | {"error": "Some results could not be saved. Durable results were retained; retry this batch."}
         run.total_cost_usd = summary.total_cost_usd
         run.degraded = summary.degraded
         run.finished_at = datetime.now(UTC)

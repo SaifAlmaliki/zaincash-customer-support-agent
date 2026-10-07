@@ -1636,6 +1636,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "langchain" },
     { name = "langchain-core" },
     { name = "langchain-openrouter" },
@@ -1653,7 +1654,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -1662,6 +1662,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115,<1" },
+    { name = "httpx", specifier = ">=0.27,<1" },
     { name = "langchain", specifier = ">=1.0,<2.0" },
     { name = "langchain-core", specifier = ">=1.6.2,<2.0" },
     { name = "langchain-openrouter", specifier = ">=0.1,<1" },
@@ -1679,7 +1680,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.27" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.6" },

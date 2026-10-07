@@ -41,7 +41,7 @@ export function KnowledgePage() {
     doc.filename.toLowerCase().includes(search.toLowerCase())
   )
   async function upload(file?: File) {
-    if (!file || busy) return
+    if (!file || busy || workspace.mode !== "live") return
     setBusy(true)
     try {
       if (file.size > 10 * 1024 * 1024)
@@ -119,6 +119,7 @@ export function KnowledgePage() {
                   type="file"
                   className="sr-only"
                   aria-label="Upload knowledge document"
+                  disabled={workspace.mode !== "live" || busy}
                   accept=".pdf,.md,.txt"
                   onChange={(e) => void upload(e.target.files?.[0])}
                 />
@@ -166,6 +167,7 @@ export function KnowledgePage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        nativeButton={false}
                         render={
                           <a href={`/api/knowledge/${doc.id}/download`} />
                         }

@@ -42,6 +42,24 @@ export async function request<T>(
   }
 }
 
+export async function loadQueue(path: string, options: RequestInit = {}) {
+  const [pathname, search = ""] = path.split("?")
+  const params = new URLSearchParams(search)
+  params.set("limit", "500")
+  const items = new Map<number, Result>()
+  let offset = 0, total = 0
+  do {
+    params.set("offset", String(offset))
+    const page = await request<{ items: Result[]; total: number }>(`${pathname}?${params}`, options)
+    total = page.total
+    for (const item of page.items) items.set(item.id, item)
+    if (page.items.length === 0 && items.size < total) throw new Error("The queue changed while loading. Please retry.")
+    offset += page.items.length
+  } while (offset < total)
+  if (items.size !== total) throw new Error("The queue changed while loading. Please retry.")
+  return { items: [...items.values()], total }
+}
+
 export const api = {
   startRun: (mode: Mode, tickets: TicketInput[]) =>
     request<Run>("/runs", {

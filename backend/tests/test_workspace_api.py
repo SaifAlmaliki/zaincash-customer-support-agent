@@ -113,6 +113,47 @@ def test_documents_are_stored_once_and_not_claimed_indexed(client):
     assert client.get("/api/knowledge").json() == []
 
 
+def test_concurrent_conflicting_insert_is_rechecked_after_upsert(client, monkeypatch):
+    from dataclasses import replace
+
+    from app.api import runs
+    from app.db.repository import upsert_tickets
+
+    def racing_upsert(session, tickets, **kwargs):
+        # Another request commits between this request's initial SELECT and INSERT.
+        with client.app.state.session_factory() as competitor:
+            upsert_tickets(competitor, [replace(tickets[0], text="Different winning message")], source="upload")
+            competitor.commit()
+        return upsert_tickets(session, tickets, **kwargs)
+
+    monkeypatch.setattr(runs, "upsert_tickets", racing_upsert)
+    response = client.post("/api/runs", json={"mode": "jev", "tickets": [
+        {"external_id": "race-id", "text": "Original losing message"},
+    ]})
+    assert response.status_code == 409
+    assert client.get("/api/runs").json() == []
+
+
+def test_progress_counts_only_durable_results_after_save_failure(client, monkeypatch):
+    from app.services import batch_jobs
+
+    save_outcomes = batch_jobs.save_outcomes
+
+    def fail_one_save(session, run_id, outcomes):
+        if outcomes[0].ticket.external_id == "db-fail":
+            raise RuntimeError("Simulated persistence failure")
+        return save_outcomes(session, run_id, outcomes)
+
+    monkeypatch.setattr(batch_jobs, "save_outcomes", fail_one_save)
+    run_id = start_run(client, [{"external_id": "db-fail", "text": "رسالة أولى"},
+                                {"external_id": "durable", "text": "رسالة ثانية"}])
+    run = client.get(f"/api/runs/{run_id}").json()
+    assert run["status"] == "failed"
+    assert run["processed"] == run["counts"]["total"] == 1
+    assert sum(run["counts"]["by_status"].values()) == 1
+    assert run["total"] == 2
+
+
 def test_openrouter_credentials_enable_api_modes_without_exposing_keys(client):
     client.app.state.settings = Settings(_env_file=None, openrouter_api_key="test-router-secret",
                                          typesafe_api_key="test-jev-secret")
