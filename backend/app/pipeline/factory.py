@@ -25,7 +25,7 @@ def make_jev_client(settings: Settings) -> Any:
 
 def make_gemini_llm(settings: Settings) -> GeminiStructuredLLM:
     return GeminiStructuredLLM(
-        api_key=settings.google_api_key, model=settings.gemini_model,
+        api_key=settings.openrouter_api_key, model=settings.gemini_model,
         price_in_per_m=settings.price_gemini_flash_in, price_out_per_m=settings.price_gemini_flash_out,
     )
 
@@ -41,10 +41,10 @@ def build_pipeline(settings: Settings, mode: str, txn_repo: TransactionRepo, *,
     if mode not in MODES:
         raise ConfigError(f"unknown mode {mode!r}; choose one of {MODES}")
     taxonomy = load_taxonomy(settings.taxonomy_path)
-    if llm is None and settings.google_api_key:
+    if llm is None and settings.openrouter_api_key:
         llm = make_gemini_llm(settings)
     if mode in ("gemini", "cascade") and llm is None:
-        raise ConfigError(f"GOOGLE_API_KEY is required for mode={mode}")
+        raise ConfigError(f"OPENROUTER_API_KEY is required for mode={mode}")
     if mode in ("jev", "cascade") and jev_client is None:
         if not settings.typesafe_api_key:
             raise ConfigError(f"TYPESAFE_API_KEY is required for mode={mode}")

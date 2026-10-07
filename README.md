@@ -64,12 +64,77 @@ Every path ends with a person approving the reply.
 | Model | What it does here |
 |---|---|
 | **Jev** (TypeSafe System One) | Fast, cheap classification. Its confidence scores are calibrated, and it picks extracted values directly from the ticket text, so it cannot invent them. |
-| **Gemini** | Second opinion on uncertain tickets, fallback extraction, the drafting agent, and the embeddings used to search the knowledge base |
+| **Gemini 3.8 Flash** (via OpenRouter) | Second opinion on uncertain tickets and fallback extraction. RAG drafting is planned for a later phase. |
 
 ## Design
 
 The full design is in [`docs/superpowers/specs/2026-10-07-support-pipeline-design.md`](docs/superpowers/specs/2026-10-07-support-pipeline-design.md).
 
+## Quickstart (WSL Ubuntu, Docker Engine, uv)
+
+Run from the repository root in WSL:
+
+```bash
+test -f .env || cp .env.example .env
+# Set OPENROUTER_API_KEY and TYPESAFE_API_KEY in .env before continuing.
+# GEMINI_MODEL defaults to google/gemini-3.8-flash.
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt  # Use WSL's installed CA certificates.
+docker compose up -d db
+cd backend
+uv sync
+uv run support seed-db --transactions tests/fixtures/sample_transactions.jsonl \
+  --incidents tests/fixtures/sample_incidents.jsonl
+uv run support run-batch tests/fixtures/sample_tickets.jsonl --mode cascade --out ../out/run.json
+```
+
+`seed-db` creates the schema and loads the synthetic records. Postgres is exposed on host port **5433**.
+
+`--mode` is one of `jev`, `gemini` or `cascade` (the default). Add `--no-db --transactions <file>` to run without Postgres:
+
+```bash
+uv run support run-batch tests/fixtures/sample_tickets.jsonl --mode jev --no-db \
+  --transactions tests/fixtures/sample_transactions.jsonl --out ../out/smoke-jev.json
+```
+
+Ticket files can be `.jsonl`, `.json` or `.csv`. Each row needs `text`; `external_id`, `channel`, `customer_phone` and `received_at` are optional. `cascade` needs both API keys; `gemini` needs `OPENROUTER_API_KEY`. `jev` needs `TYPESAFE_API_KEY` and can also use `OPENROUTER_API_KEY` for fallback extraction.
+
+Gemini requests use `https://openrouter.ai/api/v1` through `langchain-openrouter`. Set `GEMINI_MODEL` to an OpenRouter model ID to change models; existing unqualified `gemini-*` names are accepted and prefixed with `google/`. Run metadata records the qualified ID. Costs use OpenRouter's reported charge when available; the token-based fallback defaults to Gemini 3.8 Flash's standard $0.75 input / $3.75 output per million tokens.
+
+Run the checks from `backend/`:
+
+```bash
+uv run pytest -q
+uv run ruff check app tests
+```
+
+The Postgres integration tests need the database service running; they use the separate `support_test` database.
+
+### Corporate-network troubleshooting
+
+If OpenRouter fails with `CERTIFICATE_VERIFY_FAILED` and your organization’s trusted CA is already installed in Ubuntu, point the SDK at the system CA bundle before running the CLI or starting the API:
+
+```bash
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+```
+
+Export this variable in the shell that launches the process; adding it only to `.env` does not configure the SDK's TLS trust. Restart an already-running API after changing credentials or models. The original direct Google API was blocked on this network; OpenRouter was successfully verified with the system CA bundle.
+
 ## Status
 
-Under construction. Setup instructions, evaluation results and the disclosure of every model and tool used will be added here as each part lands.
+**Plan 1's core pipeline and CLI are verified**, including Task 15's live smoke checks using Gemini 3.8 Flash through OpenRouter. Reply generation still uses `NullDrafter`; RAG drafting comes in Plan 3.
+
+Live smoke results on 2026-10-07:
+
+| Check | Result |
+|---|---|
+| Jev response shape (`jev-1.13.0`) | Passed; adapter and fake are compatible |
+| In-memory `jev` | 5 tickets, no failures |
+| In-memory `gemini` | 5 tickets, no failures, using `google/gemini-3.8-flash`; final reported batch cost $0.058727 |
+| In-memory `cascade` | 5 tickets, no failures; all used Jev, so Gemini fallback was not exercised |
+| Database `cascade`, run twice after migration | Runs 3 and 4 completed with 5 results each; 5 ticket rows total, including the earlier runs |
+
+The cascade fixture checks passed: S-001 was `failed_transfer`, matched its transaction and extracted **50,000 IQD**; S-002 escalated for `fraud_suspected` at **P1**; S-005 was `general_inquiry` at **P4**. Per-ticket outputs are saved locally to `out/smoke-{jev,gemini,cascade}.json`.
+
+To repeat the Gemini smoke test, run the in-memory command above with `--mode gemini --out ../out/smoke-gemini.json` and confirm `total: 5` and `failed_ids: []`. These five fixtures are a connectivity and pipeline check; held-out accuracy evaluation comes in Plan 2.
+
+The remaining plans cover synthetic data and evaluation, RAG drafting, the review workspace, and the weekly report. Disclosure and failure-mode documentation land with Plan 5.

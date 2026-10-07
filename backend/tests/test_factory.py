@@ -9,11 +9,11 @@ REPO = InMemoryTransactionRepo([])
 
 
 def _settings(**kw):
-    return Settings(_env_file=None, google_api_key="", typesafe_api_key="", **kw)
+    return Settings(_env_file=None, **({"openrouter_api_key": "", "typesafe_api_key": ""} | kw))
 
 
 def test_missing_keys_raise_config_error():
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError, match="OPENROUTER_API_KEY"):
         build_pipeline(_settings(), "gemini", REPO)
     with pytest.raises(ConfigError):
         build_pipeline(_settings(), "jev", REPO)
@@ -28,5 +28,10 @@ def test_builds_with_injected_clients():
 
 def test_model_ids():
     s = _settings()
-    assert model_ids(s, "jev") == {"jev": "jev-1.13.0", "gemini": "gemini-2.5-flash"}
-    assert model_ids(s, "gemini") == {"gemini": "gemini-2.5-flash"}
+    assert model_ids(s, "jev") == {"jev": "jev-1.13.0", "gemini": "google/gemini-3.8-flash"}
+    assert model_ids(s, "gemini") == {"gemini": "google/gemini-3.8-flash"}
+
+
+def test_openrouter_key_enables_gemini_pipeline():
+    graph = build_pipeline(_settings(openrouter_api_key="test-openrouter-key"), "gemini", REPO)
+    assert "gemini_classify" in graph.get_graph().nodes

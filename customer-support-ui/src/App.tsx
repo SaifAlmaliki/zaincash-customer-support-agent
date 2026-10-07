@@ -1,21 +1,65 @@
-import { Button } from "@/components/ui/button"
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout"
+import { WorkspaceProvider } from "@/components/layout/WorkspaceProvider"
+import { QueuePage } from "@/features/queue/QueuePage"
+const TicketReviewPage = lazy(() =>
+  import("@/features/review/TicketReviewPage").then((module) => ({
+    default: module.TicketReviewPage,
+  }))
+)
+const RunsPage = lazy(() =>
+  import("@/features/runs/RunsPage").then((module) => ({
+    default: module.RunsPage,
+  }))
+)
+const RunDetailPage = lazy(() =>
+  import("@/features/runs/RunsPage").then((module) => ({
+    default: module.RunDetailPage,
+  }))
+)
+const NewBatchPage = lazy(() =>
+  import("@/features/runs/NewBatchPage").then((module) => ({
+    default: module.NewBatchPage,
+  }))
+)
+const KnowledgePage = lazy(() =>
+  import("@/features/knowledge/KnowledgePage").then((module) => ({
+    default: module.KnowledgePage,
+  }))
+)
+const InsightsPage = lazy(() =>
+  import("@/features/insights/InsightsPage").then((module) => ({
+    default: module.InsightsPage,
+  }))
+)
+const EvaluationPage = lazy(() =>
+  import("@/features/insights/EvaluationPage").then((module) => ({
+    default: module.EvaluationPage,
+  }))
+)
 
-export function App() {
+export default function App() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
+    <BrowserRouter>
+      <TooltipProvider>
+        <WorkspaceProvider>
+          <Routes>
+            <Route element={<WorkspaceLayout />}>
+              <Route index element={<QueuePage />} />
+              <Route path="tickets/:id" element={<TicketReviewPage />} />
+              <Route path="runs" element={<RunsPage />} />
+              <Route path="runs/new" element={<NewBatchPage />} />
+              <Route path="runs/:id" element={<RunDetailPage />} />
+              <Route path="knowledge" element={<KnowledgePage />} />
+              <Route path="insights" element={<InsightsPage />} />
+              <Route path="evaluation" element={<EvaluationPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </WorkspaceProvider>
+      </TooltipProvider>
+    </BrowserRouter>
   )
 }
-
-export default App
+import { lazy } from "react"

@@ -626,3 +626,14 @@ None of the following changes the architecture above. They decide which librarie
 | Schema management | `Base.metadata.create_all` through `support init-db` instead of Alembic. All data is synthetic and resettable, so migrations add no value for the hackathon. |
 | CLI location | `backend/app/cli.py`, exposed as the `support` console script |
 | Dev environment | The repo lives in WSL (`~/dev/zaincash-support`, Ubuntu-24.04), with Docker Engine running in WSL. Commits stay local; nothing is pushed. |
+
+### Task 15 provider update (2026-10-07)
+
+The user selected **OpenRouter** and **`google/gemini-3.8-flash`** for the live pipeline after the direct Google endpoint was blocked on the development network. This supersedes the direct-Google transport and pipeline model pin above:
+
+- `OPENROUTER_API_KEY` replaces `GOOGLE_API_KEY` for classification and extraction.
+- `langchain-openrouter` / `ChatOpenRouter` provides Pydantic structured output with `method="json_schema"` and `include_raw=True`, behind the same `StructuredLLM` protocol.
+- The `jev`, `gemini`, and `cascade` modes retain their meanings; Jev remains pinned to `jev-1.13.0`.
+- Run metadata records the qualified OpenRouter model ID. OpenRouter's reported cost takes precedence over a token-based estimate; fallback Flash prices are $0.75 input / $3.75 output per million tokens.
+- The WSL environment uses its installed CA bundle via `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt`. All three live smoke modes succeeded, and database reruns retained five unique tickets.
+- Future embedding and data-generation integrations are still subject to their own implementation plans. Model/threshold evaluation remains Plan 2 work.
