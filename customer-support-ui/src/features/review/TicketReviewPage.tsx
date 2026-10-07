@@ -273,7 +273,9 @@ export function TicketReviewPage() {
         title="Ticket not found"
         description="Return to the queue and select a ticket in this workspace."
       >
-        <Button nativeButton={false} render={<Link to="/" />}>Back to queue</Button>
+        <Button nativeButton={false} render={<Link to="/" />}>
+          Back to queue
+        </Button>
       </EmptyState>
     )
   return (

@@ -2,7 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout"
 import { WorkspaceProvider } from "@/components/layout/WorkspaceProvider"
-import { QueuePage } from "@/features/queue/QueuePage"
+const QueuePage = lazy(() =>
+  import("@/features/queue/QueuePage").then((module) => ({ default: module.QueuePage }))
+)
 const TicketReviewPage = lazy(() =>
   import("@/features/review/TicketReviewPage").then((module) => ({
     default: module.TicketReviewPage,

@@ -5,8 +5,12 @@ afterEach(() => vi.unstubAllGlobals())
 
 it("loads subsequent API pages so ticket 501 remains searchable and exportable", async () => {
   const fetch = vi.fn(async (url: string) => {
-    const offset = Number(new URL(url, "http://localhost").searchParams.get("offset") || 0)
-    const items = Array.from({ length: offset === 0 ? 500 : 1 }, (_, i) => ({ id: offset + i + 1 }))
+    const offset = Number(
+      new URL(url, "http://localhost").searchParams.get("offset") || 0
+    )
+    const items = Array.from({ length: offset === 0 ? 500 : 1 }, (_, i) => ({
+      id: offset + i + 1,
+    }))
     return new Response(JSON.stringify({ items, total: 501 }), { status: 200 })
   })
   vi.stubGlobal("fetch", fetch)
@@ -17,9 +21,19 @@ it("loads subsequent API pages so ticket 501 remains searchable and exportable",
 })
 
 it("reports an inconsistent queue snapshot instead of silently dropping rows", async () => {
-  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-    const offset = Number(new URL(url, "http://localhost").searchParams.get("offset") || 0)
-    return new Response(JSON.stringify({ items: offset ? [] : [{ id: 1 }], total: 2 }), { status: 200 })
-  }))
-  await expect(loadQueue("/results?limit=500", {})).rejects.toThrow(/queue changed/i)
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      const offset = Number(
+        new URL(url, "http://localhost").searchParams.get("offset") || 0
+      )
+      return new Response(
+        JSON.stringify({ items: offset ? [] : [{ id: 1 }], total: 2 }),
+        { status: 200 }
+      )
+    })
+  )
+  await expect(loadQueue("/results?limit=500", {})).rejects.toThrow(
+    /queue changed/i
+  )
 })
