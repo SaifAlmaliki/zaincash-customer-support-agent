@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -13,10 +14,10 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=str(REPO_ROOT / ".env"), extra="ignore")
 
-    google_api_key: str = ""
+    openrouter_api_key: str = ""
     typesafe_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
-    gemini_strong_model: str = "gemini-2.5-pro"
+    gemini_model: str = "google/gemini-3.8-flash"
+    gemini_strong_model: str = "google/gemini-2.5-pro"
     gemini_embed_model: str = "gemini-embedding-001"
     embed_dim: int = 768
     jev_model: str = "jev-1.13.0"
@@ -34,11 +35,17 @@ class Settings(BaseSettings):
     taxonomy_path: str = str(REPO_ROOT / "data" / "taxonomy.yaml")
 
     # USD per 1M tokens. Check current pricing before reporting costs.
-    price_gemini_flash_in: float = 0.30
-    price_gemini_flash_out: float = 2.50
+    price_gemini_flash_in: float = 0.75
+    price_gemini_flash_out: float = 3.75
     price_gemini_pro_in: float = 1.25
     price_gemini_pro_out: float = 10.0
     price_jev_in: float = 0.042
+
+    @field_validator("gemini_model", "gemini_strong_model")
+    @classmethod
+    def qualify_gemini_model(cls, value: str) -> str:
+        """Accept legacy .env model names while recording the OpenRouter model ID."""
+        return f"google/{value}" if value.startswith("gemini-") else value
 
 
 @lru_cache

@@ -2,10 +2,10 @@ from collections import Counter
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from sqlalchemy import text
 
-from app.api.dependencies import get_session
+from app.api.dependencies import SessionDep
 from app.db.models import TicketRow
 from app.services.workspace_queries import STAGES, latest_results_query
 
@@ -13,13 +13,13 @@ router = APIRouter(prefix="/api", tags=["Workspace"])
 
 
 @router.get("/health")
-def health(request: Request, session=Depends(get_session)):
+def health(request: Request, session: SessionDep):
     session.execute(text("SELECT 1"))
     settings = request.app.state.settings
     modes = []
     if settings.typesafe_api_key:
         modes.append("jev")
-    if settings.google_api_key:
+    if settings.openrouter_api_key:
         modes.append("gemini")
     if len(modes) == 2:
         modes.append("cascade")
@@ -28,7 +28,7 @@ def health(request: Request, session=Depends(get_session)):
 
 
 @router.get("/workspace")
-def workspace(request: Request, session=Depends(get_session)):
+def workspace(request: Request, session: SessionDep):
     rows = list(session.scalars(latest_results_query()))
     tax = request.app.state.taxonomy
     return {"taxonomy": [{"id": cat.id, "team": cat.team, "description": cat.what_en}
@@ -39,7 +39,7 @@ def workspace(request: Request, session=Depends(get_session)):
 
 
 @router.get("/insights")
-def insights(session=Depends(get_session)):
+def insights(session: SessionDep):
     rows = list(session.scalars(latest_results_query()))
     now = datetime.now(ZoneInfo("Asia/Baghdad"))
     current_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)

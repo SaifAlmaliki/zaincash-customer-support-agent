@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import select
 
-from app.api.dependencies import get_session
+from app.api.dependencies import SessionDep
 from app.api.schemas import ReviewInput
 from app.db.models import TicketResultRow, TicketRow
 from app.services.reviews import record_review
@@ -11,10 +11,9 @@ router = APIRouter(prefix="/api/results", tags=["Results & review"])
 
 
 @router.get("")
-def list_results(status: str | None = None, team: str | None = None, category: str | None = None,
+def list_results(session: SessionDep, status: str | None = None, team: str | None = None, category: str | None = None,
                  priority: str | None = None, q: str = "", run_id: int | None = None,
-                 offset: int = Query(0, ge=0), limit: int = Query(200, ge=1, le=500),
-                 session=Depends(get_session)):
+                 offset: int = Query(0, ge=0), limit: int = Query(200, ge=1, le=500)):
     query = select(TicketResultRow).where(TicketResultRow.run_id == run_id) if run_id else latest_results_query()
     for column, value in [(TicketResultRow.status, status), (TicketResultRow.team, team),
                           (TicketResultRow.category, category), (TicketResultRow.priority, priority)]:
@@ -29,7 +28,7 @@ def list_results(status: str | None = None, team: str | None = None, category: s
 
 
 @router.get("/{result_id}")
-def get_result(result_id: int, session=Depends(get_session)):
+def get_result(result_id: int, session: SessionDep):
     result = session.get(TicketResultRow, result_id)
     if result is None:
         raise HTTPException(404, "Ticket result not found.")
@@ -37,6 +36,6 @@ def get_result(result_id: int, session=Depends(get_session)):
 
 
 @router.post("/{result_id}/reviews")
-def review_result(result_id: int, review: ReviewInput, request: Request, session=Depends(get_session)):
+def review_result(result_id: int, review: ReviewInput, request: Request, session: SessionDep):
     result = record_review(session, result_id, review, request.app.state.taxonomy.teams)
     return result_view(session, result, detail=True)

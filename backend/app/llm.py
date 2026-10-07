@@ -1,4 +1,4 @@
-"""Gemini structured-output adapter (langchain-google-genai) behind a small protocol."""
+"""Gemini structured-output adapter via OpenRouter behind a small protocol."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,7 +27,7 @@ class StructuredLLM(Protocol):
 
 
 class GeminiStructuredLLM:
-    """`ChatGoogleGenerativeAI.with_structured_output(method="json_schema", include_raw=True)`."""
+    """`ChatOpenRouter.with_structured_output(method="json_schema", include_raw=True)`."""
 
     def __init__(
         self,
@@ -50,13 +50,13 @@ class GeminiStructuredLLM:
     def _runnable(self, schema: type[BaseModel], temperature: float) -> Any:
         key = (schema, temperature)
         if key not in self._cache:
-            from langchain_google_genai import ChatGoogleGenerativeAI
+            from langchain_openrouter import ChatOpenRouter
 
-            chat = ChatGoogleGenerativeAI(
+            chat = ChatOpenRouter(
                 model=self._model,
                 temperature=temperature,
-                google_api_key=self._api_key,
-                timeout=self._timeout,
+                api_key=self._api_key,
+                timeout=int(self._timeout * 1000),  # ChatOpenRouter expects milliseconds.
                 max_retries=self._max_retries,
             )
             self._cache[key] = chat.with_structured_output(
@@ -78,6 +78,9 @@ class GeminiStructuredLLM:
             usage.get("input_tokens", 0) * self._price_in
             + usage.get("output_tokens", 0) * self._price_out
         ) / 1e6
+        metadata = getattr(result.get("raw"), "response_metadata", None) or {}
+        if metadata.get("cost") is not None:
+            cost = float(metadata["cost"])  # Includes provider-specific pricing and cache discounts.
         parsed = result.get("parsed")
         if parsed is None:
             return Sample(None, cost, str(result.get("parsing_error") or "no parsed output"))

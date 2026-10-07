@@ -2,11 +2,11 @@ from hashlib import sha256
 from pathlib import PurePath
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
+from fastapi import APIRouter, HTTPException, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.api.dependencies import get_session
+from app.api.dependencies import SessionDep
 from app.db.document_models import UploadedDocument
 
 router = APIRouter(prefix="/api/knowledge", tags=["Knowledge documents"])
@@ -21,12 +21,12 @@ def document_view(doc):
 
 
 @router.get("")
-def list_documents(session=Depends(get_session)):
+def list_documents(session: SessionDep):
     return [document_view(doc) for doc in session.scalars(select(UploadedDocument).order_by(UploadedDocument.id.desc()))]
 
 
 @router.post("")
-async def upload_document(file: UploadFile, session=Depends(get_session)):
+async def upload_document(file: UploadFile, session: SessionDep):
     filename = PurePath((file.filename or "document").replace("\\", "/")).name[:255]
     suffix = PurePath(filename).suffix.lower()
     if suffix not in TYPES:
@@ -58,7 +58,7 @@ async def upload_document(file: UploadFile, session=Depends(get_session)):
 
 
 @router.get("/{document_id}/download")
-def download_document(document_id: int, session=Depends(get_session)):
+def download_document(document_id: int, session: SessionDep):
     doc = session.get(UploadedDocument, document_id)
     if not doc:
         raise HTTPException(404, "Document not found.")
@@ -67,7 +67,7 @@ def download_document(document_id: int, session=Depends(get_session)):
 
 
 @router.delete("/{document_id}", status_code=204)
-def delete_document(document_id: int, session=Depends(get_session)):
+def delete_document(document_id: int, session: SessionDep):
     doc = session.get(UploadedDocument, document_id)
     if not doc:
         raise HTTPException(404, "Document not found.")

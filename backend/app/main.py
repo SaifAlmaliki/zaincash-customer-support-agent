@@ -39,7 +39,8 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None):
         if engine:
             engine.dispose()
 
-    app = FastAPI(title="ZainCash Support Workspace", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="ZainCash Support Workspace", version="0.1.0", lifespan=lifespan,
+                  docs_url="/api/docs", openapi_url="/api/openapi.json")
     app.state.settings = settings
     app.state.session_factory = session_factory
     app.state.pipeline_builder = pipeline_builder or build_pipeline

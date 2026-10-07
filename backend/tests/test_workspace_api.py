@@ -18,7 +18,7 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture
 def client():
-    settings = Settings(_env_file=None, google_api_key="", typesafe_api_key="")
+    settings = Settings(_env_file=None, openrouter_api_key="", typesafe_api_key="")
     assert make_url(settings.test_database_url).database == "support_test"
     engine = make_engine(settings.test_database_url)
     reset_db(engine)
@@ -93,7 +93,7 @@ def test_batch_failure_is_isolated_and_conflicting_ids_rejected(client):
 def test_health_does_not_expose_secrets_and_empty_batch_is_rejected(client):
     health = client.get("/api/health")
     assert health.status_code == 200
-    assert "google_api_key" not in health.json()
+    assert "openrouter_api_key" not in health.json()
     assert health.json()["capabilities"]["drafting"] is False
     assert client.post("/api/runs", json={"mode": "jev", "tickets": []}).status_code == 422
 
@@ -111,3 +111,26 @@ def test_documents_are_stored_once_and_not_claimed_indexed(client):
     assert client.get(f"/api/knowledge/{doc_id}/download").content.startswith(b"# Fictional")
     assert client.delete(f"/api/knowledge/{doc_id}").status_code == 204
     assert client.get("/api/knowledge").json() == []
+
+
+def test_openrouter_credentials_enable_api_modes_without_exposing_keys(client):
+    client.app.state.settings = Settings(_env_file=None, openrouter_api_key="test-router-secret",
+                                         typesafe_api_key="test-jev-secret")
+    client.app.state.testing_pipeline = False
+    health = client.get("/api/health")
+    assert health.json()["configured_modes"] == ["jev", "gemini", "cascade"]
+    assert "test-router-secret" not in health.text and "test-jev-secret" not in health.text
+    response = client.post("/api/runs", json={"mode": "gemini", "tickets": [
+        {"external_id": "openrouter-case", "text": "شكد عمولة التحويل؟"},
+    ]})
+    assert response.status_code == 202, response.text
+    assert client.get(f"/api/runs/{response.json()['id']}").json()["status"] == "completed"
+
+
+def test_api_reports_missing_openrouter_key(client):
+    client.app.state.testing_pipeline = False
+    response = client.post("/api/runs", json={"mode": "gemini", "tickets": [
+        {"external_id": "missing-key", "text": "مرحبا"},
+    ]})
+    assert response.status_code == 503
+    assert "OPENROUTER_API_KEY" in response.json()["detail"]

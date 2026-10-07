@@ -1,7 +1,7 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from sqlalchemy import select
 
-from app.api.dependencies import get_session
+from app.api.dependencies import SessionDep
 from app.api.schemas import BatchInput
 from app.db.models import RunRow, TicketRow
 from app.db.repository import create_run, upsert_tickets
@@ -15,12 +15,12 @@ router = APIRouter(prefix="/api/runs", tags=["Batch runs"])
 
 
 @router.get("")
-def list_runs(session=Depends(get_session)):
+def list_runs(session: SessionDep):
     return [run_view(session, run) for run in session.scalars(select(RunRow).order_by(RunRow.id.desc()).limit(100))]
 
 
 @router.get("/{run_id}")
-def get_run(run_id: int, session=Depends(get_session)):
+def get_run(run_id: int, session: SessionDep):
     run = session.get(RunRow, run_id)
     if not run:
         raise HTTPException(404, "Batch run not found.")
@@ -28,12 +28,12 @@ def get_run(run_id: int, session=Depends(get_session)):
 
 
 @router.post("", status_code=202)
-def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, session=Depends(get_session)):
+def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, session: SessionDep):
     settings = request.app.state.settings
     if not request.app.state.testing_pipeline:
         missing = []
-        if batch.mode in ("gemini", "cascade") and not settings.google_api_key:
-            missing.append("GOOGLE_API_KEY")
+        if batch.mode in ("gemini", "cascade") and not settings.openrouter_api_key:
+            missing.append("OPENROUTER_API_KEY")
         if batch.mode in ("jev", "cascade") and not settings.typesafe_api_key:
             missing.append("TYPESAFE_API_KEY")
         if missing:
