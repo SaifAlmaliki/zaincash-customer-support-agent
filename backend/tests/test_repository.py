@@ -7,7 +7,12 @@ from sqlalchemy.exc import OperationalError
 from app.config import Settings
 from app.db.models import RunRow, TicketResultRow, TicketRow
 from app.db.repository import (
-    SqlTransactionRepo, create_run, finish_run, load_incidents, load_transactions, save_outcomes,
+    SqlTransactionRepo,
+    create_run,
+    finish_run,
+    load_incidents,
+    load_transactions,
+    save_outcomes,
     upsert_tickets,
 )
 from app.db.session import make_engine, make_sessionmaker, reset_db

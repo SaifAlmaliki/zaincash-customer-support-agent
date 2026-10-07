@@ -3,14 +3,19 @@ from __future__ import annotations
 
 import asyncio
 import json
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 import typer
 
 from app.config import Settings, get_settings
 from app.db.repository import (
-    SqlTransactionRepo, create_run, finish_run, load_incidents, load_transactions, save_outcomes,
+    SqlTransactionRepo,
+    create_run,
+    finish_run,
+    load_incidents,
+    load_transactions,
+    save_outcomes,
     upsert_tickets,
 )
 from app.db.session import init_db, make_engine, make_sessionmaker
@@ -25,7 +30,7 @@ from app.pipeline.serialize import outcome_to_dict
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="ZainCash support pipeline")
 
 
-class Mode(str, Enum):
+class Mode(StrEnum):
     jev = "jev"
     gemini = "gemini"
     cascade = "cascade"
