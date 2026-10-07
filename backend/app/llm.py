@@ -1,0 +1,84 @@
+"""Gemini structured-output adapter (langchain-google-genai) behind a small protocol."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Generic, Protocol, TypeVar
+
+from pydantic import BaseModel
+
+T = TypeVar("T", bound=BaseModel)
+
+
+class LLMUnavailable(RuntimeError):
+    """The generative model could not produce a usable answer."""
+
+
+@dataclass(frozen=True)
+class Sample(Generic[T]):
+    parsed: T | None
+    cost_usd: float
+    error: str | None = None
+
+
+class StructuredLLM(Protocol):
+    async def sample(
+        self, prompt: str, schema: type[T], *, temperature: float, n: int = 1
+    ) -> list[Sample[T]]: ...
+
+
+class GeminiStructuredLLM:
+    """`ChatGoogleGenerativeAI.with_structured_output(method="json_schema", include_raw=True)`."""
+
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str,
+        price_in_per_m: float,
+        price_out_per_m: float,
+        timeout_s: float = 60.0,
+        max_retries: int = 2,
+    ) -> None:
+        self._api_key = api_key
+        self._model = model
+        self._price_in = price_in_per_m
+        self._price_out = price_out_per_m
+        self._timeout = timeout_s
+        self._max_retries = max_retries
+        self._cache: dict[tuple[type, float], Any] = {}
+
+    def _runnable(self, schema: type[BaseModel], temperature: float) -> Any:
+        key = (schema, temperature)
+        if key not in self._cache:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+
+            chat = ChatGoogleGenerativeAI(
+                model=self._model,
+                temperature=temperature,
+                google_api_key=self._api_key,
+                timeout=self._timeout,
+                max_retries=self._max_retries,
+            )
+            self._cache[key] = chat.with_structured_output(
+                schema, method="json_schema", include_raw=True
+            )
+        return self._cache[key]
+
+    async def sample(self, prompt, schema, *, temperature, n=1):
+        results = await self._runnable(schema, temperature).abatch(
+            [prompt] * n, return_exceptions=True
+        )
+        return [self.to_sample(r) for r in results]
+
+    def to_sample(self, result: Any) -> Sample:
+        if isinstance(result, BaseException):
+            return Sample(None, 0.0, f"{type(result).__name__}: {result}")
+        usage = getattr(result.get("raw"), "usage_metadata", None) or {}
+        cost = (
+            usage.get("input_tokens", 0) * self._price_in
+            + usage.get("output_tokens", 0) * self._price_out
+        ) / 1e6
+        parsed = result.get("parsed")
+        if parsed is None:
+            return Sample(None, cost, str(result.get("parsing_error") or "no parsed output"))
+        return Sample(parsed, cost)
