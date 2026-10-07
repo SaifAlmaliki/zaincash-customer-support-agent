@@ -1,0 +1,153 @@
+# Single source of truth for categories, teams and priorities (spec §4).
+# Priorities: P1 money at risk now / fraud, P2 money lost or stuck, P3 service blocked, P4 information.
+teams:
+  - Payments Ops
+  - Disputes
+  - Account & Security
+  - Agent Network
+  - Cards
+  - Tech Support
+  - General Care
+
+categories:
+  - id: failed_transfer
+    team: Payments Ops
+    what_en: A transfer the customer sent failed, is stuck or pending, or left the wallet but did not arrive
+    what_ar: تحويل فشل أو معلّق أو انقطع من الرصيد وما وصل
+    not_for: Money sent to the wrong number on purpose by mistake (wrong_recipient); bill payments (bill_payment)
+    examples:
+      - حولت فلوس لاخوي من الصبح وبعده ما وصله شي والفلوس انقصت من حسابي
+      - التحويل طلعلي فشل بس الرصيد نازل 50 الف
+      - hawalit 25 alf w ma wislat
+    required_fields: [amount, date]
+    min_priority: P2
+    needs_transaction: true
+
+  - id: wrong_recipient
+    team: Disputes
+    what_en: The customer sent money to the wrong number or person by mistake and wants it back
+    what_ar: تحويل لرقم غلط أو شخص غلط بالغلط ويريد يرجع الفلوس
+    not_for: A transfer that failed technically (failed_transfer)
+    examples:
+      - غلطت برقم واحد وحولت 100 الف لغير شخص اريد ارجعهن
+      - دزيت الفلوس على رقم غلط شلون ارجعها
+    required_fields: [amount]
+    min_priority: P2
+    needs_transaction: true
+
+  - id: login_access
+    team: Account & Security
+    what_en: Cannot log in, forgot PIN or password, verification code not arriving, account locked
+    what_ar: ما يكدر يدخل للحساب، نسى الرمز، رمز التحقق ما يوصل، الحساب مقفول
+    not_for: Someone else accessed the account or stole money (fraud_report)
+    examples:
+      - ما دا يوصلني رمز التحقق حتى افتح الحساب
+      - نسيت الرمز السري وانقفل الحساب
+      - ma da ywselni el code mal ta2keed
+    required_fields: []
+    min_priority: P3
+    needs_transaction: false
+
+  - id: agent_dispute
+    team: Agent Network
+    what_en: Problem with a ZainCash agent or shop - cash-in or cash-out not credited, extra fee charged, service refused
+    what_ar: مشكلة مع وكيل زين كاش - شحن أو سحب ما نزل، عمولة زايدة، رفض الخدمة
+    not_for: Problems inside the app with no agent involved
+    examples:
+      - رحت للوكيل وانطيته 200 الف يشحن حسابي وما نزلت
+      - الوكيل اخذ مني عمولة زايدة على السحب
+    required_fields: [amount]
+    min_priority: P2
+    needs_transaction: true
+
+  - id: card_issue
+    team: Cards
+    what_en: ZainCash Mastercard or virtual card - card declined, blocked, not delivered, or charged twice for one purchase
+    what_ar: بطاقة زين كاش ماستر كارد - مرفوضة، مقفولة، ما وصلت، أو انسحب مبلغ مرتين
+    not_for: Wallet transfers between people (failed_transfer)
+    examples:
+      - الماستر كارد مالتي ترفض بكل موقع
+      - انسحب مني مبلغ مرتين من البطاقة على شراء واحد
+    required_fields: []
+    min_priority: P3
+    needs_transaction: false
+
+  - id: bill_payment
+    team: Payments Ops
+    what_en: Paying a bill or top-up (electricity, internet, mobile credit, water) failed or was not applied by the biller
+    what_ar: دفع فاتورة أو شحن رصيد (كهرباء، انترنت، رصيد موبايل) فشل أو ما انحسب عند الجهة
+    not_for: Transfers to a person (failed_transfer)
+    examples:
+      - دفعت فاتورة الكهرباء وطلعتلي ناجحة بس بعدها الوطنية تكول ما مدفوعة
+      - شحنت رصيد اسيا وما وصل
+    required_fields: [amount]
+    min_priority: P3
+    needs_transaction: true
+
+  - id: account_kyc
+    team: Account & Security
+    what_en: Account verification, upgrading the account level, ID documents, limits reached, changing account details
+    what_ar: توثيق الحساب، رفع مستوى الحساب، المستمسكات، الحد الأعلى، تغيير معلومات الحساب
+    not_for: Cannot log in (login_access)
+    examples:
+      - شلون ارفع مستوى الحساب حتى اكدر احول اكثر
+      - رفضوا هويتي بالتوثيق
+    required_fields: []
+    min_priority: P4
+    needs_transaction: false
+
+  - id: refund_request
+    team: Disputes
+    what_en: The customer wants money back from a merchant purchase or a cancelled service
+    what_ar: يريد يرجع فلوسه من متجر أو خدمة ملغية
+    not_for: Money sent to the wrong person (wrong_recipient); failed transfers (failed_transfer)
+    examples:
+      - اشتريت من متجر بالزين كاش والغيت الطلب يمته ترجع فلوسي
+    required_fields: [amount]
+    min_priority: P3
+    needs_transaction: true
+
+  - id: fraud_report
+    team: Account & Security
+    what_en: Scam or fraud - someone asked for the OTP or PIN, unauthorized transactions, hacked account
+    what_ar: احتيال أو نصب - واحد طلب الرمز، حركات ما سواها الزبون، الحساب مخترق
+    not_for: Simply forgetting the PIN (login_access)
+    examples:
+      - واحد اتصل بيه يكول من زين كاش وطلب الرمز وبعدها انسحبت فلوسي
+      - اكو حركات بحسابي ما سويتها
+    required_fields: []
+    min_priority: P1
+    needs_transaction: false
+
+  - id: app_bug
+    team: Tech Support
+    what_en: The app crashes, shows errors, or a feature does not work, with no money lost
+    what_ar: التطبيق يطفي أو يطلع أخطاء أو ميزة ما تشتغل بدون ضياع فلوس
+    not_for: Any case where money is missing (failed_transfer, bill_payment)
+    examples:
+      - التطبيق يطفي اول ما افتحه بعد التحديث
+    required_fields: []
+    min_priority: P3
+    needs_transaction: false
+
+  - id: general_inquiry
+    team: General Care
+    what_en: Questions about fees, limits, how to do something, agent locations, or promotions
+    what_ar: أسئلة عن العمولة، الحدود، طريقة الاستخدام، أماكن الوكلاء، العروض
+    not_for: Reports of a problem that already happened
+    examples:
+      - شكد عمولة التحويل لحساب بنكي
+    required_fields: []
+    min_priority: P4
+    needs_transaction: false
+
+  - id: other
+    team: General Care
+    what_en: Anything that does not fit the categories above, including complaints with no clear request
+    what_ar: أي شي ما ينطبق على الأصناف الثانية
+    not_for: ""
+    examples:
+      - عندي ملاحظة على الخدمة بشكل عام
+    required_fields: []
+    min_priority: P4
+    needs_transaction: false
