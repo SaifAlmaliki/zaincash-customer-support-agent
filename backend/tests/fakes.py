@@ -8,7 +8,11 @@ from langchain_typesafe import Noul, Score
 
 from app.llm import Sample
 from app.pipeline.contracts import (
-    FIELD_NAMES, FLAG_NAMES, ClassificationResult, ClassifierOutput, FieldPick,
+    FIELD_NAMES,
+    FLAG_NAMES,
+    ClassificationResult,
+    ClassifierOutput,
+    FieldPick,
 )
 
 

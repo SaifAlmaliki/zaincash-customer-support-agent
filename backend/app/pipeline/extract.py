@@ -8,7 +8,13 @@ from datetime import date, datetime
 from app.llm import LLMUnavailable
 from app.pipeline.candidates import TXN_FULL, normalize_phone, parse_amount
 from app.pipeline.classify.base import FieldExtractor
-from app.pipeline.contracts import FIELD_NAMES, Candidates, ExtractedField, FieldPick, NormalizedTicket
+from app.pipeline.contracts import (
+    FIELD_NAMES,
+    Candidates,
+    ExtractedField,
+    FieldPick,
+    NormalizedTicket,
+)
 from app.pipeline.dates import resolve_date
 
 _NO_PICK = FieldPick(None, 0.0, "none")

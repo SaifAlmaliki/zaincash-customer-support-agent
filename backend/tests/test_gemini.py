@@ -3,7 +3,11 @@ import pytest
 from app.llm import LLMUnavailable
 from app.pipeline.candidates import find_candidates
 from app.pipeline.classify.gemini import (
-    ExtractedSpan, GeminiAnalysis, GeminiClassifier, GeminiExtractor, GeminiFields,
+    ExtractedSpan,
+    GeminiAnalysis,
+    GeminiClassifier,
+    GeminiExtractor,
+    GeminiFields,
 )
 from app.pipeline.normalize import normalize
 from tests.fakes import FakeStructuredLLM

@@ -9,7 +9,12 @@ from pydantic import BaseModel, Field
 
 from app.llm import LLMUnavailable, StructuredLLM
 from app.pipeline.contracts import (
-    FIELD_NAMES, FLAG_NAMES, Candidates, ClassificationResult, ClassifierOutput, FieldPick,
+    FIELD_NAMES,
+    FLAG_NAMES,
+    Candidates,
+    ClassificationResult,
+    ClassifierOutput,
+    FieldPick,
     NormalizedTicket,
 )
 from app.pipeline.normalize import to_ascii_digits

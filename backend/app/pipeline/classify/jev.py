@@ -7,7 +7,12 @@ from typing import Any
 from langchain_typesafe import Choice, Noul, NoulCriteria, Score
 
 from app.pipeline.contracts import (
-    FIELD_NAMES, FLAG_NAMES, Candidates, ClassificationResult, ClassifierOutput, FieldPick,
+    FIELD_NAMES,
+    FLAG_NAMES,
+    Candidates,
+    ClassificationResult,
+    ClassifierOutput,
+    FieldPick,
     NormalizedTicket,
 )
 from app.taxonomy import Taxonomy
