@@ -44,8 +44,8 @@ Optional: seed the existing synthetic transaction fixtures before investigating 
 
 ```bash
 uv --directory backend run support seed-db \
-  --transactions backend/tests/fixtures/sample_transactions.jsonl \
-  --incidents backend/tests/fixtures/sample_incidents.jsonl
+  --transactions tests/fixtures/sample_transactions.jsonl \
+  --incidents tests/fixtures/sample_incidents.jsonl
 ```
 
 ## Workspace modes
