@@ -70,6 +70,37 @@ Every path ends with a person approving the reply.
 
 The full design is in [`docs/superpowers/specs/2026-10-07-support-pipeline-design.md`](docs/superpowers/specs/2026-10-07-support-pipeline-design.md).
 
+## Run locally
+
+From the repository root, in three terminals. Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` first.
+
+Database:
+
+```bash
+docker compose up -d --wait db
+uv --directory backend run support seed-db \
+  --transactions tests/fixtures/sample_transactions.jsonl \
+  --incidents tests/fixtures/sample_incidents.jsonl
+```
+
+Backend:
+
+```bash
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+uv --directory backend sync
+uv --directory backend run uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Frontend:
+
+```bash
+cd customer-support-ui
+npm ci
+npm run dev -- --port 5173
+```
+
+Open http://localhost:5173. API docs are at http://localhost:8000/api/docs. Postgres is on port 5433.
+
 ## Quickstart (WSL Ubuntu, Docker Engine, uv)
 
 Run from the repository root in WSL:
