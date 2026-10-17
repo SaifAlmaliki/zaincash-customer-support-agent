@@ -15,9 +15,9 @@ flowchart TD
     D{Is Jev confident?}
     E[Gemini gives a second opinion<br/>asked 3 times]
     F{Gemini confident<br/>and agrees?}
-    G[Look up the transaction<br/>in ZainCash records]
+    G[Look up the transaction<br/>in synthetic demo records]
     H[Route to the right team<br/>and set priority]
-    I{Any red flags?<br/>fraud · several issues · missing info<br/>transaction not found · amount mismatch}
+    I[Keep escalation reasons<br/>fraud · several issues · missing info<br/>transaction not found · amount mismatch]
     J[AI agent drafts a reply in Iraqi Arabic<br/>using policy documents + transaction]
     K{Draft passes safety checks?<br/>cites policy · no invented numbers<br/>never asks for OTP/PIN}
     R[Ready for review]
@@ -32,10 +32,9 @@ flowchart TD
     F -- Yes --> G
     F -- No --> X
     G --> H --> I
-    I -- Yes --> X
-    I -- No --> J --> K
-    K -- No --> X
-    K -- Yes --> R
+    I --> J --> K
+    K -- Check failed or earlier flags --> X
+    K -- Passed, no earlier flags --> R
     X --> Q
     R --> Q
     Q --> Z
@@ -46,8 +45,8 @@ flowchart TD
     classDef escalate fill:#f8e6df,stroke:#c4a090,color:#1a1a1a
 
     class A,Z terminal
-    class D,F,I,K decision
-    class B,C,E,G,H,J,R action
+    class D,F,K decision
+    class B,C,E,G,H,I,J,R action
     class X,Q escalate
 ```
 
@@ -73,24 +72,25 @@ The diagram above is the path a ticket takes. This is the same path as code: the
 | Jev → Gemini → human decision | `gemini_classify` (cascade mode) | `stage2_classify/cascade.py` | `combine()` |
 | Classify and extract prompts | — | `stage2_classify/prompts/gemini_classify_v1.md`, `gemini_extract_v1.md` | prompt files (versioned) |
 | Extract ref, amount, date, phone | `extract` | `stage3_extract/extract.py` | `finalize()`, `fill_gaps()`, span verification. Gemini fills a field only when regex found nothing or the Jev pick is weak |
-| Look up the transaction | `lookup` | `stage4_lookup/lookup.py` (+ `app/db/repository.py`) | `match_transaction()`, `lookup_transaction` tool |
+| Look up the transaction | `lookup` | `stage4_lookup/lookup.py` (+ `app/db/repository.py`) | `match_transaction()` |
 | Route to team + red-flag check | `decide` | `stage5_decide/rules.py` | `decide()`, `merge_reasons()` |
-| Draft the reply | `draft` | `stage6_draft/agent.py`, `stage6_draft/drafting.py` | LangChain `create_agent` |
-| Safety checks on the draft | `draft` | `stage6_draft/guardrails.py` | Jev `requests_credentials` noul + regex |
-| Knowledge-base search | `draft` (tool) | `stage6_draft/tools/search_knowledge_base.py` | `search_knowledge_base` |
+| Draft the reply | `draft` | `stage6_draft/agent.py`, `model.py`, `context.py`, `prompts/draft_v1.md` | Bounded LangChain agent through OpenRouter; 6 executed tools / 30 seconds |
+| Safety checks on the draft | `draft` | `stage6_draft/guardrails.py`, `credentials.py` | Grounded facts/citations, Arabic/length checks, local credential-request detection + Jev |
+| Knowledge-base search | `draft` (tool) | `stage6_draft/tools.py`, `app/kb/service.py` | `search_knowledge_base`, compatible pgvector passages |
+| Parse, embed and publish sources | Outside ticket graph | `app/kb/parse.py`, `embeddings.py`, `service.py` | OpenRouter embeddings; durable indexing lifecycle |
 
-The eight drafting tools live in `stage6_draft/tools/`:
+The eight drafting tools are built in `stage6_draft/tools.py`. Read-only investigations use `stage6_draft/investigation.py`; no tool changes a financial record:
 
-| Tool | File | What it does |
-|---|---|---|
-| `lookup_transaction` | `tools/lookup_transaction.py` | exact ref lookup |
-| `search_transactions` | `tools/search_transactions.py` | fuzzy search when no ref |
-| `get_customer_recent_transactions` | `tools/customer_transactions.py` | recent activity |
-| `get_customer_ticket_history` | `tools/ticket_history.py` | repeat contacts |
-| `check_service_status` | `tools/service_status.py` | known outages |
-| `search_knowledge_base` | `tools/search_knowledge_base.py` | pgvector policy chunks |
-| `flag_for_human` | `tools/flag_for_human.py` | record an escalation reason |
-| `submit_draft` | `tools/submit_draft.py` | record the draft (terminal) |
+| Tool | What it does |
+|---|---|
+| `lookup_transaction` | Ticket-scoped exact reference lookup |
+| `search_transactions` | Bounded candidate search constrained by ticket evidence |
+| `get_customer_recent_transactions` | Recent activity for the ticket's known customer |
+| `get_customer_ticket_history` | Prior contacts for that customer |
+| `check_service_status` | Known synthetic service incidents |
+| `search_knowledge_base` | Relevant policy passages and embedding cost |
+| `flag_for_human` | Preserve/add an escalation reason |
+| `submit_draft` | Record the cited draft and internal note (terminal) |
 
 Orchestration, outside any single stage:
 
@@ -107,7 +107,8 @@ Orchestration, outside any single stage:
 | Model | What it does here |
 |---|---|
 | **Jev** (TypeSafe System One) | Fast, cheap classification. Its confidence scores are calibrated, and it picks extracted values directly from the ticket text, so it cannot invent them. |
-| **Gemini 3.8 Flash** (via OpenRouter) | Second opinion on uncertain tickets and fallback extraction. RAG drafting is planned for a later phase. |
+| **Gemini 3.8 Flash** (via OpenRouter) | Second opinion, fallback extraction and grounded drafting; selected with `GEMINI_MODEL`. |
+| **text-embedding-3-small** (via OpenRouter) | Knowledge indexing and query embeddings, 768 dimensions. |
 
 ## Design
 
@@ -195,7 +196,15 @@ Export this variable in the shell that launches the process; adding it only to `
 
 ## Status
 
-**Plan 1's core pipeline and CLI are verified**, including Task 15's live smoke checks using Gemini 3.8 Flash through OpenRouter. Reply generation still uses `NullDrafter`; RAG drafting comes in Plan 3.
+**Plan 1 and the review workspace are implemented. Plan 3 RAG is implemented and live-smoke verified, with Task 8/controller review pending.** Database-backed runs now retrieve policies, draft Arabic replies, retain citations/tool traces and enforce human review. Explicit `RAG_ENABLED=false` and `--no-db` remain classification-only.
+
+On 2026-10-17, 12 fictional policies were indexed through real OpenRouter embeddings. Supported Arabic searches ranked their intended policy first; supported general-inquiry and pending-transfer drafts passed checks. Fraud stayed P1/escalated; the unsupported physics question received only a scoped refusal with `no_kb_support`. Browser edit/approve/reload and saved citations after temporary-source reindex/deletion were verified. A live transfer attempt timed out before a same-settings retry succeeded; two initial credential-warning false positives led to a narrow regression-tested fix. These are smoke observations, not held-out quality metrics.
+
+See the [demo runbook and remaining work](docs/demo-readiness.md) and [commands, counts, costs and live evidence](docs/verification/2026-10-17-rag-drafting.md). `data/kb/` is **fictional demonstration guidance, not real ZainCash policies, fees, promises or account access**.
+
+Final automated checks: **665 backend tests**, Ruff, **21 frontend tests**, frontend lint and production build passed. Automated fake-provider results are distinct from the live observations above.
+
+### Earlier Plan 1 evidence
 
 Live smoke results on 2026-10-07:
 
@@ -211,7 +220,7 @@ The cascade fixture checks passed: S-001 was `failed_transfer`, matched its tran
 
 To repeat the Gemini smoke test, run the in-memory command above with `--mode gemini --out ../out/smoke-gemini.json` and confirm `total: 5` and `failed_ids: []`. These five fixtures are a connectivity and pipeline check; held-out accuracy evaluation comes in Plan 2.
 
-The remaining plans cover synthetic data and evaluation, RAG drafting, the review workspace, and the weekly report. Disclosure and failure-mode documentation land with Plan 5.
+Remaining: **Plan 2 held-out evaluation**; **Plan 5 packaging/CI**, disclosure, data card and broader evidence-backed failure modes; and the **weekly statistical report as stretch work**. The workspace's existing weekly counts and imported evaluation display do not implement those deliverables.
 
 ## License
 

@@ -1,0 +1,52 @@
+- generic [ref=f7e3]:
+  - link "Skip to content" [ref=f7e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary [ref=f7e5]:
+    - generic [ref=f7e11]:
+      - text: zaincash
+      - generic [ref=f7e12]: Support workspace
+    - generic [ref=f7e13]:
+      - generic [ref=f7e14]: ZC
+      - generic [ref=f7e15]:
+        - strong [ref=f7e16]: Customer support
+        - generic [ref=f7e17]: Iraq workspace
+    - generic [ref=f7e20]: Workspace
+    - navigation "Main navigation" [ref=f7e21]:
+      - link "Support queue" [ref=f7e22] [cursor=pointer]:
+        - /url: /
+      - link "Pipeline runs" [ref=f7e27] [cursor=pointer]:
+        - /url: /runs
+      - link "Knowledge base" [ref=f7e33] [cursor=pointer]:
+        - /url: /knowledge
+      - link "Weekly insights" [ref=f7e37] [cursor=pointer]:
+        - /url: /insights
+      - link "Evaluation" [ref=f7e41] [cursor=pointer]:
+        - /url: /evaluation
+    - generic [ref=f7e45]:
+      - strong [ref=f7e49]: AI prepares. You decide.
+      - paragraph [ref=f7e50]: Every response stays in review until a person approves it.
+    - generic [ref=f7e51]:
+      - link "API documentation" [ref=f7e52] [cursor=pointer]:
+        - /url: /api/docs
+      - generic [ref=f7e59]:
+        - generic [ref=f7e60]: "06"
+        - generic [ref=f7e61]:
+          - strong [ref=f7e62]: Support pipeline automation
+          - text: Agentic AI Challenge Iraq
+  - generic [ref=f7e63]:
+    - banner [ref=f7e64]:
+      - generic [ref=f7e65]:
+        - generic [ref=f7e66]: Workspace
+        - strong [ref=f7e69]: Knowledge base
+      - generic [ref=f7e70]:
+        - generic [ref=f7e71]: Connecting…
+        - combobox "Workspace data source" [ref=f7e78] [cursor=pointer]:
+          - generic [ref=f7e79]: Live workspace
+          - img [aria-hidden]: ▼
+        - textbox [aria-hidden] [ref=f7e80]: live
+        - generic [ref=f7e81]: SA
+    - main [ref=f7e82]:
+      - status [ref=f7e83]: Loading workspace…
+    - contentinfo [ref=f7e86]:
+      - generic [ref=f7e87]: Human approval required for every response
+      - generic [ref=f7e91]: Topic 06 · Built for Iraq

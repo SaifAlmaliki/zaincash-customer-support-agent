@@ -308,6 +308,8 @@ Keep original draft and final reviewed reply separate. Show retained evidence wh
 
 **Files:** Create 12 Markdown policy documents under `data/kb/`; create `docs/demo-readiness.md` and `docs/verification/2026-10-17-rag-drafting.md`. Update root/UI README, `pipeline/runner.md`, `.env.example` and this plan's checkboxes based on observed results.
 
+**Execution record (2026-10-17):** Tasks 1–7 are implemented and independently reviewed (see the execution ledger). Task 8 corpus, live verification and readiness documentation have implementer evidence in [the verification record](../../verification/2026-10-17-rag-drafting.md): 665 backend tests, 21 frontend tests, both lints/build and real provider/browser checks. Task 8's checkboxes below remain unchecked until the controller reviews that evidence and the live-discovered credential-negation fix. Implementation/testing evidence alone does not imply independent review approval.
+
 - [ ] Write one clearly labelled fictional document per taxonomy category, with Iraqi-Arabic guidance and a short English title. Include safe escalation and credential warnings, but no claimed real ZainCash fees, reimbursement guarantees or account access.
 - [ ] Add demo inputs aligned with existing synthetic transactions: supported failed transfer, supported general inquiry, fraud escalation and an unsupported question. Keep these separate from the future held-out evaluation data.
 - [ ] Run the existing and new backend suite against `support_test`:
@@ -339,4 +341,4 @@ npm run build
 
 ## Execution handoff
 
-Written plan awaits user review and selection of native or subagent-driven execution. Implementation begins only after that review.
+The user authorized full implementation and live synthetic verification. Tasks 1–7 have independent review evidence. Task 8 and the final whole-plan review remain pending controller sign-off; remaining evaluation, packaging and disclosure work is tracked in [demo readiness](../../demo-readiness.md).

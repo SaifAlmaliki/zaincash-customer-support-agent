@@ -1,0 +1,139 @@
+- generic [ref=f1e3]:
+  - link "Skip to content" [ref=f1e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary [ref=f1e5]:
+    - generic [ref=f1e11]:
+      - text: zaincash
+      - generic [ref=f1e12]: Support workspace
+    - generic [ref=f1e13]:
+      - generic [ref=f1e14]: ZC
+      - generic [ref=f1e15]:
+        - strong [ref=f1e16]: Customer support
+        - generic [ref=f1e17]: Iraq workspace
+    - generic [ref=f1e20]: Workspace
+    - navigation "Main navigation" [ref=f1e21]:
+      - link "Support queue" [ref=f1e22] [cursor=pointer]:
+        - /url: /
+      - link "Pipeline runs" [ref=f1e27] [cursor=pointer]:
+        - /url: /runs
+      - link "Knowledge base" [ref=f1e33] [cursor=pointer]:
+        - /url: /knowledge
+      - link "Weekly insights" [ref=f1e37] [cursor=pointer]:
+        - /url: /insights
+      - link "Evaluation" [ref=f1e41] [cursor=pointer]:
+        - /url: /evaluation
+    - generic [ref=f1e45]:
+      - strong [ref=f1e49]: AI prepares. You decide.
+      - paragraph [ref=f1e50]: Every response stays in review until a person approves it.
+    - generic [ref=f1e51]:
+      - link "API documentation" [ref=f1e52] [cursor=pointer]:
+        - /url: /api/docs
+      - generic [ref=f1e59]:
+        - generic [ref=f1e60]: "06"
+        - generic [ref=f1e61]:
+          - strong [ref=f1e62]: Support pipeline automation
+          - text: Agentic AI Challenge Iraq
+  - generic [ref=f1e63]:
+    - banner [ref=f1e64]:
+      - generic [ref=f1e65]:
+        - generic [ref=f1e66]: Workspace
+        - strong [ref=f1e69]: Knowledge base
+      - generic [ref=f1e70]:
+        - generic [ref=f1e71]: API connected
+        - combobox "Workspace data source" [ref=f1e78] [cursor=pointer]:
+          - generic [ref=f1e79]: Live workspace
+          - img [aria-hidden]: ▼
+        - textbox [aria-hidden] [ref=f1e80]: live
+        - generic [ref=f1e81]: SA
+    - main [ref=f1e82]:
+      - generic [ref=f1e83]:
+        - generic [ref=f1e84]:
+          - heading "Knowledge base" [level=1] [ref=f1e85]
+          - paragraph [ref=f1e86]: The source material behind a well-grounded response.
+        - button "Upload document" [ref=f1e88] [cursor=pointer]
+      - status [ref=f1e191]: "task8-history-policy.md: indexing request accepted. Follow its status below."
+      - generic [ref=f1e89]:
+        - generic [ref=f1e90]:
+          - generic [ref=f1e93]:
+            - heading "Give your team a shared source of truth" [level=3] [ref=f1e97]
+            - paragraph [ref=f1e98]: Upload policies, FAQs and support procedures.PDF, Markdown or text · up to 10 MB
+            - button "Browse files" [ref=f1e99] [cursor=pointer]
+            - button "Upload knowledge document" [ref=f1e100]
+          - generic [ref=f1e101]:
+            - generic [ref=f1e102]:
+              - generic [ref=f1e103]:
+                - text: Documents
+                - generic [ref=f1e107]: 1 shown / 1 stored
+              - button "Refresh status" [ref=f1e108] [cursor=pointer]
+            - generic [ref=f1e109]:
+              - textbox "Search documents" [ref=f1e111]:
+                - /placeholder: Find a document by name…
+              - generic [ref=f1e198]:
+                - strong [ref=f1e199]: task8-history-policy.md
+                - generic [ref=f1e200]: 1 KB · Uploaded 17 Oct
+                - generic [ref=f1e201]:
+                  - generic [ref=f1e202]: Indexed
+                  - generic [ref=f1e204]: 1 passages
+                - generic [ref=f1e205]: openai/text-embedding-3-small · 768 dimensions · Indexed 17 Oct
+                - generic [ref=f1e206]:
+                  - 'button "Reindex: task8-history-policy.md" [ref=f1e207] [cursor=pointer]': Reindex
+                  - 'button "Inspect passages : task8-history-policy.md" [ref=f1e208] [cursor=pointer]':
+                    - text: Inspect passages
+                    - generic [ref=f1e209]: ": task8-history-policy.md"
+                  - button "Download task8-history-policy.md" [ref=f1e210] [cursor=pointer]
+                  - button "Delete task8-history-policy.md" [ref=f1e211] [cursor=pointer]
+          - generic [ref=f1e119]:
+            - generic [ref=f1e120]: Test policy search
+            - generic [ref=f1e125]:
+              - paragraph [ref=f1e126]: Find passages a drafting agent could use. Each live search uses the configured embedding provider.
+              - generic [ref=f1e127]:
+                - generic [ref=f1e128]: Policy question
+                - textbox "Policy question" [ref=f1e129]:
+                  - /placeholder: Ask about a support policy…
+                - generic [ref=f1e130]:
+                  - generic [ref=f1e131]:
+                    - generic [ref=f1e132]: Category
+                    - combobox "Search category" [ref=f1e133] [cursor=pointer]:
+                      - generic [ref=f1e134]: All categories
+                      - img [aria-hidden]: ▼
+                    - textbox [aria-hidden] [ref=f1e135]
+                  - generic [ref=f1e136]:
+                    - text: Maximum passages
+                    - spinbutton "Maximum passages" [ref=f1e137]: "5"
+                  - button "Search policies" [disabled]
+        - complementary [ref=f1e138]:
+          - generic [ref=f1e139]:
+            - generic [ref=f1e140]: Document lifecycle
+            - list [ref=f1e147]:
+              - listitem [ref=f1e148]:
+                - generic [ref=f1e149]: "1"
+                - generic [ref=f1e150]:
+                  - strong [ref=f1e151]: Upload & store
+                  - paragraph [ref=f1e152]: Your files are saved in PostgreSQL with a checksum.
+                - generic [ref=f1e153]: Available
+              - listitem [ref=f1e154]:
+                - generic [ref=f1e155]: "2"
+                - generic [ref=f1e156]:
+                  - strong [ref=f1e157]: Chunk & embed
+                  - paragraph [ref=f1e158]: Prepare searchable passages with pgvector.
+                - generic [ref=f1e159]: Configured
+              - listitem [ref=f1e160]:
+                - generic [ref=f1e161]: "3"
+                - generic [ref=f1e162]:
+                  - strong [ref=f1e163]: Retrieve & cite
+                  - paragraph [ref=f1e164]: Ground the agent’s draft in relevant policy passages.
+                - generic [ref=f1e165]: Needs index
+          - generic [ref=f1e166]:
+            - generic [ref=f1e167]: Knowledge readiness
+            - generic [ref=f1e169]:
+              - paragraph [ref=f1e170]: 0 searchable documents · empty
+              - paragraph [ref=f1e171]: openai/text-embedding-3-small · 768 dimensions
+              - paragraph [ref=f1e172]: Index a policy successfully before expecting a grounded draft.
+              - paragraph [ref=f1e173]: Credential checking is configured. Readiness reflects configuration and stored indexes, not a live provider check.
+          - generic [ref=f1e177]:
+            - strong [ref=f1e178]: Stored does not mean indexed
+            - paragraph [ref=f1e179]: Only successfully indexed documents can ground new drafts. Saved reviews retain their cited passages after a source is reindexed or deleted.
+            - generic [ref=f1e180]: Upload Index Ground
+    - contentinfo [ref=f1e185]:
+      - generic [ref=f1e186]: Human approval required for every response
+      - generic [ref=f1e190]: Topic 06 · Built for Iraq

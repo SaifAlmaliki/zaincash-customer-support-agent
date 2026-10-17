@@ -38,7 +38,8 @@ _REQUEST = re.compile(
 _CLAUSE = re.compile(r"[.!?؟;؛،,\n]|\b(?:but|however|بس|لكن)\b", re.IGNORECASE)
 _NEGATION = re.compile(
     r"(?:\b(?:never|not|don't|dont|avoid)\s+(?:ever\s+)?(?:ask\s+you\s+to\s+)?"
-    r"|(?<!\w)(?:[وف])?(?:لا|ما|مو|ممنوع|اياك|عدم|لا\s+نطلب\s+منك|نحذرك\s+من)\s+)$",
+    r"|(?<!\w)(?:[وف])?(?:لا|ما|مو|ممنوع|اياك|عدم|تجنب(?:\s+تماما)?"
+    r"|لا\s+نطلب\s+منك|نحذرك\s+من)\s+)$",
     re.IGNORECASE,
 )
 _COORDINATION = re.compile(r"\s*(?:or|nor|and|او|ولا|و)\s*", re.IGNORECASE)

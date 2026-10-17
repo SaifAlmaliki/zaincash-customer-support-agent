@@ -1,0 +1,4 @@
+{"external_id":"RAG-DEMO-FAILED-TRANSFER","text":"حولت ٥٠ الف لاخوي على رقم 07701234567 امس وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123","channel":"app","customer_phone":"07809876543","received_at":"2026-10-07T09:30:00+03:00"}
+{"external_id":"RAG-DEMO-GENERAL","text":"شلون أشرح مشكلتي للدعم بأمان؟ شنو المعلومات غير السرية اللي أذكرها؟","channel":"app","received_at":"2026-10-07T13:00:00+03:00"}
+{"external_id":"RAG-DEMO-FRAUD","text":"واحد اتصل بيه يكول انه موظف زين كاش وطلب الرمز اللي وصلني، انطيته وبعدها انسحب من حسابي 200 الف!! الحكوني","channel":"whatsapp","customer_phone":"07501112233","received_at":"2026-10-07T10:05:00+03:00"}
+{"external_id":"RAG-DEMO-UNSUPPORTED","text":"اشرحلي بالتفصيل شلون التشابك الكمي يشتغل بين فوتونين داخل مختبر فيزياء؟","channel":"app","received_at":"2026-10-07T14:00:00+03:00"}

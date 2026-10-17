@@ -1,0 +1,52 @@
+- generic [ref=e3]:
+  - link "Skip to content" [ref=e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary [ref=e5]:
+    - generic [ref=e11]:
+      - text: zaincash
+      - generic [ref=e12]: Support workspace
+    - generic [ref=e13]:
+      - generic [ref=e14]: ZC
+      - generic [ref=e15]:
+        - strong [ref=e16]: Customer support
+        - generic [ref=e17]: Iraq workspace
+    - generic [ref=e20]: Workspace
+    - navigation "Main navigation" [ref=e21]:
+      - link "Support queue" [ref=e22] [cursor=pointer]:
+        - /url: /
+      - link "Pipeline runs" [ref=e27] [cursor=pointer]:
+        - /url: /runs
+      - link "Knowledge base" [ref=e33] [cursor=pointer]:
+        - /url: /knowledge
+      - link "Weekly insights" [ref=e37] [cursor=pointer]:
+        - /url: /insights
+      - link "Evaluation" [ref=e41] [cursor=pointer]:
+        - /url: /evaluation
+    - generic [ref=e45]:
+      - strong [ref=e49]: AI prepares. You decide.
+      - paragraph [ref=e50]: Every response stays in review until a person approves it.
+    - generic [ref=e51]:
+      - link "API documentation" [ref=e52] [cursor=pointer]:
+        - /url: /api/docs
+      - generic [ref=e59]:
+        - generic [ref=e60]: "06"
+        - generic [ref=e61]:
+          - strong [ref=e62]: Support pipeline automation
+          - text: Agentic AI Challenge Iraq
+  - generic [ref=e63]:
+    - banner [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]: Workspace
+        - strong [ref=e69]: Knowledge base
+      - generic [ref=e70]:
+        - generic [ref=e71]: Connecting…
+        - combobox "Workspace data source" [ref=e78] [cursor=pointer]:
+          - generic [ref=e79]: Live workspace
+          - img [aria-hidden]: ▼
+        - textbox [aria-hidden] [ref=e80]: live
+        - generic [ref=e81]: SA
+    - main [ref=e82]:
+      - status [ref=e83]: Loading workspace…
+    - contentinfo [ref=e86]:
+      - generic [ref=e87]: Human approval required for every response
+      - generic [ref=e91]: Topic 06 · Built for Iraq
