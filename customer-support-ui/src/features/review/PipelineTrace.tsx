@@ -1,12 +1,13 @@
 import { Code2, Workflow } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { stages, plannedTools } from "@/lib/stages"
+import { stages, agentTools } from "@/lib/stages"
 import { duration } from "@/lib/format"
 import type { Result } from "@/lib/types"
+import { reviewEvidence } from "./review-evidence"
 
 export function PipelineTrace({ result }: { result: Result }) {
   const events = result.agent_trace.filter((event) => event.kind === "stage")
-  const tools = result.agent_trace.filter((event) => event.kind !== "stage")
+  const { tools, otherEvents } = reviewEvidence(result)
   return (
     <Card>
       <CardHeader>
@@ -64,14 +65,19 @@ export function PipelineTrace({ result }: { result: Result }) {
           ) : (
             <>
               <p>
-                No agent tool calls were recorded. The planned drafting tools
-                are listed for implementation reference.
+                 No agent tool calls were recorded for this result. Available tools
+                 are listed below for reference.
               </p>
-              {plannedTools.map((tool) => (
+              {agentTools.map((tool) => (
                 <code key={tool}>{tool}</code>
               ))}
             </>
           )}
+        </details>
+        <details className="tool-reference">
+          <summary><Code2 size={15} />Draft & check events <span>{otherEvents.length} recorded</span></summary>
+          <p>Model, guardrail, draft and skipped events are not tool calls.</p>
+          {otherEvents.map((event, i) => <pre key={i}>{JSON.stringify(event, null, 2)}</pre>)}
         </details>
       </CardContent>
     </Card>

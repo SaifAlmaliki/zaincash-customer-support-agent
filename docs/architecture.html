@@ -161,7 +161,7 @@
         <circle cx="258" cy="180" r="9" fill="#0f766e"/>
         <text x="258" y="184" fill="#ffffff" font-size="11" font-weight="600" text-anchor="middle">5</text>
         <text x="272" y="184" fill="#0f172a" font-size="13" font-weight="600">jev_classify</text>
-        <text x="252" y="204" fill="#475569" font-size="11">Category and priority</text>
+        <text x="252" y="204" fill="#475569" font-size="11">Category, urgency, flags</text>
         <text x="252" y="224" fill="#334155" font-size="11" font-weight="600">Python · TypeSafe · Jev</text>
 
         <rect x="452" y="158" width="192" height="82" rx="8" fill="#ffffff" stroke="#d0d7e2"/>
@@ -200,20 +200,20 @@
         <rect x="236" y="264" width="192" height="76" rx="8" fill="#ffffff" stroke="#d0d7e2"/>
         <rect x="237" y="276" width="3" height="52" rx="1.5" fill="#b45309"/>
         <text x="252" y="286" fill="#0f172a" font-size="13" font-weight="600">gemini_classify</text>
-        <text x="252" y="306" fill="#475569" font-size="11">Second opinion, 2 of 3</text>
-        <text x="252" y="326" fill="#334155" font-size="11" font-weight="600">Python · OpenRouter</text>
+        <text x="252" y="306" fill="#475569" font-size="11">Same prompt, three times</text>
+        <text x="252" y="326" fill="#334155" font-size="11" font-weight="600">Python · Gemini · :8000</text>
 
         <!-- Dependencies -->
         <rect x="20" y="364" width="305" height="82" rx="8" fill="#ffffff" stroke="#d0d7e2"/>
         <rect x="21" y="376" width="3" height="58" rx="1.5" fill="#b45309"/>
         <text x="36" y="390" fill="#0f172a" font-size="13" font-weight="600">TypeSafe · Jev</text>
-        <text x="36" y="410" fill="#475569" font-size="11">Labels copied from the ticket</text>
+        <text x="36" y="410" fill="#475569" font-size="11">Category, urgency, and risk flags</text>
         <text x="36" y="430" fill="#334155" font-size="11" font-weight="600">HTTPS · TypeSafe · jev-1.13.0</text>
 
         <rect x="345" y="364" width="305" height="82" rx="8" fill="#ffffff" stroke="#d0d7e2"/>
         <rect x="346" y="376" width="3" height="58" rx="1.5" fill="#b45309"/>
         <text x="361" y="390" fill="#0f172a" font-size="13" font-weight="600">OpenRouter</text>
-        <text x="361" y="410" fill="#475569" font-size="11">Gemini, only if Jev is unsure</text>
+        <text x="361" y="410" fill="#475569" font-size="11">Three samples when Jev is unsure</text>
         <text x="361" y="430" fill="#334155" font-size="11" font-weight="600">HTTPS · Gemini 3.8 Flash</text>
 
         <rect x="670" y="364" width="305" height="82" rx="8" fill="#ffffff" stroke="#d0d7e2"/>
@@ -305,12 +305,24 @@
 
     <div class="cards">
       <div class="card">
-        <h3>Cascade</h3>
+        <h3>Jev proposal</h3>
         <ul>
-          <li>Jev runs first in jev and cascade mode.</li>
-          <li>Confident only if the top label, the score, and the reversed-option check agree.</li>
-          <li>Otherwise Gemini answers three times; two of three must agree (t_gem 0.66).</li>
-          <li>A remaining disagreement is escalated with a one-line note.</li>
+          <li>One call proposes the category, urgency as P1–P4, and six flags.</li>
+          <li>Flags: fraud, money lost, several issues, anger or urgency, a named transaction, asks for a person.</li>
+          <li>A second call repeats only the category, with the options reversed.</li>
+          <li>Uncertain if the label is invalid, the top probability is under 0.60, confidence is under 0.60, or those two category calls disagree.</li>
+          <li>Cascade mode then asks Gemini. Jev-only mode does not. A Jev failure in cascade mode does too.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Three samples</h3>
+        <ul>
+          <li>The same prompt runs three times, in parallel, at temperature 0.7.</li>
+          <li>Category is the label that appears most. Confidence is that count divided by 3, so a failed call lowers it.</li>
+          <li>Urgency is the majority among the runs that picked the winning category.</li>
+          <li>Each flag is the share of successful runs that said yes. Above 0.5 it counts.</li>
+          <li>Agreement under 0.66 is uncertain. Two of three is the minimum.</li>
+          <li>A disagreement is escalated when Jev was at least 0.40 confident on its category.</li>
         </ul>
       </div>
       <div class="card">

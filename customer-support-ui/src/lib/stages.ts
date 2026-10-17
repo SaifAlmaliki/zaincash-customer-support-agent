@@ -62,12 +62,12 @@ export const stages = [
     label: "Draft & review",
     subtitle: "Keep people in control",
     icon: SquarePen,
-    files: ["stage6_draft/drafting.py", "stage6_draft/tools/"],
+    files: ["stage6_draft/agent.py", "stage6_draft/tools.py", "stage6_draft/guardrails.py"],
     description:
-      "The current backend uses NullDrafter. Staff can write and approve a response. The planned RAG agent will prepare drafts with source citations here.",
+      "When configured with indexed policies, the RAG agent investigates and prepares an Iraqi-Arabic draft with retained citations. Guardrails and credential checks flag issues for human review; disabled or unavailable drafting is recorded explicitly. Staff review and approve the final reply.",
   },
 ]
-export const plannedTools = [
+export const agentTools = [
   "lookup_transaction",
   "search_transactions",
   "get_customer_recent_transactions",

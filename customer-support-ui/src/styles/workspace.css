@@ -1792,6 +1792,49 @@ summary:focus-visible {
   gap: 8px;
   margin-top: 12px;
 }
+.knowledge-message {
+  padding: 14px 16px;
+  margin-block: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.document-status,
+.document-actions,
+.passage-meta,
+.passage-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.document-actions { margin-top: 12px; }
+.document-error { color: var(--destructive); font-size: 12px; line-height: 1.8; margin-top: 8px; overflow-wrap: anywhere; }
+.status-indexed { color: #39785d; background: #eef8f2; border-color: #d6eadd; }
+.status-indexing,
+.status-index_requested { color: #947434; background: #fff8e9; border-color: #efdbb2; }
+.knowledge-search-form { margin-top: 20px; }
+.knowledge-search-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-top: 12px; }
+.knowledge-search-controls > div { flex: 1; min-width: 150px; }
+.knowledge-search-controls .filter-select { width: 100%; }
+.knowledge-search-controls > label { width: 130px; margin-bottom: 0; }
+.passage-list { display: grid; gap: 16px; margin-top: 16px; }
+.passage { border-block-start: 1px solid var(--border); padding-top: 16px; min-width: 0; }
+.passage-filename { display: block; font-size: 13px; font-weight: 550; overflow-wrap: anywhere; }
+.passage-meta { justify-content: space-between; font-size: 11px; color: var(--muted-foreground); margin-block: 8px; }
+.passage-text { white-space: pre-wrap; overflow-wrap: anywhere; font-family: "Geist Variable", Tahoma, Arial, sans-serif; font-size: 14px; line-height: 1.9; margin-block: 12px; max-width: 80ch; }
+.passage-id { display: block; overflow-wrap: anywhere; font-size: 10px; color: var(--muted-foreground); margin-top: 8px; }
+.passage-pagination { justify-content: space-between; margin-top: 20px; }
+.guardrail-findings { list-style: disc; padding-left: 18px; margin-block: 14px; font-size: 12px; line-height: 1.8; }
+.guardrail-findings code { display: block; color: var(--muted-foreground); font-size: 10px; overflow-wrap: anywhere; }
+.internal-note,
+.saved-reply { padding-block: 14px; border-block-end: 1px solid var(--border); margin-bottom: 16px; font-size: 12px; }
+.tool-reference pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 420px; }
+.stage-trace summary:focus-visible,
+.tool-reference summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 3px; }
 .insights-hero {
   background: var(--card);
   border: 1px solid var(--border);

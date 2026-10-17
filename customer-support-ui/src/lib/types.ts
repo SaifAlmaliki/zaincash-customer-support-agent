@@ -59,6 +59,11 @@ export type Result = {
   draft_text: string | null
   final_text: string | null
   citations: string[]
+  citation_sources?: Passage[]
+  guardrail_findings?: string[]
+  credential_check_degraded?: boolean | null
+  requests_credentials?: number | null
+  internal_note?: string | null
   agent_trace: TraceEvent[]
   status: string
   error: string | null
@@ -104,16 +109,57 @@ export type Health = {
     rag_indexing: boolean
     evaluation: boolean
   }
+  knowledge?: {
+    enabled: boolean
+    configured: boolean
+    ready: boolean
+    status: "disabled" | "unconfigured" | "ready" | "indexing" | "failed" | "empty"
+    indexed_document_count: number
+    embedding_model: string
+    embedding_dimensions: number
+  }
+  drafting?: {
+    enabled: boolean
+    configured: boolean
+    ready: boolean
+    credential_check_configured: boolean
+  }
 }
 export type KnowledgeDocument = {
   id: number
   filename: string
   size: number
-  status: string
+  status: "awaiting_indexing" | "indexing" | "indexed" | "failed"
   content_type: string
   sha256: string
   created_at: string
+  updated_at: string
+  category_tags: string[]
+  chunk_count: number
+  embedding_model: string | null
+  embedding_dimensions: number | null
+  chunking_version: string | null
+  indexed_at: string | null
+  error: string | null
+  cost_usd: number
 }
+export type IndexResponse = KnowledgeDocument & { index_requested: boolean }
+export type Passage = {
+  id: string
+  document_id: number
+  chunk_index: number
+  text: string
+  filename: string
+  score: number
+  page_start: number | null
+  page_end: number | null
+}
+export type KnowledgeChunk = Omit<Passage, "score"> & {
+  category_tags: string[]
+  embedding_model: string
+}
+export type ChunkPage = { items: KnowledgeChunk[]; total: number }
+export type KnowledgeSearchResult = { passages: Passage[]; cost_usd: number }
 export type Insights = {
   total: number
   categories: Record<string, number>

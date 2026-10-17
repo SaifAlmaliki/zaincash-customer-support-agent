@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   BookOpen,
   Download,
@@ -9,6 +9,7 @@ import {
   Database,
   ArrowRight,
   Info,
+  RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,54 +22,100 @@ import {
   PageHeader,
   StatusBadge,
 } from "@/components/shared/workspace-ui"
-import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
 import { api } from "@/lib/api"
 import { dateLabel, sizeLabel } from "@/lib/format"
 import type { KnowledgeDocument } from "@/lib/types"
+import { useKnowledgeLibrary } from "./use-knowledge-library"
+import { KnowledgeSearch } from "./KnowledgeSearch"
 
 export function KnowledgePage() {
+  const { mode } = useWorkspace()
+  return <KnowledgeWorkspace key={mode} />
+}
+
+function KnowledgeWorkspace() {
   const workspace = useWorkspace(),
     input = useRef<HTMLInputElement>(null)
-  const query = useResource<KnowledgeDocument[]>(
-    workspace.mode === "preview" ? null : "/knowledge",
-    workspace.revision
-  )
+  const live = workspace.mode === "live"
+  const query = useKnowledgeLibrary(live, workspace.revision)
+  const mutation = useRef<AbortController | null>(null)
+  useEffect(() => () => mutation.current?.abort(), [])
   const [search, setSearch] = useState(""),
     [busy, setBusy] = useState(false),
     [remove, setRemove] = useState<KnowledgeDocument | null>(null)
-  const documents = (query.data || []).filter((doc) =>
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [notice, setNotice] = useState("")
+  const [actionError, setActionError] = useState("")
+  const selected = query.documents.find((doc) => doc.id === selectedId) ?? null
+  const configured = workspace.health?.knowledge?.configured ?? workspace.health?.capabilities.rag_indexing ?? false
+  const documents = query.documents.filter((doc) =>
     doc.filename.toLowerCase().includes(search.toLowerCase())
   )
-  async function upload(file?: File) {
-    if (!file || busy || workspace.mode !== "live") return
+  function beginMutation() {
+    if (!live || mutation.current) return null
+    const controller = new AbortController()
+    mutation.current = controller
     setBusy(true)
+    setActionError("")
+    setNotice("")
+    return controller
+  }
+  function finishMutation(controller: AbortController) {
+    if (controller.signal.aborted) return
+    mutation.current = null
+    setBusy(false)
+  }
+  async function upload(file?: File) {
+    if (!file) return
+    const controller = beginMutation()
+    if (!controller) return
     try {
+      if (!file.size) throw new Error("Choose a document that contains text.")
       if (file.size > 10 * 1024 * 1024)
         throw new Error("Choose a document smaller than 10 MB.")
-      await api.uploadDocument(file)
-      workspace.notify("Document stored. RAG indexing is not connected yet.")
-      query.reload()
+      const document = await api.uploadDocument(file, controller.signal)
+      if (controller.signal.aborted) return
+      query.accepted(document)
+      setNotice(document.index_requested
+        ? `${document.filename}: indexing request accepted. Waiting for the indexing result.`
+        : document.status === "indexed" ? `${document.filename} is already indexed; no new indexing was requested.`
+        : document.status === "failed" ? `${document.filename} is stored with a failed index. Review the error and choose Retry index.`
+        : document.status === "indexing" ? `${document.filename} is already indexing.`
+        : configured ? `${document.filename} is stored, but indexing was not queued. Capacity may be full; choose Index document to try again.`
+        : `${document.filename} is stored. Enable and configure knowledge indexing, then choose Index document.`)
     } catch (e) {
-      workspace.notify(e instanceof Error ? e.message : "Upload failed.", true)
+      if (!controller.signal.aborted) setActionError(e instanceof Error ? e.message : "Upload failed.")
     } finally {
-      setBusy(false)
+      finishMutation(controller)
       if (input.current) input.current.value = ""
     }
   }
+  async function indexDocument(doc: KnowledgeDocument) {
+    if (!configured || doc.status === "indexing" || query.pendingIds.includes(doc.id)) return
+    const controller = beginMutation()
+    if (!controller) return
+    try {
+      const response = await api.indexDocument(doc.id, null, controller.signal)
+      if (!controller.signal.aborted) query.accepted(response)
+    } catch (e) {
+      if (!controller.signal.aborted) setActionError(`${doc.filename}: ${e instanceof Error ? e.message : "Index request failed."} The stored source is retained. Retry when indexing is available.`)
+    } finally { finishMutation(controller) }
+  }
   async function deleteDocument() {
     if (!remove) return
+    const controller = beginMutation()
+    if (!controller) return
     try {
-      await api.deleteDocument(remove.id)
+      await api.deleteDocument(remove.id, controller.signal)
+      if (controller.signal.aborted) return
+      query.deleted(remove.id)
+      if (selectedId === remove.id) setSelectedId(null)
       setRemove(null)
-      query.reload()
-      workspace.notify("Document deleted.")
+      setNotice("Document deleted. Saved citation evidence remains available in historical reviews.")
     } catch (e) {
-      workspace.notify(
-        e instanceof Error ? e.message : "Could not delete document.",
-        true
-      )
-    }
+      if (!controller.signal.aborted) setActionError(e instanceof Error ? e.message : "Could not delete document.")
+    } finally { finishMutation(controller) }
   }
   return (
     <>
@@ -85,6 +132,9 @@ export function KnowledgePage() {
           {busy ? "Uploading…" : "Upload document"}
         </Button>
       </PageHeader>
+      {!live && <p className="knowledge-message" role="status">Preview is read-only for knowledge. Switch to the live workspace to upload, index or test policy search.</p>}
+      {notice && <p className="knowledge-message" role="status">{notice}</p>}
+      {actionError && <div className="error-state" role="alert">{actionError}</div>}
       <div className="knowledge-layout">
         <div className="evidence-stack">
           <Card className="knowledge-upload">
@@ -126,16 +176,18 @@ export function KnowledgePage() {
               </div>
             </CardContent>
           </Card>
-          {query.error && workspace.mode === "live" && (
-            <ErrorState message={query.error} retry={query.reload} />
+          {query.error && live && (
+            <ErrorState message={query.error} retry={query.refresh} />
           )}
+          {query.paused && <p className="knowledge-message" role="status">Automatic status checks paused after 3 minutes. Accepted requests remain pending; use Refresh status to check their result.</p>}
           <Card>
             <CardHeader>
               <CardTitle className="section-title">
                 <FileText size={17} />
                 Documents
-                <span className="muted small">{documents.length} stored</span>
+                <span className="muted small">{documents.length} shown / {query.documents.length} stored</span>
               </CardTitle>
+              <Button variant="ghost" size="sm" disabled={!live || busy} onClick={query.refresh}><RefreshCw size={14} />Refresh status</Button>
             </CardHeader>
             <CardContent>
               <div className="input-with-icon">
@@ -151,19 +203,34 @@ export function KnowledgePage() {
                 <LoadingState />
               ) : documents.length ? (
                 <div className="document-list">
-                  {documents.map((doc) => (
+                  {documents.map((doc) => {
+                    const pending = query.pendingIds.includes(doc.id)
+                    const active = pending || doc.status === "indexing"
+                    return (
                     <div className="document-item" key={doc.id}>
                       <span className="document-icon">
                         <FileText size={23} />
                       </span>
-                      <div>
+                      <div className="document-body">
                         <strong>{doc.filename}</strong>
                         <small>
                           {sizeLabel(doc.size)} · Uploaded{" "}
                           {dateLabel(doc.created_at)}
                         </small>
-                        <StatusBadge status={doc.status} />
-                      </div>
+                        <div className="document-status" aria-live="polite">
+                          <StatusBadge status={pending && doc.status !== "indexing" ? "index_requested" : doc.status} />
+                          <span className="muted small">{doc.chunk_count} passages</span>
+                        </div>
+                        {pending && doc.status !== "indexing" && <p className="field-help">Request accepted; waiting for the indexing worker. Last stored state: {doc.status.replaceAll("_", " ")}.</p>}
+                        {doc.error && <p className="document-error">{pending ? "Previous attempt: " : "Indexing failed: "}{doc.error} {!active && "Check the document and indexing configuration, then retry."}</p>}
+                        {doc.status === "awaiting_indexing" && !pending && <p className="field-help">Stored; indexing has not started. {configured ? "Choose Index document to request indexing." : "Indexing needs to be enabled and configured."}</p>}
+                        {doc.embedding_model && <small>{doc.embedding_model} · {doc.embedding_dimensions} dimensions{doc.indexed_at ? ` · Indexed ${dateLabel(doc.indexed_at)}` : ""}</small>}
+                        {!!doc.category_tags.length && <small>Categories: {doc.category_tags.join(", ")}</small>}
+                        <div className="document-actions">
+                          <Button variant="outline" size="sm" disabled={!live || busy || active || !configured} onClick={() => void indexDocument(doc)} aria-label={`${doc.status === "failed" ? "Retry index" : doc.status === "indexed" ? "Reindex" : "Index document"}: ${doc.filename}`}>
+                            {active ? "Index pending" : doc.status === "failed" ? "Retry index" : doc.status === "indexed" ? "Reindex" : "Index document"}
+                          </Button>
+                          <Button variant="ghost" size="sm" disabled={!live} aria-pressed={selectedId === doc.id} onClick={() => setSelectedId(doc.id)}>Inspect passages<span className="sr-only">: {doc.filename}</span></Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -179,12 +246,15 @@ export function KnowledgePage() {
                         variant="ghost"
                         size="icon"
                         aria-label={`Delete ${doc.filename}`}
+                        disabled={!live || busy || active}
                         onClick={() => setRemove(doc)}
                       >
                         <Trash2 size={16} />
                       </Button>
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               ) : (
                 <EmptyState
@@ -202,6 +272,7 @@ export function KnowledgePage() {
               )}
             </CardContent>
           </Card>
+          <KnowledgeSearch live={live} configured={configured} selected={selected} onClose={() => setSelectedId(null)} />
         </div>
         <aside className="evidence-stack">
           <Card>
@@ -227,7 +298,7 @@ export function KnowledgePage() {
                     <strong>Chunk & embed</strong>
                     <p>Prepare searchable passages with pgvector.</p>
                   </div>
-                  <BadgeLabel text="Not connected" />
+                  <BadgeLabel text={!live ? "Live only" : configured ? "Configured" : "Needs setup"} />
                 </li>
                 <li>
                   <span>3</span>
@@ -235,9 +306,20 @@ export function KnowledgePage() {
                     <strong>Retrieve & cite</strong>
                     <p>Ground the agent’s draft in relevant policy passages.</p>
                   </div>
-                  <BadgeLabel text="Not connected" />
+                  <BadgeLabel text={!live ? "Live only" : workspace.health?.knowledge?.ready ? "Ready" : "Needs index"} />
                 </li>
               </ol>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="section-title">Knowledge readiness</CardTitle></CardHeader>
+            <CardContent>
+              <p className="muted small">{!live ? "Preview uses illustrative review data." : workspace.health?.knowledge ? `${workspace.health.knowledge.indexed_document_count} searchable documents · ${workspace.health.knowledge.status}` : "Readiness is unavailable. Check the API connection."}</p>
+              {live && workspace.health?.knowledge && <>
+                <p className="field-help">{workspace.health.knowledge.embedding_model} · {workspace.health.knowledge.embedding_dimensions} dimensions</p>
+                <p className="field-help">{!workspace.health.knowledge.enabled ? "Knowledge retrieval is disabled. Enable RAG to index and search." : !configured ? "Configure the embedding provider to index and search policies." : workspace.health.knowledge.ready ? "Indexed policy passages are available for grounded drafts." : "Index a policy successfully before expecting a grounded draft."}</p>
+                <p className="field-help">{workspace.health.drafting?.credential_check_configured ? "Credential checking is configured." : "Credential checking is not configured; affected drafts are marked for review."} Readiness reflects configuration and stored indexes, not a live provider check.</p>
+              </>}
             </CardContent>
           </Card>
           <div className="knowledge-note">
@@ -245,8 +327,8 @@ export function KnowledgePage() {
             <div>
               <strong>Stored does not mean indexed</strong>
               <p>
-                Uploaded files are awaiting the RAG ingestion stage. The UI
-                never marks them searchable before indexing succeeds.
+                Only successfully indexed documents can ground new drafts.
+                Saved reviews retain their cited passages after a source is reindexed or deleted.
               </p>
               <span>
                 Upload <ArrowRight size={13} />
@@ -258,10 +340,10 @@ export function KnowledgePage() {
         </aside>
       </div>
       <ConfirmDialog
-        open={remove !== null}
+        open={live && remove !== null}
         onClose={() => setRemove(null)}
         title="Delete this document?"
-        description={`${remove?.filename || "This document"} will be removed from the stored document library.`}
+        description={`${remove?.filename || "This document"} and its searchable passages will be removed. Evidence already saved with a draft remains in that review.`}
         action="Delete document"
         onConfirm={() => void deleteDocument()}
       />

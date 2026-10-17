@@ -31,6 +31,9 @@ const statusLabels: Record<string, string> = {
   completed_with_errors: "Partial failure",
   failed: "Failed",
   awaiting_indexing: "Awaiting indexing",
+  index_requested: "Index requested",
+  indexing: "Indexing",
+  indexed: "Indexed",
 }
 export function StatusBadge({ status }: { status: string }) {
   return (

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Confidence } from "@/components/shared/workspace-ui"
 import { categoryLabel, humanize, percentage } from "@/lib/format"
 import type { Result } from "@/lib/types"
+import { CitationEvidence } from "./CitationEvidence"
 
 function highlightedText(result: Result): ReactNode[] {
   const characters = Array.from(result.ticket.text) // Python source spans count code points, not UTF-16 units.
@@ -183,6 +184,7 @@ export function SourceEvidence({ result }: { result: Result }) {
           )}
         </CardContent>
       </Card>
+      <CitationEvidence result={result} />
     </div>
   )
 }

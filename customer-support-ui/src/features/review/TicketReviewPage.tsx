@@ -6,6 +6,7 @@ import {
   Copy,
   FileText,
   ShieldCheck,
+  ShieldAlert,
   SquarePen,
   X,
 } from "lucide-react"
@@ -46,6 +47,7 @@ function ReviewEditor({
   const [saving, setSaving] = useState(false),
     [reject, setReject] = useState(false)
   const approved = ["approved", "edited"].includes(result.status)
+  const findings = result.guardrail_findings ?? []
   async function save(action: ReviewInput["action"]) {
     if (saving) return
     setSaving(true)
@@ -87,6 +89,19 @@ function ReviewEditor({
   }
   return (
     <div className="review-editor-stack">
+      <Card>
+        <CardHeader><CardTitle className="section-title"><ShieldAlert size={17} />Draft checks & internal note</CardTitle></CardHeader>
+        <CardContent>
+          <p className="muted small">Checks apply to the original generated draft. Review any edits separately.</p>
+          {findings.length ? <ul className="guardrail-findings">{findings.map((finding) => <li key={finding}><strong>{humanize(finding)}</strong><code>{finding}</code></li>)}</ul> : <p className="field-help">{result.guardrail_findings ? "No guardrail findings recorded. Human review is still required." : "Guardrail findings are unavailable for this historical result."}</p>}
+          <div className={result.credential_check_degraded ? "knowledge-message" : "field-help"}>
+            <strong>{result.credential_check_degraded === true ? "Credential check degraded" : result.credential_check_degraded === false ? "Credential check available" : "Credential check status unknown"}</strong>
+            <p>{result.credential_check_degraded === true ? "The credential checker was unavailable or returned an invalid result. Review the reply for requests for sensitive credentials." : result.credential_check_degraded == null ? "No valid checker outcome was saved; do not assume this check passed." : "The checker returned a usable result; findings above show any flagged request."}</p>
+            {result.requests_credentials != null && <p>Credential-request score: {result.requests_credentials.toFixed(3)} (must be below 0.200).</p>}
+          </div>
+          <div className="internal-note"><strong>Internal note</strong>{result.internal_note ? <p className="passage-text" dir="auto">{result.internal_note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
+        </CardContent>
+      </Card>
       <Card className="draft-card">
         <CardHeader>
           <CardTitle className="section-title">
@@ -99,8 +114,7 @@ function ReviewEditor({
             <div className="draft-unavailable">
               <FileText size={17} />
               <span>
-                <strong>No generated draft</strong>The drafting agent is not
-                connected yet. You can write a response below.
+                <strong>No generated draft</strong>No draft was saved for this result. Check the trace and findings, or write a response below.
               </span>
             </div>
           )}
@@ -109,8 +123,10 @@ function ReviewEditor({
               This response is an illustrative preview, not a model output.
             </p>
           )}
+          {result.draft_text && <div className="saved-reply"><strong>Original generated draft</strong><p className="passage-text" dir="auto" lang="ar">{result.draft_text}</p></div>}
+          {result.final_text && <div className="saved-reply"><strong>Final reviewed reply</strong><p className="passage-text" dir="auto" lang="ar">{result.final_text}</p></div>}
           <label className="field-label" htmlFor="reply">
-            Reply in Iraqi Arabic
+            {result.final_text ? "Edit reviewed reply in Iraqi Arabic" : "Reply for review in Iraqi Arabic"}
           </label>
           <Textarea
             id="reply"
@@ -215,21 +231,11 @@ function ReviewEditor({
         <CardHeader>
           <CardTitle className="section-title">
             <FileText size={16} />
-            Sources & review history
+            Review history
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {result.citations.length ? (
-            result.citations.map((citation) => (
-              <code key={citation} className="citation-id">
-                {citation}
-              </code>
-            ))
-          ) : (
-            <p className="muted small">
-              No retrieved policy citations are recorded for this ticket.
-            </p>
-          )}
+          {!result.reviews?.length && <p className="muted small">No human review has been saved yet.</p>}
           <div className="audit-list">
             {result.reviews?.map((review) => (
               <div key={review.id}>

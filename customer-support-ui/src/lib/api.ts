@@ -4,7 +4,9 @@ import type {
   Run,
   Mode,
   TicketInput,
-  KnowledgeDocument,
+  IndexResponse,
+  ChunkPage,
+  KnowledgeSearchResult,
 } from "./types"
 
 export async function request<T>(
@@ -77,11 +79,21 @@ export const api = {
       method: "POST",
       body: JSON.stringify(review),
     }),
-  uploadDocument: (file: File) => {
+  uploadDocument: (file: File, signal?: AbortSignal) => {
     const body = new FormData()
     body.append("file", file)
-    return request<KnowledgeDocument>("/knowledge", { method: "POST", body })
+    return request<IndexResponse>("/knowledge", { method: "POST", body, signal })
   },
-  deleteDocument: (id: number) =>
-    request<void>(`/knowledge/${id}`, { method: "DELETE" }),
+  indexDocument: (id: number, categoryTags?: string[] | null, signal?: AbortSignal) =>
+    request<IndexResponse>(`/knowledge/${id}/index`, {
+      method: "POST", body: JSON.stringify({ category_tags: categoryTags ?? null }), signal,
+    }),
+  documentChunks: (id: number, offset = 0, limit = 50, signal?: AbortSignal) =>
+    request<ChunkPage>(`/knowledge/${id}/chunks?offset=${offset}&limit=${limit}`, { signal }),
+  searchKnowledge: (query: string, category: string | null = null, k = 5, signal?: AbortSignal) =>
+    request<KnowledgeSearchResult>("/knowledge/search", {
+      method: "POST", body: JSON.stringify({ query, category, k }), signal,
+    }),
+  deleteDocument: (id: number, signal?: AbortSignal) =>
+    request<void>(`/knowledge/${id}`, { method: "DELETE", signal }),
 }
