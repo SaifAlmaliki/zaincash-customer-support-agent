@@ -94,7 +94,7 @@ function ReviewEditor({
         <CardContent>
           <p className="muted small">Checks apply to the original generated draft. Review any edits separately.</p>
           {findings.length ? <ul className="guardrail-findings">{findings.map((finding) => <li key={finding}><strong>{humanize(finding)}</strong><code>{finding}</code></li>)}</ul> : <p className="field-help">{result.guardrail_findings ? "No guardrail findings recorded. Human review is still required." : "Guardrail findings are unavailable for this historical result."}</p>}
-          <div className={result.credential_check_degraded ? "knowledge-message" : "field-help"}>
+          <div className={result.credential_check_degraded ? "knowledge-message" : "field-help checker-summary"}>
             <strong>{result.credential_check_degraded === true ? "Credential check degraded" : result.credential_check_degraded === false ? "Credential check available" : "Credential check status unknown"}</strong>
             <p>{result.credential_check_degraded === true ? "The credential checker was unavailable or returned an invalid result. Review the reply for requests for sensitive credentials." : result.credential_check_degraded == null ? "No valid checker outcome was saved; do not assume this check passed." : "The checker returned a usable result; findings above show any flagged request."}</p>
             {result.requests_credentials != null && <p>Credential-request score: {result.requests_credentials.toFixed(3)} (must be below 0.200).</p>}

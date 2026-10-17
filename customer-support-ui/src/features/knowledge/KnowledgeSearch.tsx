@@ -89,7 +89,7 @@ export function KnowledgeSearch({ live, configured, selected, onClose }: {
         {error && <div className="error-state" role="alert">{error} Review the query or provider configuration, then search again.</div>}
         {busy && <div role="status" className="loading-state">Searching indexed policy passages…</div>}
         {result && <div aria-live="polite">
-          <p className="field-help">Results for “<bdi>{searchedFor}</bdi>” · Query cost ${result.cost_usd.toFixed(6)}</p>
+          <p className="field-help search-result-label">Results for “<bdi>{searchedFor}</bdi>” · Query cost ${result.cost_usd.toFixed(6)}</p>
           {!result.passages.length ? <EmptyState title="No matching passages" description="Try another question or category, and check that a relevant policy is indexed." /> : <div className="passage-list">
             {result.passages.map((passage) => <article className="passage" key={passage.id}>
               <strong className="passage-filename">{passage.filename}</strong>

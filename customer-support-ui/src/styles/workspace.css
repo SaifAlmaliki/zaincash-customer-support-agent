@@ -1817,6 +1817,8 @@ summary:focus-visible {
 .status-indexing,
 .status-index_requested { color: #947434; background: #fff8e9; border-color: #efdbb2; }
 .knowledge-search-form { margin-top: 20px; }
+.search-result-label,
+.checker-summary { display: block; }
 .knowledge-search-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-top: 12px; }
 .knowledge-search-controls > div { flex: 1; min-width: 150px; }
 .knowledge-search-controls .filter-select { width: 100%; }

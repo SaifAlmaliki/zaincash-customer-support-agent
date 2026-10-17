@@ -78,7 +78,7 @@ function KnowledgeWorkspace() {
       if (controller.signal.aborted) return
       query.accepted(document)
       setNotice(document.index_requested
-        ? `${document.filename}: indexing request accepted. Waiting for the indexing result.`
+        ? `${document.filename}: indexing request accepted. Follow its status below.`
         : document.status === "indexed" ? `${document.filename} is already indexed; no new indexing was requested.`
         : document.status === "failed" ? `${document.filename} is stored with a failed index. Review the error and choose Retry index.`
         : document.status === "indexing" ? `${document.filename} is already indexing.`
