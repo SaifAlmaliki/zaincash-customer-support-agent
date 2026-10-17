@@ -1,4 +1,4 @@
-"""`support` CLI: init-db, seed-db, run-batch. The same pipeline code is used by the API (Plan 4) and eval (Plan 2)."""
+"""`support` CLI: database setup, batches and shared knowledge ingestion."""
 from __future__ import annotations
 
 import asyncio
@@ -26,6 +26,8 @@ from app.pipeline.graph import run_batch
 from app.pipeline.io.serialize import outcome_to_dict
 from app.pipeline.stage2_classify.prompts import PROMPT_VERSION
 from app.pipeline.stage4_lookup.lookup import InMemoryTransactionRepo, txn_from_dict
+from app.services.knowledge_ingest import MAX_INGEST_DOCUMENTS, ingest_one, ingest_paths, retry_ids
+from app.services.knowledge_runtime import knowledge_configured, make_knowledge_service
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="ZainCash support pipeline")
 
@@ -114,3 +116,38 @@ def run_batch_cmd(
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps([outcome_to_dict(o) for o in outcomes], ensure_ascii=False,
                                   indent=2, default=str), encoding="utf-8")
+
+
+@app.command("ingest-kb")
+def ingest_kb_cmd(
+    path: Path | None = typer.Argument(None, exists=True, help="PDF, Markdown, text file or directory"),
+    retry_stored: bool = typer.Option(False, "--retry-stored", help="Retry awaiting/failed stored uploads"),
+) -> None:
+    """Index at most 100 sources, sequentially; print one JSON status per source."""
+    if (path is None) == (not retry_stored):
+        raise typer.BadParameter("Provide PATH or --retry-stored, exclusively.")
+    settings = get_settings()
+    if not knowledge_configured(settings):
+        typer.echo("Knowledge provider is disabled or unconfigured.", err=True)
+        raise typer.Exit(2)
+    try:
+        paths = ingest_paths(path) if path is not None else None
+        sf = _sessionmaker(settings)
+        service = make_knowledge_service(sf, settings)
+        sources = paths if paths is not None else retry_ids(sf)
+        if len(sources) > MAX_INGEST_DOCUMENTS:
+            raise ValueError("Too many pending sources.")
+    except Exception:
+        typer.echo("Unable to prepare ingestion; check source, database and the 100-document limit.", err=True)
+        raise typer.Exit(2) from None
+
+    async def ingest():
+        failed = False
+        for source in sources:
+            value = await ingest_one(sf, service, source)
+            typer.echo(json.dumps(value, ensure_ascii=False))
+            failed |= value["status"] != "indexed"
+        return failed
+
+    if asyncio.run(ingest()):
+        raise typer.Exit(1)

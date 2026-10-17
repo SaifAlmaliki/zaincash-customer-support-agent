@@ -29,6 +29,7 @@ from app.pipeline.stage6_draft.credentials import CredentialChecker
 from app.pipeline.stage6_draft.drafting import DraftExecutionError
 from app.pipeline.stage6_draft.guardrails import check_draft
 from app.pipeline.stage6_draft.investigation import SqlInvestigationRepo
+from app.pipeline.stage6_draft.model import DraftProviderResponseError
 from app.pipeline.stage6_draft.tools import _bounded, _json, build_tools
 from app.pipeline.state import PipelineState
 
@@ -68,24 +69,33 @@ class _ModelUsage(AsyncCallbackHandler):
                 message = getattr(generation, "message", None)
                 if message is None:
                     continue
-                metadata = message.response_metadata or {}
-                response_id = str(metadata.get("id") or message.id or run_id)
-                if response_id in self.seen:
-                    continue
-                self.seen.add(response_id)
-                usage = message.usage_metadata or {}
-                cost = (_number(usage.get("input_tokens")) * self.settings.price_gemini_flash_in
-                        + _number(usage.get("output_tokens")) * self.settings.price_gemini_flash_out) / 1e6
-                source = "token_estimate"
-                reported = metadata.get("cost")
-                if type(reported) in (int, float) and math.isfinite(reported) and reported >= 0:
-                    cost, source = float(reported), "provider"
-                self.cost_usd += cost
-                self.context.trace.append({"kind": "model", "status": "ok", "response_id": response_id,
-                                           "model": metadata.get("model_name") or self.settings.gemini_model,
-                                           "usage": _bounded(usage), "cost_usd": cost, "cost_source": source})
+                self._record_response(message.response_metadata or {}, message.usage_metadata or {},
+                                      fallback_id=message.id or run_id)
+
+    def _record_response(self, metadata, usage, *, fallback_id, error_type=None):
+        response_id = str(metadata.get("id") or fallback_id)
+        if response_id in self.seen:
+            return
+        self.seen.add(response_id)
+        cost = (_number(usage.get("input_tokens")) * self.settings.price_gemini_flash_in
+                + _number(usage.get("output_tokens")) * self.settings.price_gemini_flash_out) / 1e6
+        source = "token_estimate"
+        reported = metadata.get("cost")
+        if type(reported) in (int, float) and math.isfinite(reported) and reported >= 0:
+            cost, source = float(reported), "provider"
+        self.cost_usd += cost
+        entry = {"kind": "model", "status": "error" if error_type else "ok", "response_id": response_id,
+                 "model": metadata.get("model_name") or self.settings.gemini_model,
+                 "usage": _bounded(usage), "cost_usd": cost, "cost_source": source}
+        if error_type:
+            entry["error_type"] = error_type
+        self.context.trace.append(entry)
 
     async def on_llm_error(self, error, *, run_id, **kwargs):
+        if isinstance(error, DraftProviderResponseError):
+            self._record_response(error.response_metadata, error.usage_metadata,
+                                  fallback_id=run_id, error_type=type(error).__name__)
+            return
         partial = kwargs.get("response")
         has_response = partial is not None and any(
             getattr(generation, "message", None) is not None

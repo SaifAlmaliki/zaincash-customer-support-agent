@@ -2,6 +2,7 @@
 from sqlalchemy import func, select
 
 from app.db.models import ReviewRow, RunRow, TicketResultRow, TicketRow, TransactionRow
+from app.services.draft_evidence import draft_evidence
 
 STAGES = [
     {"id": "prepare", "number": 1, "label": "Prepare", "description": "Normalize text and find candidate details", "file": "stage1_normalize/normalize.py"},
@@ -9,7 +10,7 @@ STAGES = [
     {"id": "extract", "number": 3, "label": "Extract", "description": "Anchor reference, amount and date to the source", "file": "stage3_extract/extract.py"},
     {"id": "lookup", "number": 4, "label": "Investigate", "description": "Find the matching mock transaction", "file": "stage4_lookup/lookup.py"},
     {"id": "decide", "number": 5, "label": "Route", "description": "Apply team, priority and escalation rules", "file": "stage5_decide/rules.py"},
-    {"id": "draft", "number": 6, "label": "Draft & review", "description": "Human review; generation is not connected yet", "file": "stage6_draft/drafting.py"},
+    {"id": "draft", "number": 6, "label": "Draft & review", "description": "Retrieve policy evidence, draft an Arabic reply and check guardrails for human review", "file": "stage6_draft/agent.py"},
 ]
 
 
@@ -30,6 +31,7 @@ def result_view(session, result, *, detail=False):
     ).order_by(ReviewRow.id.desc())).first()
     value["final_text"] = approvals.final_text if approvals else None
     if detail:
+        value.update(draft_evidence(result.agent_trace, result.citations))
         value["reviews"] = [columns(review) for review in session.scalars(
             select(ReviewRow).where(ReviewRow.result_id == result.id).order_by(ReviewRow.id.desc())
         )]

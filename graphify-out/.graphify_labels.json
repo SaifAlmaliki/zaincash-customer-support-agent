@@ -1,12 +1,10 @@
 {
   "1": "Ticket Ingest",
-  "3": "Settings and Gemini Client",
   "4": "Form Controls and Preview",
   "5": "Shared UI States",
   "6": "Results and Review API",
   "7": "Workspace Cards and Badges",
   "8": "SQL Persistence",
-  "10": "Transaction Lookup",
   "11": "App and Database Bootstrap",
   "12": "Dialogs and Pipeline Strip",
   "13": "UI Package Metadata",

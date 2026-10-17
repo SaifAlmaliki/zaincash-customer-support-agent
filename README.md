@@ -59,6 +59,49 @@ Colours in the diagram:
 
 Every path ends with a person approving the reply.
 
+## Where each step lives
+
+The diagram above is the path a ticket takes. This is the same path as code: the LangGraph node, the file under `backend/app/pipeline/`, and the tool or model that does the work.
+
+| Flow step | LangGraph node | File(s) | Tool(s) / model |
+|---|---|---|---|
+| Clean the text (digits → 0-9, hide cards) | `prepare` | `stage1_normalize/normalize.py` | `normalize()`, `mask_cards()`, `fold_arabic()` |
+| Find refs, phones, amounts, and dates | `prepare` | `stage1_normalize/candidates.py` | `find_candidates()` — recall-tuned regex, the options Jev is allowed to pick |
+| Resolve relative dates | (used in extract) | `stage1_normalize/dates.py` | `resolve_date()` |
+| Jev reads the ticket | `jev_classify` | `stage2_classify/jev.py` | Jev via langchain-typesafe: category, priority, flags, candidate picks (+ reversed-option check) |
+| Gemini second opinion | `gemini_classify` | `stage2_classify/gemini.py` | Gemini structured output, 3 samples |
+| Jev → Gemini → human decision | `gemini_classify` (cascade mode) | `stage2_classify/cascade.py` | `combine()` |
+| Classify and extract prompts | — | `stage2_classify/prompts/gemini_classify_v1.md`, `gemini_extract_v1.md` | prompt files (versioned) |
+| Extract ref, amount, date, phone | `extract` | `stage3_extract/extract.py` | `finalize()`, `fill_gaps()`, span verification. Gemini fills a field only when regex found nothing or the Jev pick is weak |
+| Look up the transaction | `lookup` | `stage4_lookup/lookup.py` (+ `app/db/repository.py`) | `match_transaction()`, `lookup_transaction` tool |
+| Route to team + red-flag check | `decide` | `stage5_decide/rules.py` | `decide()`, `merge_reasons()` |
+| Draft the reply | `draft` | `stage6_draft/agent.py`, `stage6_draft/drafting.py` | LangChain `create_agent` |
+| Safety checks on the draft | `draft` | `stage6_draft/guardrails.py` | Jev `requests_credentials` noul + regex |
+| Knowledge-base search | `draft` (tool) | `stage6_draft/tools/search_knowledge_base.py` | `search_knowledge_base` |
+
+The eight drafting tools live in `stage6_draft/tools/`:
+
+| Tool | File | What it does |
+|---|---|---|
+| `lookup_transaction` | `tools/lookup_transaction.py` | exact ref lookup |
+| `search_transactions` | `tools/search_transactions.py` | fuzzy search when no ref |
+| `get_customer_recent_transactions` | `tools/customer_transactions.py` | recent activity |
+| `get_customer_ticket_history` | `tools/ticket_history.py` | repeat contacts |
+| `check_service_status` | `tools/service_status.py` | known outages |
+| `search_knowledge_base` | `tools/search_knowledge_base.py` | pgvector policy chunks |
+| `flag_for_human` | `tools/flag_for_human.py` | record an escalation reason |
+| `submit_draft` | `tools/submit_draft.py` | record the draft (terminal) |
+
+Orchestration, outside any single stage:
+
+| What | File |
+|---|---|
+| Build the graph, run a batch, summarize | `pipeline/graph.py` |
+| LangGraph state | `pipeline/state.py` |
+| Shared dataclasses | `pipeline/contracts.py` |
+| Wire real clients (Jev and Gemini) | `pipeline/factory.py` |
+| Outcome → dict or database row | `pipeline/io/serialize.py` |
+
 ## Models
 
 | Model | What it does here |

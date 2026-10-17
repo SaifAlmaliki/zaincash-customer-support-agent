@@ -69,3 +69,20 @@ class ReviewInput(BaseModel):
         if self.action == "reassign" and not self.team:
             raise ValueError("Select a team.")
         return self
+
+
+class KnowledgeIndexInput(BaseModel):
+    category_tags: list[str] | None = Field(default=None, max_length=100)
+
+
+class KnowledgeSearchInput(BaseModel):
+    query: str = Field(min_length=1, max_length=2000)
+    category: str | None = Field(default=None, max_length=64)
+    k: int = Field(default=5, ge=1, le=10, strict=True)
+
+    @field_validator("query")
+    @classmethod
+    def nonblank_query(cls, value):
+        if not value.strip():
+            raise ValueError("Enter a knowledge query.")
+        return value.strip()
