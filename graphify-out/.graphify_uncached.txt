@@ -1,0 +1,17 @@
+/home/cvzmh_saif/dev/zaincash-support/README.md
+/home/cvzmh_saif/dev/zaincash-support/backend/app/pipeline/runner.md
+/home/cvzmh_saif/dev/zaincash-support/backend/app/pipeline/stage2_classify/prompts/gemini_classify_v1.md
+/home/cvzmh_saif/dev/zaincash-support/backend/app/pipeline/stage2_classify/prompts/gemini_extract_v1.md
+/home/cvzmh_saif/dev/zaincash-support/customer-support-ui/README.md
+/home/cvzmh_saif/dev/zaincash-support/customer-support-ui/index.html
+/home/cvzmh_saif/dev/zaincash-support/data/taxonomy.yaml
+/home/cvzmh_saif/dev/zaincash-support/docker-compose.yml
+/home/cvzmh_saif/dev/zaincash-support/docs/superpowers/plans/2026-10-07-plan1-core-pipeline-part2.md
+/home/cvzmh_saif/dev/zaincash-support/docs/superpowers/plans/2026-10-07-plan1-core-pipeline-part3.md
+/home/cvzmh_saif/dev/zaincash-support/docs/superpowers/plans/2026-10-07-plan1-core-pipeline.md
+/home/cvzmh_saif/dev/zaincash-support/docs/superpowers/plans/2026-10-07-support-workspace-ui.md
+/home/cvzmh_saif/dev/zaincash-support/docs/superpowers/specs/2026-10-07-support-pipeline-design.md
+/home/cvzmh_saif/dev/zaincash-support/docs/verification/2026-10-07-support-workspace-ui.md
+/home/cvzmh_saif/dev/zaincash-support/customer-support-ui/public/vite.svg
+/home/cvzmh_saif/dev/zaincash-support/customer-support-ui/public/zaincash-mark.svg
+/home/cvzmh_saif/dev/zaincash-support/customer-support-ui/src/assets/react.svg
