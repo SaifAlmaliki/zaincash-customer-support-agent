@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -19,7 +19,11 @@ class Settings(BaseSettings):
     gemini_model: str = "google/gemini-3.8-flash"
     gemini_strong_model: str = "google/gemini-2.5-pro"
     gemini_embed_model: str = "gemini-embedding-001"
+    rag_enabled: bool = True
+    embedding_model: str = "openai/text-embedding-3-small"
     embed_dim: int = 768
+    kb_top_k: int = Field(default=5, ge=1, le=10)
+    kb_min_similarity: float = Field(default=0.3, ge=-1, le=1, allow_inf_nan=False)
     jev_model: str = "jev-1.13.0"
 
     t_jev: float = 0.6
@@ -40,6 +44,24 @@ class Settings(BaseSettings):
     price_gemini_pro_in: float = 1.25
     price_gemini_pro_out: float = 10.0
     price_jev_in: float = 0.042
+    # Fallback estimate only: OpenAI text-embedding-3-small, $0.02/1M input tokens.
+    # https://developers.openai.com/api/docs/models/text-embedding-3-small (2026-10-17)
+    # OpenRouter-reported cost takes precedence; update this when changing models.
+    price_embedding_in: float = Field(default=0.02, ge=0, allow_inf_nan=False)
+
+    @field_validator("embed_dim")
+    @classmethod
+    def validate_embed_dim(cls, value: int) -> int:
+        if value != 768:
+            raise ValueError("EMBED_DIM must be 768 to match the knowledge index schema")
+        return value
+
+    @field_validator("embedding_model")
+    @classmethod
+    def validate_embedding_model(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("EMBEDDING_MODEL must be a non-empty model ID")
+        return value.strip()
 
     @field_validator("gemini_model", "gemini_strong_model")
     @classmethod

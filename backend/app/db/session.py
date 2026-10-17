@@ -3,7 +3,9 @@ from __future__ import annotations
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from app.db import document_models  # noqa: F401 -- register sources for CLI initialization too
 from app.db.models import Base
+from app.kb import models as kb_models  # noqa: F401 -- register before create_all/drop_all
 
 
 def make_engine(url: str) -> Engine:
