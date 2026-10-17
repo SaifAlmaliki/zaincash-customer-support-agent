@@ -87,6 +87,8 @@ class _DatabaseCall:
         self.deadline = deadline
         self.stopped = Event()
         self._finished = False
+        self._cancel_requested = False
+        self._commit_owned = False
         self._finish_lock = Lock()
         self._connection_lock = Lock()
         self._connection = None
@@ -98,6 +100,10 @@ class _DatabaseCall:
         _check_deadline(self.deadline)
 
     def attach(self, connection) -> None:
+        with self._finish_lock:
+            self._commit_owned = False
+            if self._cancel_requested:
+                self.stopped.set()
         with self._connection_lock:
             self._connection = connection
         self.check()
@@ -140,6 +146,23 @@ class _DatabaseCall:
     def before_commit(self, connection) -> None:
         self.before_execute(connection)
 
+    def commit(self, dbapi_commit) -> None:
+        # Linearization point: the DBAPI handoff and abandonment compete under
+        # one short lock. Once handed off, COMMIT owns its outcome; cancellation
+        # can detach the caller but must not stop/cancel this transaction. The
+        # lock is never held during driver I/O or acquired there by the loop.
+        with self._finish_lock:
+            self.check()
+            self._commit_owned = True
+        try:
+            dbapi_commit()
+        except BaseException:
+            with self._finish_lock:
+                self._commit_owned = False
+                if self._cancel_requested:
+                    self.stopped.set()
+            raise
+
     def cleanup(self) -> None:
         if self._on_abandon is not None:
             try:
@@ -158,15 +181,21 @@ class _DatabaseCall:
         finally:
             with self._finish_lock:
                 self._finished = True
-                cleanup = self.stopped.is_set()
+                cleanup = self._cancel_requested
             if cleanup:
                 self.cleanup()
 
     def abandon(self, loop) -> None:
         with self._finish_lock:
-            self.stopped.set()
+            if self._cancel_requested:
+                return
+            self._cancel_requested = True
+            if not self._commit_owned:
+                self.stopped.set()
+            cancel_query = self.stopped.is_set()
             finished = self._finished
-        loop.run_in_executor(None, self.cancel_query).add_done_callback(_consume)
+        if cancel_query:
+            loop.run_in_executor(None, self.cancel_query).add_done_callback(_consume)
         # If the worker finished just before cancellation was delivered, it could
         # not see the stop flag in its finally block. Exactly one side cleans up.
         if finished:
@@ -200,6 +229,9 @@ class KnowledgeService:
         # fenced before any SQL and returned to the pool by this context manager.
         with self._sessions() as session, session.get_bind().connect() as connection:
             session.bind = connection
+            driver = connection.connection.driver_connection
+            original_commit = driver.commit
+            had_commit_override = "commit" in vars(driver)
             listeners = (
                 ("before_execute", call.before_execute),
                 ("before_cursor_execute", call.before_cursor),
@@ -207,7 +239,10 @@ class KnowledgeService:
                 ("commit", call.before_commit),
             )
             try:
-                call.attach(connection.connection.driver_connection)
+                call.attach(driver)
+                # Borrower-local interception at the actual DBAPI boundary, not
+                # a SQLAlchemy event which still precedes an unchecked commit.
+                driver.commit = lambda: call.commit(original_commit)
                 for name, listener in listeners:
                     event.listen(connection, name, listener)
                 with session.begin():
@@ -216,6 +251,10 @@ class KnowledgeService:
                     call.check()
             finally:
                 session.close()
+                if had_commit_override:
+                    driver.commit = original_commit
+                elif "commit" in vars(driver):
+                    del driver.commit
                 call.detach()
                 for name, listener in listeners:
                     if event.contains(connection, name, listener):
@@ -339,9 +378,11 @@ class KnowledgeService:
 
     async def _record_failure(self, document_id: int, attempt_id: str, message: str, cost: float):
         try:
-            return await self._database(monotonic() + 1.0, lambda call: self._fail(
-                document_id, attempt_id, message, cost, call,
-            ))
+            return await self._database(
+                monotonic() + 1.0,
+                lambda call: self._fail(document_id, attempt_id, message, cost, call),
+                on_abandon=lambda: self._abandon_attempt(document_id, attempt_id, cost),
+            )
         except asyncio.CancelledError as exc:
             exc.cost_usd = cost
             raise

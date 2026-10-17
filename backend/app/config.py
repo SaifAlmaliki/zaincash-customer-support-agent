@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     jev_min_top_prob: float = 0.60
     pipeline_concurrency: int = 20
     max_state_chars: int = 6000
-    agent_max_tool_calls: int = 6
-    agent_timeout_s: int = 30
+    agent_max_tool_calls: int = Field(default=6, ge=1, le=6, strict=True)
+    agent_timeout_s: float = Field(default=30, gt=0, le=30, allow_inf_nan=False)
 
     database_url: str = "postgresql+psycopg://support:support@localhost:5433/support"
     test_database_url: str = "postgresql+psycopg://support:support@localhost:5433/support_test"
@@ -48,6 +48,15 @@ class Settings(BaseSettings):
     # https://developers.openai.com/api/docs/models/text-embedding-3-small (2026-10-17)
     # OpenRouter-reported cost takes precedence; update this when changing models.
     price_embedding_in: float = Field(default=0.02, ge=0, allow_inf_nan=False)
+
+    @field_validator("agent_max_tool_calls", mode="before")
+    @classmethod
+    def parse_tool_limit_env(cls, value):
+        # Environment settings arrive as strings; keep strict rejection of bools
+        # and fractional numbers while accepting ordinary integer env values.
+        if isinstance(value, str) and value.strip().isdecimal():
+            return int(value.strip())
+        return value
 
     @field_validator("embed_dim")
     @classmethod

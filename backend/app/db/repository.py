@@ -93,6 +93,15 @@ class SqlTransactionRepo:
     def __init__(self, session_factory: sessionmaker) -> None:
         self._sf = session_factory
 
+    @property
+    def session_factory(self) -> sessionmaker:
+        """Public factory for sibling read-only KB/investigation adapters.
+
+        Each adapter opens its own session; callers must not share live sessions.
+        Exposing the factory does not open a connection or change its lifecycle.
+        """
+        return self._sf
+
     def get_by_ref(self, txn_ref: str) -> TxnRecord | None:
         with self._sf() as s:
             row = s.get(TransactionRow, txn_ref)

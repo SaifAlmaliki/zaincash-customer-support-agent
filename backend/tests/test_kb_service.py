@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from time import monotonic
 
 import httpx
+import psycopg
 import pytest
 from sqlalchemy import create_engine, event, func, select, text
 from sqlalchemy.engine import make_url
@@ -650,39 +651,60 @@ async def test_db_deadline_is_cumulative_across_publication_statements(support_t
     from app.kb import service
 
     document_id = upload(support_test)
-    monkeypatch.setattr(service, "INDEXING_TIMEOUT_S", 0.15)
-    completed_delays = []
+    # Only statement completions advance this clock. Pool/parse/embed scheduling
+    # cannot accidentally consume the first statement's allotted budget.
+    clock = [monotonic()]
+    clock_lock = threading.Lock()
+
+    def phase_time():
+        with clock_lock:
+            return clock[0]
+
+    monkeypatch.setattr(service, "monotonic", phase_time)
+    monkeypatch.setattr(service, "INDEXING_TIMEOUT_S", 120.0)
+    statement_budgets = []
+    completed_statements = []
     failed_written = threading.Event()
 
-    def slow_publication(_conn, cursor, statement, _parameters, _context, _many):
+    def inspect_budget(_conn, cursor, statement, _parameters, _context, _many):
         if statement.startswith(("DELETE FROM kb_chunks", "INSERT INTO kb_chunks")):
-            cursor.execute("SELECT pg_sleep(0.12)")
-            completed_delays.append(statement.split()[0])
+            # Observe the real transaction-local PostgreSQL budget, not a mock
+            # of the deadline helper. A per-statement reset would incorrectly
+            # grant INSERT another 120 seconds instead of the remaining 40.
+            cursor.execute("SELECT setting::int FROM pg_settings WHERE name = 'statement_timeout'")
+            statement_budgets.append((statement.split()[0], cursor.fetchone()[0]))
 
     def changed_index(_conn, _cursor, statement, parameters, _context, _many):
+        if statement.startswith(("DELETE FROM kb_chunks", "INSERT INTO kb_chunks")):
+            completed_statements.append(statement.split()[0])
+            # Each statement consumes 80 seconds: individually within 120, but
+            # cumulatively over budget. Both real writes must be rolled back.
+            with clock_lock:
+                clock[0] += 80.0
         if statement.startswith("UPDATE kb_document_indexes") and parameters.get("status") == "failed":
             failed_written.set()
 
     engine = support_test.kw["bind"]
-    event.listen(engine, "before_cursor_execute", slow_publication)
+    event.listen(engine, "before_cursor_execute", inspect_budget)
     event.listen(engine, "after_cursor_execute", changed_index)
     try:
-        started = monotonic()
         try:
-            result = await KnowledgeService(support_test, settings, PaidEmbedder()).index_document(document_id)
+            result = await asyncio.wait_for(
+                KnowledgeService(support_test, settings, PaidEmbedder()).index_document(document_id), 5,
+            )
             assert result["status"] == "failed"
             assert result["cost_usd"] == pytest.approx(0.125)
         except KnowledgeError as exc:
             assert exc.cost_usd == pytest.approx(0.125)
-        assert monotonic() - started < 0.22
         assert await asyncio.to_thread(failed_written.wait, 2)
         # Acquire the source lock after failure bookkeeping so assertions see its commit.
         with support_test.begin() as session:
             session.execute(select(UploadedDocument).where(
                 UploadedDocument.id == document_id).with_for_update())
-        assert completed_delays == ["DELETE"]
+        assert completed_statements == ["DELETE", "INSERT"]
+        assert statement_budgets == [("DELETE", 120_000), ("INSERT", 40_000)]
     finally:
-        event.remove(engine, "before_cursor_execute", slow_publication)
+        event.remove(engine, "before_cursor_execute", inspect_budget)
         event.remove(engine, "after_cursor_execute", changed_index)
     assert count_chunks(support_test) == 0
     assert view(support_test, document_id)["status"] == "failed"
@@ -696,12 +718,16 @@ async def test_db_deadline_second_cancel_during_failure_bookkeeping_keeps_cost(s
     entered = asyncio.Event()
     release = threading.Event()
     returned = threading.Event()
+    continued = threading.Event()
     loop = asyncio.get_running_loop()
 
     def gate_failure(_conn, _cursor, statement, parameters, _context, _many):
         if statement.startswith("UPDATE kb_document_indexes") and parameters.get("status") == "failed":
-            loop.call_soon_threadsafe(entered.set)
-            release.wait(0.5)
+            if not entered.is_set():
+                loop.call_soon_threadsafe(entered.set)
+                release.wait(0.5)
+            else:
+                continued.set()
 
     def checked_in(_dbapi, _record):
         if entered.is_set():
@@ -721,10 +747,23 @@ async def test_db_deadline_second_cancel_during_failure_bookkeeping_keeps_cost(s
         assert getattr(caught.value, "cost_usd", None) == pytest.approx(0.125)
     finally:
         release.set()
-        assert await asyncio.to_thread(returned.wait, 2)
-        event.remove(engine, "after_cursor_execute", gate_failure)
-        event.remove(engine, "checkin", checked_in)
+        try:
+            assert await asyncio.to_thread(returned.wait, 2)
+            assert await asyncio.to_thread(continued.wait, 2)
+        finally:
+            event.remove(engine, "after_cursor_execute", gate_failure)
+            event.remove(engine, "checkin", checked_in)
+    with support_test.begin() as session:
+        session.execute(select(UploadedDocument).where(
+            UploadedDocument.id == document_id).with_for_update())
     assert count_chunks(support_test) == 0
+    failed = view(support_test, document_id)
+    assert failed["status"] == "failed"
+    assert "retry" in failed["error"].lower()
+    assert failed["cost_usd"] == pytest.approx(0.125)
+    retried = await KnowledgeService(support_test, settings, FakeEmbedder()).index_document(document_id)
+    assert retried["status"] == "indexed"
+    assert retried["cost_usd"] == pytest.approx(0.125)
 
 
 @pytest.mark.parametrize("external_timeout", [True, False])
@@ -808,3 +847,99 @@ async def test_db_deadline_cancelled_publication_cannot_commit_late(support_test
     assert count_chunks(support_test) == 0
     assert view(support_test, document_id)["status"] == "failed"
     assert view(support_test, document_id)["cost_usd"] == pytest.approx(0.125)
+
+
+@pytest.mark.parametrize("handoff_wins", [False, True])
+async def test_dbapi_commit_handoff_arbitrates_cancellation(support_test, settings, monkeypatch, handoff_wins):
+    document_id = upload(support_test)
+    entered = asyncio.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    cancel_delivered = threading.Event()
+    continued = threading.Event()
+    loop = asyncio.get_running_loop()
+    engine = support_test.kw["bind"]
+    original_do_commit = engine.dialect.do_commit
+    original_commit = psycopg.Connection.commit
+    original_cancel = psycopg.Connection.cancel_safe
+    blocked_driver = None
+
+    def gate(driver):
+        nonlocal blocked_driver
+        if blocked_driver is not None:
+            return False
+        with driver.cursor() as cursor:
+            cursor.execute("SELECT status FROM kb_document_indexes WHERE document_id = %s", (document_id,))
+            row = cursor.fetchone()
+        if row != ("indexed",):
+            return False
+        blocked_driver = driver
+        loop.call_soon_threadsafe(entered.set)
+        assert release.wait(2)
+        return True
+
+    def gate_before_dbapi(dbapi):
+        # SQLAlchemy commit events (including the old fence) have already fired.
+        gated = gate(dbapi.driver_connection)
+        try:
+            return original_do_commit(dbapi)
+        finally:
+            if gated:
+                finished.set()
+
+    def gate_inside_dbapi(driver):
+        # This is after the service's DBAPI commit wrapper takes ownership.
+        gated = gate(driver)
+        try:
+            return original_commit(driver)
+        finally:
+            if gated:
+                finished.set()
+
+    def observe_cancel(driver, *args, **kwargs):
+        result = original_cancel(driver, *args, **kwargs)
+        if driver is blocked_driver:
+            cancel_delivered.set()
+        return result
+
+    def failure_update(_conn, _cursor, statement, parameters, _context, _many):
+        if statement.startswith("UPDATE kb_document_indexes") and parameters.get("status") == "failed":
+            continued.set()
+
+    if handoff_wins:
+        monkeypatch.setattr(psycopg.Connection, "commit", gate_inside_dbapi)
+    else:
+        monkeypatch.setattr(engine.dialect, "do_commit", gate_before_dbapi)
+    monkeypatch.setattr(psycopg.Connection, "cancel_safe", observe_cancel)
+    event.listen(engine, "after_cursor_execute", failure_update)
+    job = asyncio.create_task(KnowledgeService(support_test, settings, PaidEmbedder()).index_document(document_id))
+    try:
+        await asyncio.wait_for(entered.wait(), 2)
+        started = monotonic()
+        job.cancel()
+        with pytest.raises(asyncio.CancelledError) as caught:
+            await job
+        assert caught.value.cost_usd == pytest.approx(0.125)
+        assert monotonic() - started < 0.25
+        if not handoff_wins:
+            # Reproduce a completed, ineffective cancel while COMMIT is still idle.
+            assert await asyncio.to_thread(cancel_delivered.wait, 2)
+        else:
+            assert not await asyncio.to_thread(cancel_delivered.wait, 0.1)
+    finally:
+        release.set()
+        try:
+            assert await asyncio.to_thread(finished.wait, 2)
+            if not handoff_wins:
+                assert await asyncio.to_thread(continued.wait, 2)
+        finally:
+            event.remove(engine, "after_cursor_execute", failure_update)
+    with support_test.begin() as session:
+        session.execute(select(UploadedDocument).where(
+            UploadedDocument.id == document_id).with_for_update())
+    result = view(support_test, document_id)
+    assert result["status"] == ("indexed" if handoff_wins else "failed")
+    assert count_chunks(support_test) == (1 if handoff_wins else 0)
+    assert result["cost_usd"] == pytest.approx(0.125)
+    if handoff_wins:
+        assert not cancel_delivered.is_set()

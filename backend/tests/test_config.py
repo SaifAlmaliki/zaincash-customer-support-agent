@@ -34,3 +34,20 @@ def test_openrouter_key_is_loaded_from_environment(monkeypatch):
 ])
 def test_legacy_gemini_model_names_are_qualified_for_openrouter(model, expected):
     assert Settings(_env_file=None, gemini_model=model).gemini_model == expected
+
+
+def test_drafting_limits_load_from_environment(monkeypatch):
+    monkeypatch.setenv("AGENT_MAX_TOOL_CALLS", "6")
+    monkeypatch.setenv("AGENT_TIMEOUT_S", "30")
+    settings = Settings(_env_file=None)
+    assert settings.agent_max_tool_calls == 6 and settings.agent_timeout_s == 30
+
+
+@pytest.mark.parametrize("values", [{"agent_max_tool_calls": 7}, {"agent_max_tool_calls": 0},
+                                    {"agent_max_tool_calls": True}, {"agent_timeout_s": 31},
+                                    {"agent_timeout_s": 0}, {"agent_timeout_s": float("nan")}])
+def test_drafting_configuration_cannot_bypass_hard_limits(values):
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **values)

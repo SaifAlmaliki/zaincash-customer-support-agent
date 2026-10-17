@@ -97,3 +97,25 @@ async def test_openrouter_retry_budget_is_bounded(monkeypatch, max_retries, fail
     assert attempts == expected_attempts
     assert sample.parsed is None and sample.error
     assert "retry budget exceeded" not in sample.error
+
+
+async def test_draft_model_uses_millisecond_timeout_and_disables_sdk_retries(monkeypatch):
+    from app.pipeline.factory import make_draft_model
+
+    attempts = 0
+
+    async def send(_client, request, **_kwargs):
+        nonlocal attempts
+        attempts += 1
+        assert attempts == 1, "SDK retries must be disabled; the agent owns bounded retries"
+        body = json.loads(request.content)
+        assert body["temperature"] == 0.1
+        assert request.extensions["timeout"]["read"] == 30.0
+        return httpx.Response(500, request=request,
+                              json={"error": {"code": 500, "message": "unavailable"}})
+
+    monkeypatch.setattr(httpx.AsyncClient, "send", send)
+    model = make_draft_model(Settings(_env_file=None, openrouter_api_key="test-key"))
+    with pytest.raises(Exception) as exc:
+        await model.ainvoke("test")
+    assert type(exc.value).__name__ != "AssertionError" and attempts == 1

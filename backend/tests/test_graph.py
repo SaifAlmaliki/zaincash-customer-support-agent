@@ -1,3 +1,4 @@
+import httpx
 import pytest
 from langgraph.types import RetryPolicy
 
@@ -108,3 +109,50 @@ def test_deps_validate_mode(tax):
 async def test_empty_batch(tax):
     outcomes, summary = await _run(_deps(tax, jev=FakeClassifier(make_output())), [])
     assert outcomes == [] and summary.total == 0
+
+
+async def test_draft_node_never_retries_or_restarts_paid_work(tax):
+    class BrokenDrafter:
+        calls = 0
+
+        async def draft(self, state):
+            self.calls += 1
+            raise httpx.ConnectError("failure after paid call")
+
+    drafter = BrokenDrafter()
+    [outcome], _ = await _run(_deps(tax, jev=FakeClassifier(make_output("general_inquiry")),
+                                   drafter=drafter), [make_ticket("مساعدة")])
+    assert outcome.status == "failed"
+    assert drafter.calls == 1
+
+
+async def test_review_findings_notes_and_degradation_are_merged(tax):
+    class Reviewed:
+        async def draft(self, state):
+            return DraftResult(text="نص للمراجعة", reasons=("draft_failed_guardrail",), cost_usd=0.07,
+                               trace=({"kind": "guardrail", "findings": ["invalid_citations"],
+                                       "credential_check_degraded": True},
+                                      {"kind": "draft", "internal_note": "Check policy", "notes": ["Escalation detail"]}))
+
+    [outcome], summary = await _run(_deps(tax, jev=FakeClassifier(make_output("fraud_report", cost=0.01)),
+                                        drafter=Reviewed()), [make_ticket("احتيال")])
+    assert "fraud_suspected" in outcome.decision.reasons
+    assert "invalid_citations" in outcome.decision.note
+    assert "Check policy" in outcome.decision.note and "Escalation detail" in outcome.decision.note
+    assert "Credential check degraded" in outcome.decision.note and summary.degraded
+    assert outcome.cost_usd == 0.08
+
+
+async def test_real_draft_bug_is_failed_with_partial_evidence_cost_and_classification(tax):
+    from tests.rag_fakes import script
+    from tests.test_rag_drafter import drafter
+
+    agent, model = drafter([script()[0], RuntimeError("programming fault")])
+    [outcome], summary = await _run(_deps(tax, jev=FakeClassifier(make_output("general_inquiry", cost=0.01)),
+                                        drafter=agent), [make_ticket("مساعدة")])
+    assert outcome.status == "failed" and "RuntimeError" in outcome.error
+    assert outcome.classifier.classification.category == "general_inquiry"
+    assert outcome.cost_usd == pytest.approx(0.04) and summary.total_cost_usd == pytest.approx(0.04)
+    assert outcome.draft.trace[-1]["status"] == "error"
+    assert "llm_unavailable" not in outcome.decision.reasons
+    assert model.calls == 2

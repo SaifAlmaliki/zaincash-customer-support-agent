@@ -23,6 +23,7 @@ class PipelineState(TypedDict, total=False):
     lookup: LookupResult
     decision: Decision
     draft: DraftResult
+    draft_error: str
     degraded: bool
     cost_usd: Annotated[float, operator.add]
     started_at: float

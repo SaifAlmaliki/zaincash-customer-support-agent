@@ -6,7 +6,7 @@ import logging
 import math
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from time import perf_counter
 from typing import Any
 
@@ -22,7 +22,7 @@ from app.pipeline.stage2_classify.cascade import combine
 from app.pipeline.stage3_extract.extract import fill_gaps, finalize
 from app.pipeline.stage4_lookup.lookup import TransactionRepo, match_transaction
 from app.pipeline.stage5_decide.rules import decide, empty_ticket_decision, merge_reasons
-from app.pipeline.stage6_draft.drafting import Drafter, NullDrafter
+from app.pipeline.stage6_draft.drafting import Drafter, DraftExecutionError, NullDrafter
 from app.pipeline.state import PipelineState
 from app.taxonomy import Taxonomy
 
@@ -130,9 +130,28 @@ class _Nodes:
                                    extracted=state["extracted"], lookup=state["lookup"])}
 
     async def draft(self, state: PipelineState) -> dict[str, Any]:
-        result = await self.d.drafter.draft(state)
-        return {"draft": result, "decision": merge_reasons(state["decision"], result.reasons),
-                "cost_usd": result.cost_usd, "finished_at": perf_counter()}
+        error = ""
+        try:
+            result = await self.d.drafter.draft(state)
+        except DraftExecutionError as exc:
+            result, error = exc.result, str(exc)
+        decision = merge_reasons(state["decision"], result.reasons)
+        notes = [decision.note]
+        original_note = state["decision"].note
+        if original_note and original_note not in decision.note:
+            notes.append(original_note)
+        for entry in result.trace:
+            if entry.get("kind") == "guardrail":
+                if entry.get("findings"):
+                    notes.append("Draft findings: " + ", ".join(entry["findings"]) + ".")
+                if entry.get("credential_check_degraded"):
+                    notes.append("Credential check degraded: deterministic checks only.")
+            elif entry.get("kind") == "draft":
+                notes.extend(entry.get("notes", []))
+                notes.append(entry.get("internal_note", ""))
+        decision = replace(decision, note=" ".join(dict.fromkeys(n for n in notes if n)))
+        return {"draft": result, "decision": decision,
+                "draft_error": error, "cost_usd": result.cost_usd, "finished_at": perf_counter()}
 
 
 def build_graph(deps: PipelineDeps):
@@ -146,7 +165,9 @@ def build_graph(deps: PipelineDeps):
     b.add_node("extract", n.extract, retry_policy=deps.retry)
     b.add_node("lookup", n.lookup)
     b.add_node("decide", n.decide)
-    b.add_node("draft", n.draft, retry_policy=deps.retry)
+    # The drafter owns its deadline and request retries. Retrying this node would
+    # create a fresh tool budget, buy duplicate calls and lose partial evidence.
+    b.add_node("draft", n.draft, retry_policy=RetryPolicy(max_attempts=1))
     b.add_edge(START, "prepare")
     b.add_conditional_edges("prepare", n.route_after_prepare,
                             ["escalate_empty", "jev_classify", "gemini_classify"])
@@ -166,7 +187,7 @@ def outcome_from_state(state: PipelineState) -> TicketOutcome:
     latency = int((finished - started) * 1000) if started is not None and finished is not None else 0
     return TicketOutcome(
         ticket=state["ticket"],
-        status="escalated" if decision.escalated else "pending_review",
+        status="failed" if state.get("draft_error") else "escalated" if decision.escalated else "pending_review",
         classifier=state.get("classifier"),
         extracted=state.get("extracted", {}),
         lookup=state.get("lookup"),
@@ -174,6 +195,7 @@ def outcome_from_state(state: PipelineState) -> TicketOutcome:
         draft=state.get("draft"),
         latency_ms=latency,
         cost_usd=round(state.get("cost_usd", 0.0), 6),
+        error=state.get("draft_error") or None,
     )
 
 
@@ -222,7 +244,9 @@ def summarize(outcomes: Sequence[TicketOutcome]) -> RunSummary:
         escalation_reasons=dict(Counter(r for o in decided for r in o.decision.reasons)),
         classifier_paths=dict(paths),
         fallback_rate=round(fallback / len(classified), 4) if classified else 0.0,
-        degraded=any(o.classifier.degraded for o in classified),
+        degraded=any(o.classifier.degraded for o in classified) or any(
+            entry.get("kind") == "guardrail" and entry.get("credential_check_degraded") is True
+            for outcome in outcomes if outcome.draft for entry in outcome.draft.trace),
         failed_ids=[o.ticket.external_id for o in outcomes if o.status == "failed"],
         latency_p50_ms=_percentile(latencies, 50),
         latency_p95_ms=_percentile(latencies, 95),

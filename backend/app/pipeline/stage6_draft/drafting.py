@@ -10,8 +10,33 @@ class Drafter(Protocol):
     async def draft(self, state: PipelineState) -> DraftResult: ...
 
 
+class DraftExecutionError(RuntimeError):
+    """Unexpected fault, with completed drafting evidence and measured spend.
+
+    The pipeline records a failed outcome, never a provider-unavailable escalation.
+    The original exception remains available as __cause__.
+    """
+
+    def __init__(self, cause: Exception, result: DraftResult):
+        super().__init__(f"{type(cause).__name__}: {str(cause)[:500]}")
+        self.result = result
+
+
 class NullDrafter:
-    """Plan 1 drafter. It produces no draft and adds no escalation reasons. Plan 3 replaces it with the RAG agent."""
+    """Explicit classification-only operation, with an auditable skipped stage."""
+
+    def __init__(self, reason: str = "rag_disabled") -> None:
+        self.reason = reason
 
     async def draft(self, state: PipelineState) -> DraftResult:
-        return DraftResult()
+        return DraftResult(trace=({"kind": "skipped", "stage": "draft", "reason": self.reason},))
+
+
+class UnavailableDrafter:
+    """RAG requested but its provider is unconfigured; preserve earlier stages."""
+
+    async def draft(self, state: PipelineState) -> DraftResult:
+        return DraftResult(reasons=("llm_unavailable",), trace=({
+            "kind": "draft", "status": "unavailable", "reasons": ["llm_unavailable"],
+            "internal_note": "Drafting unavailable: OPENROUTER_API_KEY is missing.", "cost_usd": 0.0,
+        },))
