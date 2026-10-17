@@ -118,4 +118,8 @@ Screenshots under `.playwright-mcp/`: `task8-live-empty.png`, `task8-live-failed
 
 API/Vite PID pairs: **509081/509082**, **519886/519887**, **534223/534224**. Restarts loaded each focused fix only after jobs finished. A port probe initially saw TIME_WAIT after shutdown; `ss` confirmed no listener and the task-only probe was adjusted for address reuse. No user process was stopped.
 
+All task-owned servers were stopped at handoff; `ss -ltnp` confirmed **8018 and 5188 free**, and the existing 8765 process plus database listeners remained. The task's isolated browser context was closed.
+
+Final graph refresh command (root): `/home/cvzmh_saif/.local/share/uv/tools/graphifyy/bin/python .superpowers/sdd/2026-10-17-plan3-rag-drafting/task8-graph.py`. It uses the installed graphify scoped AST/Markdown update, backs up existing graph artifacts, preserves unrelated source nodes and records counts in `task8-graph-summary.json`. It does not call an external semantic model. The intended source/doc diff was self-reviewed and `git diff --check` was clean; controller review remains separate.
+
 Remaining: controller review of Task 8 and its narrow guardrail change; variable provider latency; broader Arabic retrieval/negation evaluation; the deferred CLI invalid-`EMBED_DIM` diagnostic. [Plan 2 evaluation, packaging/CI, disclosure/data card/broader failure evidence and the weekly-report stretch work](../demo-readiness.md#known-limitations-and-remaining-work) remain open. No commits, staging or pushes were made by this task.

@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "language": "ar",
+  "created_on": "2026-10-17",
+  "validation_scope": "offline_parser_only_not_live_retested",
+  "hash_algorithm": "SHA-256",
+  "path_base": "repository_root",
+  "notes_ar": [
+    "هذه نسخ معرّبة جديدة من ١٣ مصدراً صالحاً استُخدمت في الاختبارات، وليست البايتات الأصلية للاختبار الحي. جرى تعريب العناوين والتنبيهات وأسماء الفرق مع إبقاء المعنى ومعرّفات الفئات والاختصارات التقنية.",
+    "بصمة كل نسخة وبصمة الملف المجمّع محسوبتان على بايتات الملف كاملة بترميز UTF-8. بصمات المصادر الاثني عشر تقابل ملفات data/kb الأصلية وبصمات الرفع الحي للمستندات ٤–١٥.",
+    "بصمة saved_citation_text محسوبة على النص المستخرج من حقل JSON بعد فك الترميز وإعادة ترميزه إلى UTF-8، دون إضافة سطر أخير أو تطبيع. ليست بصمة ملف JSON ولا معرّف الاستشهاد ولا بصمة ملف الرفع الأصلي.",
+    "يُحفظ النص المستعاد داخل recovered_text كي يبقى أصل المستند ٢ متاحاً حتى إذا لم تُنقل ملفات العمل المحلية. بصمة original_upload تخص ملف الرفع المتبقي محلياً؛ المحلل ينتج منه نص الاستشهاد نفسه.",
+    "تحققت الحزمة الجديدة بالمحلل الفعلي محلياً فقط؛ لم تُعد فهرستها أو اختبار ترتيب البحث والتوليد بمزوّد حي. أرقام المستندات والاستشهادات هنا تاريخية وقد تختلف بعد الرفع الجديد.",
+    "ترتيب bundle.order يحدد جمع الملفات كاملة بفاصل سطر فارغ ثم --- ثم سطر فارغ، من دون مقدمة أو تكرار. العينات السلبية ليست أعضاء في الحزمة."
+  ],
+  "historical_index_path": ".superpowers/sdd/2026-10-17-plan3-rag-drafting/task8-corpus-index.json",
+  "historical_report_path": ".superpowers/sdd/2026-10-17-plan3-rag-drafting/task-8-report.md",
+  "published_evidence_path": "docs/verification/2026-10-17-rag-drafting.md",
+  "documents": [
+    {
+      "path": "data/test-kb/ar/account_kyc.md",
+      "category": "account_kyc",
+      "sha256": "fd570ea2edb07439fc21a3c94f7fd10b508032e09c7f73ed966902c348920eb2",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/account_kyc.md",
+        "sha256": "0fa3afdc7186189add7c97c34617f778fed0c58605e6cf83a5c0888eaf90f816",
+        "live_document_id": 4
+      }
+    },
+    {
+      "path": "data/test-kb/ar/agent_dispute.md",
+      "category": "agent_dispute",
+      "sha256": "06bc7b08321fa78aa96e5e8dc7a6a88672c665e6784c5a9ff9af80d2848cbe0c",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/agent_dispute.md",
+        "sha256": "1f889136fc3b8109499bce9bbef7f0ac459d16fe71a0d4f6bf4f019534152cc1",
+        "live_document_id": 5
+      }
+    },
+    {
+      "path": "data/test-kb/ar/app_bug.md",
+      "category": "app_bug",
+      "sha256": "a83b620804b27ab3144d05e5681602e64f18ef35bb531d3f31445586861b3d8d",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/app_bug.md",
+        "sha256": "0ee8296c7a6c6787e5676d4720c271b22a942aeed46c82ef23a2fe8afedc2816",
+        "live_document_id": 6
+      }
+    },
+    {
+      "path": "data/test-kb/ar/bill_payment.md",
+      "category": "bill_payment",
+      "sha256": "2b7e719d1c594d9927a6371b10ae28abe1bf569d6f85ee8595e9a202334ede2e",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/bill_payment.md",
+        "sha256": "d62bc99fd20ff4c7997d07ad9044d86115bc09df5600f2df1cfa72da458800f1",
+        "live_document_id": 7
+      }
+    },
+    {
+      "path": "data/test-kb/ar/card_issue.md",
+      "category": "card_issue",
+      "sha256": "b9fe949698642bccb9a31b2a3ab4b5eb897a061a2e050705ca2ff7f9446a2bad",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/card_issue.md",
+        "sha256": "584db6920bd86386e2326a4ca44fe1f3cdc6ffe493b2a64a9d58bd9871cf1633",
+        "live_document_id": 8
+      }
+    },
+    {
+      "path": "data/test-kb/ar/failed_transfer.md",
+      "category": "failed_transfer",
+      "sha256": "9c6d63ac1b564c376986b2838aa12ded50bdd997c1bf21784d944e940e39c806",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/failed_transfer.md",
+        "sha256": "a4b2bfa2ac7d442a55b5d9200f60c22dab8532fe10bf4f538f02403fd7193661",
+        "live_document_id": 9
+      }
+    },
+    {
+      "path": "data/test-kb/ar/fraud_report.md",
+      "category": "fraud_report",
+      "sha256": "f25795aff535c9b98ad540f64924596656d78137f861fd23b9c00802fb705e8d",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/fraud_report.md",
+        "sha256": "c5a4754f7248b18ed09c779da5be62f7afeba2c822dadcdfec8e027f7761643d",
+        "live_document_id": 10
+      }
+    },
+    {
+      "path": "data/test-kb/ar/general_inquiry.md",
+      "category": "general_inquiry",
+      "sha256": "c80cc8ba42b186f40b0e9416ba11fadcfe5230491bed6a299f2dcb1e7afb8bc8",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/general_inquiry.md",
+        "sha256": "b1b2711fd0907351302626867fa9cbd5dc29d01f48b088926e190b9aa1160c09",
+        "live_document_id": 11
+      }
+    },
+    {
+      "path": "data/test-kb/ar/login_access.md",
+      "category": "login_access",
+      "sha256": "52eeedb2b722fe41d32ea0cb973d84ff09442ef7f768013078203ae84b4dfcf4",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/login_access.md",
+        "sha256": "b9ae132249ecf89d0fd77ca21d178ea82a99318134054e70e6666c517830b64b",
+        "live_document_id": 12
+      }
+    },
+    {
+      "path": "data/test-kb/ar/other.md",
+      "category": "other",
+      "sha256": "6c664711c89eefbf948cce62c5e60c3321561092fb5a8f7ba12da6c3b7ff70cc",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/other.md",
+        "sha256": "8f89b48f1e8d37c8a58f790c74b1bbbe5d490b3e20ef7b09682357a69be170a5",
+        "live_document_id": 13
+      }
+    },
+    {
+      "path": "data/test-kb/ar/refund_request.md",
+      "category": "refund_request",
+      "sha256": "6c158c537b2c82e22d218ea32f478745ad357db6d48d0a8b713e569ba048734a",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/refund_request.md",
+        "sha256": "d460e99eb8037910afdd5ebc5fb8b267b600a3cab0a8719bd695ec2831a8ad33",
+        "live_document_id": 14
+      }
+    },
+    {
+      "path": "data/test-kb/ar/wrong_recipient.md",
+      "category": "wrong_recipient",
+      "sha256": "82ade953b37d1ec3cbcc83478e3e79ba90592518f1777e9e8770ff46fd79d1bc",
+      "source": {
+        "kind": "repository_file",
+        "path": "data/kb/wrong_recipient.md",
+        "sha256": "512faed905e8d5b1b3ca3f4fdc40b7d59b194b4525a7792f08726a104b7688c2",
+        "live_document_id": 15
+      }
+    },
+    {
+      "path": "data/test-kb/ar/task8-history-policy.md",
+      "category": "general_inquiry",
+      "sha256": "24e1b57a598538dbbb498e9f11f370cf1a721a3c7b58a73ba8fb510d091f8c9b",
+      "source": {
+        "kind": "saved_citation_text",
+        "snapshot_path": ".superpowers/sdd/2026-10-17-plan3-rag-drafting/task8-run-40-before.json",
+        "json_pointer": "/results/0/citation_sources/0/text",
+        "trace_json_pointers": [
+          "/results/0/agent_trace/7/retrieved_passages/0/text",
+          "/results/0/agent_trace/9/retrieved_passages/0/text",
+          "/results/0/agent_trace/13/citation_sources/0/text"
+        ],
+        "run_id": 40,
+        "result_id": 56,
+        "also_cited_in": {"run_id": 39, "result_id": 55},
+        "document_id": 2,
+        "chunk_index": 0,
+        "citation_id": "aa1a7fbbc54f9f5b9bb5fcbdb8b5da4b49c038f1063e98020e889950f0a3439d",
+        "filename": "task8-history-policy.md",
+        "sha256": "796bc90261f2896318e282e794234a936c4243024e2d25323e9dc189cd6faeb6",
+        "recovered_text": "# Task 8 temporary support inquiry — fictional demo policy\n\nCategory: general_inquiry\n\n**SYNTHETIC / FICTIONAL DEMO ONLY — مو سياسة حقيقية لزين كاش.**\n\nإذا الزبون يسأل شلون يشرح مشكلته للدعم بأمان، يكدر يكتب وصف مختصر للمشكلة ورسالة الخطأ ومرجع العملية غير السري إذا عنده. يذكر المعلومات المطلوبة للمشكلة فقط، بدون إرسال أسرار الحساب أو صور مستمسكات بمحادثة العرض.\n\nإذا التفاصيل مو واضحة، وجّه السؤال لفريق General Care حتى يراجعه إنسان. لا تخمّن رسوم أو حدود ولا توعد بوقت جواب. لا تطلب رمز التحقق OTP أو الرقم السري PIN أو كلمة المرور. هذا دليل عرض خيالي وما يحدد رسوم أو ضمان تعويض أو صلاحية دخول لأي حساب حقيقي.\n\nTemporary synthetic source owned by Task 8 for the saved-citation reindex/delete check.",
+        "original_upload": {
+          "path": ".superpowers/sdd/2026-10-17-plan3-rag-drafting/task8-history-policy.md",
+          "sha256": "74a87894c9b454e9ecdc4f43120e9bfadaa7cfd61f03d73aa2fa3683620cb0eb",
+          "bytes": 1085
+        }
+      }
+    }
+  ],
+  "bundle": {
+    "path": "data/test-kb/judge-demo.ar.md",
+    "sha256": "92ceadecb974aa901267c228011d94f31ef3e7816a0fb2bb712e00c3fe257576",
+    "separator": "\n---\n\n",
+    "order": [
+      "data/test-kb/ar/account_kyc.md",
+      "data/test-kb/ar/agent_dispute.md",
+      "data/test-kb/ar/app_bug.md",
+      "data/test-kb/ar/bill_payment.md",
+      "data/test-kb/ar/card_issue.md",
+      "data/test-kb/ar/failed_transfer.md",
+      "data/test-kb/ar/fraud_report.md",
+      "data/test-kb/ar/general_inquiry.md",
+      "data/test-kb/ar/login_access.md",
+      "data/test-kb/ar/other.md",
+      "data/test-kb/ar/refund_request.md",
+      "data/test-kb/ar/wrong_recipient.md",
+      "data/test-kb/ar/task8-history-policy.md"
+    ]
+  },
+  "negative_tests": [
+    {
+      "path": "data/test-kb/negative/task8-invalid.pdf",
+      "sha256": "90f3b21e9cfb325a102defe46c4c9195ac91fe96195b3f6bf4c3e80ec377f44e",
+      "bytes": 99,
+      "expected": "DocumentParseError",
+      "source": {
+        "path": ".superpowers/sdd/2026-10-17-plan3-rag-drafting/task8-invalid.pdf",
+        "sha256": "90f3b21e9cfb325a102defe46c4c9195ac91fe96195b3f6bf4c3e80ec377f44e",
+        "live_document_id": 3,
+        "live_outcome": "stored_then_index_failed_retry_failed_deleted"
+      }
+    }
+  ]
+}

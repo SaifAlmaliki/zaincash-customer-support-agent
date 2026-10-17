@@ -116,6 +116,14 @@ The full design is in [`docs/superpowers/specs/2026-10-07-support-pipeline-desig
 
 ## Run locally
 
+### Arabic knowledge pack for the judge demo
+
+Upload **[`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md)** for a single-file Arabic KB demo. It contains all **13 valid tested sources**: the 12 corpus policies plus the recovered temporary source used in runs 39/40. Alternatively, upload the 13 files in [`data/test-kb/ar/`](data/test-kb/ar/) individually; choose one format, not both.
+
+The [Arabic upload/search/draft/review guide](data/test-kb/README.md) includes example questions and expected-source guidance. [Provenance and SHA-256 hashes](data/test-kb/provenance.json) distinguish these newly localized, **offline-parser-validated** copies from the earlier live-tested original bytes. The malformed upload sample is isolated under `data/test-kb/negative/` and is not KB content.
+
+### Start the application
+
 From the repository root, in three terminals. Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` first.
 
 Database:

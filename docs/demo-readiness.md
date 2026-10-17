@@ -7,6 +7,7 @@ As of **2026-10-17**: Plan 1 and the workspace are implemented; Plan 3 RAG has r
 | Layer | Observed status |
 |---|---|
 | Corpus | 12 fictional Markdown policies, one per taxonomy category; 12 live indexed documents / 12 passages retained. |
+| Arabic judge pack | [13 localized sources](../data/test-kb/README.md), including recovered temporary doc2, plus a [single-upload bundle](../data/test-kb/judge-demo.ar.md). New copies: offline parser/integrity validated only; earlier live evidence below refers to the original bytes. |
 | Automated | **665 backend tests**, Ruff, **21 frontend tests**, lint and build passed. Exact commands are in the [verification record](verification/2026-10-17-rag-drafting.md). Providers are controlled fakes in automated tests; PostgreSQL integration uses only `support_test`. |
 | Real retrieval | OpenRouter `openai/text-embedding-3-small`, 768 dimensions. Intended policy ranked first for three supported Arabic queries; physics query returned zero passages. |
 | Real drafting | `google/gemini-3.8-flash`; supported general/transfer drafts passed checks, fraud stayed P1/escalated, unsupported topic received a refusal and `no_kb_support`. |
@@ -17,6 +18,8 @@ As of **2026-10-17**: Plan 1 and the workspace are implemented; Plan 3 RAG has r
 All `data/kb/` material is **fictional demo guidance**, not real ZainCash policy, fees, limits, reimbursement promises, response deadlines or account access. All ticket/transaction examples are synthetic. Nothing moves funds, changes an account or sends a reply.
 
 ## Repeatable local walkthrough
+
+For the judge presentation, use the [Arabic pack walkthrough](../data/test-kb/README.md): upload **either** `data/test-kb/judge-demo.ar.md` **or** the 13 files in `data/test-kb/ar/`. Skip the `ingest-kb ../data/kb` command below when using that pack. Do not ingest all of `data/test-kb/`; its guide, provenance and negative samples are not valid KB inputs. The commands below retain the original 12-policy smoke path for reproducibility; the Arabic pack has its own [provenance manifest](../data/test-kb/provenance.json).
 
 From the repository root in WSL, configure keys using `.env`/environment through backend `Settings`. Do not display key values. Keep the selected model unless intentionally changing it. Check `ss -ltnp` before starting servers; use free ports and preserve existing processes. The commands below use the normal documented ports when free:
 

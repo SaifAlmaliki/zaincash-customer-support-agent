@@ -1,5 +1,7 @@
 # Fictional RAG walkthrough inputs
 
+For the judge demo, use the [Arabic KB pack and walkthrough](../test-kb/README.md): **[one upload file](../test-kb/judge-demo.ar.md)** containing all 13 valid tested sources, or the [13 individual Arabic files](../test-kb/ar/) (choose one format, not both). This includes the recovered temporary source from runs 39/40. [Provenance hashes](../test-kb/provenance.json) distinguish the newly localized, offline-parser-validated copies from the live-tested originals. The tickets below work as demonstration inputs for either corpus format; verify actual retrieval and draft output for the new pack.
+
 Everything in `../kb/` and `rag_tickets.jsonl` is **synthetic, fictional demo material**. It is not a statement of real ZainCash policy, fees, limits, reimbursement guarantees, response deadlines or account access. The assistant cannot move funds, freeze accounts or send replies.
 
 The 12 Markdown files correspond one-to-one with `data/taxonomy.yaml`. Category text in a file is descriptive; upload/CLI ingestion does not infer database category tags from it. Use the index API's `category_tags` when you need filtered retrieval.
