@@ -319,19 +319,44 @@ def test_index_background_admission_is_bounded_and_releases_capacity(client, kb_
 def test_index_deadline_persists_failure_and_retry_releases_slot(client, kb_env, monkeypatch):
     from app.kb import service as service_module
 
-    monkeypatch.setattr(service_module, "INDEXING_TIMEOUT_S", 0.1)
+    index_deadlines = []
+    original_timeout = asyncio.timeout
+
+    def record_timeout(seconds):
+        context = original_timeout(seconds)
+        if seconds == service_module.INDEXING_TIMEOUT_S:
+            index_deadlines.append(context)
+        return context
+
     embedder = kb_env[2]
+    original_embed = embedder.embed
     embedder.release = Event()
-    try:
-        document = upload(client)
-        row = client.get("/api/knowledge").json()[0]
-        assert row["status"] == "failed" and "timed out" in row["error"]
-        assert row["cost_usd"] == pytest.approx(0.02)
-    finally:
-        embedder.release.set()
-    monkeypatch.setattr(service_module, "INDEXING_TIMEOUT_S", 120)
+
+    async def expire_during_embedding(texts):
+        # Retain the normal setup budget; expire the real job timeout only after
+        # claim/parse have completed, rather than racing worker/DB startup.
+        with kb_env[1]() as session:
+            assert session.scalar(select(KnowledgeDocumentIndex.status)) == "indexing"
+        assert len(index_deadlines) == 1
+        index_deadlines[0].reschedule(asyncio.get_running_loop().time())
+        return await original_embed(texts)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(asyncio, "timeout", record_timeout)
+        patch.setattr(embedder, "embed", expire_during_embedding)
+        try:
+            document = upload(client)
+            assert index_deadlines[0].expired() and embedder.calls == 1
+            row = client.get("/api/knowledge").json()[0]
+            assert row["status"] == "failed" and "timed out" in row["error"]
+            assert row["cost_usd"] == pytest.approx(0.02)
+        finally:
+            embedder.release.set()
     assert client.post(f"/api/knowledge/{document['id']}/index").status_code == 202
-    assert client.get("/api/knowledge").json()[0]["cost_usd"] == pytest.approx(0.04)
+    retried = client.get("/api/knowledge").json()[0]
+    assert retried["status"] == "indexed" and retried["error"] is None
+    assert retried["chunk_count"] == 1 and embedder.calls == 2
+    assert retried["cost_usd"] == pytest.approx(0.04)
 
 
 @pytest.mark.parametrize("name,content", [("bad.pdf", b"not pdf"), ("bad.txt", b"\xff"),
