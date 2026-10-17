@@ -31,7 +31,7 @@ categories:
     examples:
       - غلطت برقم واحد وحولت 100 الف لغير شخص اريد ارجعهن
       - دزيت الفلوس على رقم غلط شلون ارجعها
-    required_fields: [amount]
+    required_fields: [amount, phone]
     min_priority: P2
     needs_transaction: true
 
