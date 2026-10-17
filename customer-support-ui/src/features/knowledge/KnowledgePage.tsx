@@ -92,14 +92,20 @@ function KnowledgeWorkspace() {
     }
   }
   async function indexDocument(doc: KnowledgeDocument) {
-    if (!configured || doc.status === "indexing" || query.pendingIds.includes(doc.id)) return
+    if (!configured || !query.canRequestIndex(doc)) return
+    const rerequest = query.pendingIds.includes(doc.id)
     const controller = beginMutation()
     if (!controller) return
     try {
       const response = await api.indexDocument(doc.id, null, controller.signal)
-      if (!controller.signal.aborted) query.accepted(response)
+      if (!controller.signal.aborted) {
+        query.accepted(response)
+        setNotice(response.status === "indexing"
+          ? `${doc.filename}: indexing is running. Status checks resumed.`
+          : `${doc.filename}: indexing request accepted${rerequest ? " again" : ""}. Status checks resumed; waiting for a worker result.`)
+      }
     } catch (e) {
-      if (!controller.signal.aborted) setActionError(`${doc.filename}: ${e instanceof Error ? e.message : "Index request failed."} The stored source is retained. Retry when indexing is available.`)
+      if (!controller.signal.aborted) setActionError(`${doc.filename}: ${e instanceof Error ? e.message : "Index request failed."} ${rerequest ? "The previous acceptance remains pending. Use Request indexing again when indexing is available." : "The stored source is retained. Retry when indexing is available."}`)
     } finally { finishMutation(controller) }
   }
   async function deleteDocument() {
@@ -129,7 +135,7 @@ function KnowledgeWorkspace() {
           onClick={() => input.current?.click()}
         >
           <FileUp size={17} />
-          {busy ? "Uploading…" : "Upload document"}
+          {busy ? "Working…" : "Upload document"}
         </Button>
       </PageHeader>
       {!live && <p className="knowledge-message" role="status">Preview is read-only for knowledge. Switch to the live workspace to upload, index or test policy search.</p>}
@@ -179,7 +185,7 @@ function KnowledgeWorkspace() {
           {query.error && live && (
             <ErrorState message={query.error} retry={query.refresh} />
           )}
-          {query.paused && <p className="knowledge-message" role="status">Automatic status checks paused after 3 minutes. Accepted requests remain pending; use Refresh status to check their result.</p>}
+          {query.paused && <p className="knowledge-message" role="status">Automatic status checks paused after 3 minutes. Accepted requests remain pending. Refresh status checks for a result; if no worker claim was recorded, use Request indexing again to request recovery.</p>}
           <Card>
             <CardHeader>
               <CardTitle className="section-title">
@@ -206,6 +212,8 @@ function KnowledgeWorkspace() {
                   {documents.map((doc) => {
                     const pending = query.pendingIds.includes(doc.id)
                     const active = pending || doc.status === "indexing"
+                    const requestable = query.canRequestIndex(doc)
+                    const indexAction = pending && requestable ? "Request indexing again" : active ? "Index pending" : doc.status === "failed" ? "Retry index" : doc.status === "indexed" ? "Reindex" : "Index document"
                     return (
                     <div className="document-item" key={doc.id}>
                       <span className="document-icon">
@@ -221,14 +229,14 @@ function KnowledgeWorkspace() {
                           <StatusBadge status={pending && doc.status !== "indexing" ? "index_requested" : doc.status} />
                           <span className="muted small">{doc.chunk_count} passages</span>
                         </div>
-                        {pending && doc.status !== "indexing" && <p className="field-help">Request accepted; waiting for the indexing worker. Last stored state: {doc.status.replaceAll("_", " ")}.</p>}
+                        {pending && doc.status !== "indexing" && <p className="field-help">Request accepted; waiting for the indexing worker. Last stored state: {doc.status.replaceAll("_", " ")}. {requestable && "If indexing stalls, use Request indexing again. Active requests are deduplicated; this does not cancel existing work."}</p>}
                         {doc.error && <p className="document-error">{pending ? "Previous attempt: " : "Indexing failed: "}{doc.error} {!active && "Check the document and indexing configuration, then retry."}</p>}
                         {doc.status === "awaiting_indexing" && !pending && <p className="field-help">Stored; indexing has not started. {configured ? "Choose Index document to request indexing." : "Indexing needs to be enabled and configured."}</p>}
                         {doc.embedding_model && <small>{doc.embedding_model} · {doc.embedding_dimensions} dimensions{doc.indexed_at ? ` · Indexed ${dateLabel(doc.indexed_at)}` : ""}</small>}
                         {!!doc.category_tags.length && <small>Categories: {doc.category_tags.join(", ")}</small>}
                         <div className="document-actions">
-                          <Button variant="outline" size="sm" disabled={!live || busy || active || !configured} onClick={() => void indexDocument(doc)} aria-label={`${doc.status === "failed" ? "Retry index" : doc.status === "indexed" ? "Reindex" : "Index document"}: ${doc.filename}`}>
-                            {active ? "Index pending" : doc.status === "failed" ? "Retry index" : doc.status === "indexed" ? "Reindex" : "Index document"}
+                          <Button variant="outline" size="sm" disabled={busy || !requestable || !configured} onClick={() => void indexDocument(doc)} aria-label={`${indexAction}: ${doc.filename}`}>
+                            {indexAction}
                           </Button>
                           <Button variant="ghost" size="sm" disabled={!live} aria-pressed={selectedId === doc.id} onClick={() => setSelectedId(doc.id)}>Inspect passages<span className="sr-only">: {doc.filename}</span></Button>
                       <Button
