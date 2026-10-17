@@ -13,7 +13,7 @@ from typing import Annotated
 from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
-from app.kb.service import KnowledgeService
+from app.kb.service import KnowledgeExecutionError, KnowledgeService
 from app.pipeline.stage5_decide.rules import REASON_TEXT
 from app.pipeline.stage6_draft.context import (
     DraftAlreadySubmitted,
@@ -172,7 +172,8 @@ def build_tools(context: DraftContext, knowledge: KnowledgeService,
                     return result
                 except (Exception, asyncio.CancelledError) as exc:
                     entry.update(status="cancelled" if isinstance(exc, asyncio.CancelledError) else "error",
-                                 error_type=type(exc).__name__, error=str(exc)[:500] or type(exc).__name__)
+                                 error_type=exc.diagnostic_type if isinstance(exc, KnowledgeExecutionError) else type(exc).__name__,
+                                 error=str(exc)[:500] or type(exc).__name__)
                     raise
                 finally:
                     entry["duration_ms"] = round((perf_counter() - started) * 1000, 3)

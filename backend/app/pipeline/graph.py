@@ -15,6 +15,7 @@ from langgraph.types import RetryPolicy
 
 from app.llm import LLMUnavailable
 from app.pipeline.contracts import Ticket, TicketOutcome
+from app.pipeline.execution import ticket_execution
 from app.pipeline.stage1_normalize.candidates import find_candidates
 from app.pipeline.stage1_normalize.normalize import normalize
 from app.pipeline.stage2_classify.base import Classifier, FieldExtractor
@@ -133,8 +134,16 @@ class _Nodes:
         error = ""
         try:
             result = await self.d.drafter.draft(state)
+        except asyncio.CancelledError as exc:
+            result = getattr(exc, "draft_result", None)
+            if result is not None:
+                self._draft_update(state, result, "")
+            raise
         except DraftExecutionError as exc:
             result, error = exc.result, str(exc)
+        return self._draft_update(state, result, error)
+
+    def _draft_update(self, state, result, error):
         decision = merge_reasons(state["decision"], result.reasons)
         notes = [decision.note]
         original_note = state["decision"].note
@@ -150,8 +159,14 @@ class _Nodes:
                 notes.extend(entry.get("notes", []))
                 notes.append(entry.get("internal_note", ""))
         decision = replace(decision, note=" ".join(dict.fromkeys(n for n in notes if n)))
-        return {"draft": result, "decision": decision,
-                "draft_error": error, "cost_usd": result.cost_usd, "finished_at": perf_counter()}
+        update = {"draft": result, "decision": decision,
+                  "draft_error": error, "cost_usd": result.cost_usd, "finished_at": perf_counter()}
+        execution = ticket_execution.get()
+        if execution is not None:
+            # Snapshot totals, not a reducer delta: runner chooses this OR the
+            # streamed state, never adds the draft's spend to both.
+            execution.draft_state = {**state, **update, "cost_usd": state.get("cost_usd", 0.0) + result.cost_usd}
+        return update
 
 
 def build_graph(deps: PipelineDeps):

@@ -26,6 +26,7 @@ from app.kb.service import (
     DocumentNotFoundError,
     IndexAttemptLostError,
     KnowledgeError,
+    KnowledgeExecutionError,
     KnowledgeService,
 )
 from tests.kb_fakes import FakeEmbedder, GatedEmbedder, LateEmbedder, PaidEmbedder
@@ -460,11 +461,12 @@ async def test_search_database_failure_preserves_completed_query_cost(support_te
     engine = sf.kw["bind"]
     event.listen(engine, "before_cursor_execute", fail_read)
     try:
-        with pytest.raises(KnowledgeError) as caught:
+        with pytest.raises(KnowledgeExecutionError) as caught:
             await knowledge.search("تحويل")
     finally:
         event.remove(engine, "before_cursor_execute", fail_read)
     assert caught.value.cost_usd == pytest.approx(0.125)
+    assert caught.value.diagnostic_type == "RuntimeError"
     assert "PRIVATE" not in str(caught.value)
 
 

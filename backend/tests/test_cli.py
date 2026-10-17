@@ -44,6 +44,26 @@ def test_config_error_exits_2(monkeypatch):
     assert result.exit_code == 2 and "TYPESAFE_API_KEY" in result.output
 
 
+@pytest.mark.parametrize("command", [
+    ["run-batch", str(FIXTURES / "sample_tickets.jsonl"), "--no-db"],
+    ["ingest-kb", "--retry-stored"], ["init-db"],
+    ["seed-db", "--transactions", str(FIXTURES / "sample_transactions.jsonl")],
+])
+@pytest.mark.parametrize("field,value", [("EMBED_DIM", "1024"), ("EMBED_DIM", "PRIVATE-input-secret"),
+                                        ("KB_TOP_K", "11")])
+def test_settings_validation_is_safe_field_diagnostic_exit_2(monkeypatch, command, field, value):
+    from app.config import Settings
+
+    monkeypatch.setenv(field, value)
+    monkeypatch.setattr(cli, "get_settings", lambda: Settings(
+        _env_file=None, openrouter_api_key="PRIVATE-provider-secret", typesafe_api_key=""))
+    result = runner.invoke(cli.app, command)
+    assert result.exit_code == 2
+    assert "Config error" in result.output and field in result.output
+    assert "PRIVATE" not in result.output and "input_value" not in result.output
+    assert "Traceback" not in result.output
+
+
 @pytest.fixture
 def ingest_env(monkeypatch):
     from sqlalchemy.engine import make_url

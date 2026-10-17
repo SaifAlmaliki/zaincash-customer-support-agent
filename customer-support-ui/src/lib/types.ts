@@ -64,7 +64,7 @@ export type Result = {
   credential_check_degraded?: boolean | null
   requests_credentials?: number | null
   internal_note?: string | null
-  agent_trace: TraceEvent[]
+  agent_trace: unknown // Raw historical audit JSON; normalize only for rendering.
   status: string
   error: string | null
   latency_ms: number

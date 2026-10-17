@@ -7,6 +7,7 @@ from enum import StrEnum
 from pathlib import Path
 
 import typer
+from pydantic import ValidationError
 
 from app.config import Settings, get_settings
 from app.db.repository import (
@@ -44,10 +45,23 @@ def _sessionmaker(settings: Settings):
     return make_sessionmaker(engine)
 
 
+def _command_settings() -> Settings:
+    try:
+        return get_settings()
+    except ValidationError as exc:
+        # Only known field names: messages, context and even unknown locations
+        # may contain rejected input. Never render the ValidationError itself.
+        fields = sorted({str(error["loc"][0]).upper()
+                         for error in exc.errors(include_input=False, include_context=False, include_url=False)
+                         if error["loc"] and error["loc"][0] in Settings.model_fields})
+        typer.echo("Config error: invalid settings: " + (", ".join(fields) or "configuration") + ".", err=True)
+        raise typer.Exit(code=2) from None
+
+
 @app.command("init-db")
 def init_db_cmd() -> None:
     """Create the database schema (idempotent)."""
-    _sessionmaker(get_settings())
+    _sessionmaker(_command_settings())
     typer.echo("database ready")
 
 
@@ -57,7 +71,7 @@ def seed_db_cmd(
     incidents: Path | None = typer.Option(None, exists=True, dir_okay=False, help="incidents JSONL"),
 ) -> None:
     """Load mock transactions (and optional service incidents) into Postgres."""
-    sf = _sessionmaker(get_settings())
+    sf = _sessionmaker(_command_settings())
     with sf() as s:
         n = load_transactions(s, [txn_from_dict(r) for r in load_jsonl(transactions)])
         m = load_incidents(s, load_jsonl(incidents)) if incidents else 0
@@ -101,7 +115,7 @@ def run_batch_cmd(
                                              help="transactions JSONL for --no-db runs"),
 ) -> None:
     """Run the pipeline over a batch of tickets and print the run summary."""
-    settings = get_settings()
+    settings = _command_settings()
     tickets = load_tickets(path)[: limit or None]
     try:
         if no_db:
@@ -126,7 +140,7 @@ def ingest_kb_cmd(
     """Index at most 100 sources, sequentially; print one JSON status per source."""
     if (path is None) == (not retry_stored):
         raise typer.BadParameter("Provide PATH or --retry-stored, exclusively.")
-    settings = get_settings()
+    settings = _command_settings()
     if not knowledge_configured(settings):
         typer.echo("Knowledge provider is disabled or unconfigured.", err=True)
         raise typer.Exit(2)

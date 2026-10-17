@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from app.kb.service import KnowledgeExecutionError
 from app.pipeline.contracts import DraftResult
 from app.pipeline.state import PipelineState
 
@@ -14,11 +15,13 @@ class DraftExecutionError(RuntimeError):
     """Unexpected fault, with completed drafting evidence and measured spend.
 
     The pipeline records a failed outcome, never a provider-unavailable escalation.
-    The original exception remains available as __cause__.
+    The immediate exception remains available as __cause__; retrieval faults
+    carry their original diagnostic type in a sanitized service exception.
     """
 
     def __init__(self, cause: Exception, result: DraftResult):
-        super().__init__(f"{type(cause).__name__}: {str(cause)[:500]}")
+        message = str(cause) if isinstance(cause, KnowledgeExecutionError) else f"{type(cause).__name__}: {str(cause)[:500]}"
+        super().__init__(message)
         self.result = result
 
 

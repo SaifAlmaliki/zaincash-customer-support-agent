@@ -204,13 +204,13 @@ Export this variable in the shell that launches the process; adding it only to `
 
 ## Status
 
-**Plan 1 and the review workspace are implemented. Plan 3 RAG is implemented and live-smoke verified, with Task 8/controller review pending.** Database-backed runs now retrieve policies, draft Arabic replies, retain citations/tool traces and enforce human review. Explicit `RAG_ENABLED=false` and `--no-db` remain classification-only.
+**Plan 1 and the review workspace are implemented. All eight Plan 3 RAG tasks are completed and reviewed; final review findings are resolved and controller verification passed.** Database-backed runs now retrieve policies, draft Arabic replies, retain citations/tool traces and enforce human review. Explicit `RAG_ENABLED=false` and `--no-db` remain classification-only.
 
 On 2026-10-17, 12 fictional policies were indexed through real OpenRouter embeddings. Supported Arabic searches ranked their intended policy first; supported general-inquiry and pending-transfer drafts passed checks. Fraud stayed P1/escalated; the unsupported physics question received only a scoped refusal with `no_kb_support`. Browser edit/approve/reload and saved citations after temporary-source reindex/deletion were verified. A live transfer attempt timed out before a same-settings retry succeeded; two initial credential-warning false positives led to a narrow regression-tested fix. These are smoke observations, not held-out quality metrics.
 
 See the [demo runbook and remaining work](docs/demo-readiness.md) and [commands, counts, costs and live evidence](docs/verification/2026-10-17-rag-drafting.md). `data/kb/` is **fictional demonstration guidance, not real ZainCash policies, fees, promises or account access**.
 
-Final automated checks: **665 backend tests**, Ruff, **21 frontend tests**, frontend lint and production build passed. Automated fake-provider results are distinct from the live observations above.
+Final automated evidence (2026-10-17): the controller freshly verified **689 backend tests** (69.23s), Ruff and the offline Arabic-pack verifier. The final-fix report records **25 frontend tests**, frontend lint and production build passing on the same final UI code; these frontend checks were not rerun by the controller. The earlier **665/21** results remain Task 8 history in the verification record. Automated fake-provider results and parser-only validation of the translated Arabic pack add no new live retrieval/drafting quality claim.
 
 ### Earlier Plan 1 evidence
 

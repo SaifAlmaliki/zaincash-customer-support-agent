@@ -1,8 +1,6 @@
 {
-  "4": "Form Controls and Preview",
   "5": "Shared UI States",
   "7": "Workspace Cards and Badges",
-  "8": "SQL Persistence",
   "11": "App and Database Bootstrap",
   "12": "Dialogs and Pipeline Strip",
   "13": "UI Package Metadata",
@@ -30,7 +28,6 @@
   "43": "Human Review Gate",
   "44": "React Logo",
   "45": "LangGraph Orchestration",
-  "47": "Workspace Services Package",
   "49": "Human Flag Tool",
   "50": "Recent Transactions Tool",
   "51": "Ticket History Tool",

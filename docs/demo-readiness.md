@@ -1,6 +1,6 @@
 # Synthetic demo readiness
 
-As of **2026-10-17**: Plan 1 and the workspace are implemented; Plan 3 RAG has real provider/API/browser smoke evidence. **Task 8 and its live-discovered guardrail fix await controller review.** This is a local synthetic demo, not a production-readiness or accuracy claim.
+As of **2026-10-17**: Plan 1 and the workspace are implemented; **all eight Plan 3 RAG tasks are completed and reviewed** with real provider/API/browser smoke evidence. The final scoped re-review approved all five fixes (zero open findings), and the controller's fresh backend checks passed. This is a local synthetic demo, not a production-readiness or accuracy claim.
 
 ## Evidence by layer
 
@@ -8,7 +8,7 @@ As of **2026-10-17**: Plan 1 and the workspace are implemented; Plan 3 RAG has r
 |---|---|
 | Corpus | 12 fictional Markdown policies, one per taxonomy category; 12 live indexed documents / 12 passages retained. |
 | Arabic judge pack | [13 localized sources](../data/test-kb/README.md), including recovered temporary doc2, plus a [single-upload bundle](../data/test-kb/judge-demo.ar.md). New copies: offline parser/integrity validated only; earlier live evidence below refers to the original bytes. |
-| Automated | **665 backend tests**, Ruff, **21 frontend tests**, lint and build passed. Exact commands are in the [verification record](verification/2026-10-17-rag-drafting.md). Providers are controlled fakes in automated tests; PostgreSQL integration uses only `support_test`. |
+| Automated | **689 backend tests** (69.23s) and Ruff freshly passed under the controller; **25 frontend tests**, lint and build passed on the same final UI code per the final-fix report, not a controller frontend rerun. The [verification record](verification/2026-10-17-rag-drafting.md) retains the historical Task 8 665/21 table. Providers are controlled fakes in automated tests; PostgreSQL integration uses only `support_test`. |
 | Real retrieval | OpenRouter `openai/text-embedding-3-small`, 768 dimensions. Intended policy ranked first for three supported Arabic queries; physics query returned zero passages. |
 | Real drafting | `google/gemini-3.8-flash`; supported general/transfer drafts passed checks, fraud stayed P1/escalated, unsupported topic received a refusal and `no_kb_support`. |
 | Browser/API | Upload/index/search, passage inspection, ticket submission, citations/tool trace, edit/approve/reload, temporary-source reindex/delete history, empty knowledge and failed indexing exercised. |
@@ -60,12 +60,17 @@ uv --directory backend run support run-batch ../data/demo/rag_tickets.jsonl \
 
 `support ingest-kb --retry-stored` retries awaiting/failed stored sources; inspect the library first because it is not scoped to one source. The live Task 8 run used the API instead, preserving per-source IDs. Scanned PDFs need OCR before ingestion. Keep only one API worker for the local background runner; avoid restarting while a batch/index job is active.
 
+Final-fix boundary behavior (automated evidence; scoped re-review approved and controller backend verification passed):
+
+- API drafting uses the smaller of 30 seconds and the remaining 180-second ticket budget, reserving 100 ms for the final handoff. Outer expiry retains completed classification, extraction, lookup, fraud escalation, draft evidence and measured costs; genuine caller cancellation still propagates. The draft node is not retried.
+- Unexpected retrieval/database faults produce failed results with a safe original exception-type diagnostic, distinct from ordinary `kb_unavailable`. CLI settings validation, including invalid `EMBED_DIM`, reports known field names only and exits 2.
+- Review rendering tolerates malformed historical traces while retaining raw audit JSON. Original hashed `data/kb/*.md` sources now have explicit LF checkout attributes, matching the Arabic pack's provenance requirements.
+
 ## Known limitations and remaining work
 
 - Provider latency varies: a run can complete with an escalated `draft_timeout` result. Retry intentionally and keep the original evidence. Recorded costs include observed completed calls; a cancelled remote request may still be billed by the provider.
 - Retrieval is sensitive to query wording. The agent's general-inquiry query ranked KYC first, but selected the relevant general-inquiry citation. Broader relevance/quality measurement remains open.
 - Credential heuristics and Jev complement human review. The Task 8 fix handles the two observed “avoid sharing” forms, not arbitrary Arabic semantic negation. Guardrails do not certify a later human edit.
-- Deferred Task 6 minor: invalid `EMBED_DIM` reaches `get_settings()` before the CLI configuration handler, producing exit 1 without its friendly config diagnostic. It did not block this demo; final review owns it.
 
 | Follow-up | Still required |
 |---|---|
@@ -74,4 +79,4 @@ uv --directory backend run support run-batch ../data/demo/rag_tickets.jsonl \
 | Disclosure / data card / failure evidence | Formal AI/data disclosures, data card, systematic failure catalogue and evidence beyond these smoke cases. This record contributes observed failure evidence but does not finish those deliverables. |
 | Weekly report — stretch | Statistical spike detection, incident correlation and cited bilingual narrative. Existing weekly counts are not this report. |
 
-Task 8 independent review and the narrow production fix are still pending; do not mark the plan fully reviewed from the implementer's self-check alone.
+Review closure is based on the execution ledger, whole-feature review and approved `final-rereview.md`, followed by the controller's reported fresh backend verification. I1, I2 and M1–M3 are resolved. The controller also ran the actual Arabic-pack verifier: 13 documents, 13 bundle members, 14 accepted files, 11 bundle chunks, all provenance hashes verified, 18 historical comparisons, one negative fixture rejected and zero provider calls. This validates the translated pack's parser/integrity contract only; historical live timeout and source-ID evidence remains unchanged.

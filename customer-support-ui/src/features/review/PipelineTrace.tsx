@@ -6,8 +6,7 @@ import type { Result } from "@/lib/types"
 import { reviewEvidence } from "./review-evidence"
 
 export function PipelineTrace({ result }: { result: Result }) {
-  const events = result.agent_trace.filter((event) => event.kind === "stage")
-  const { tools, otherEvents } = reviewEvidence(result)
+  const { stages: events, tools, otherEvents } = reviewEvidence(result)
   return (
     <Card>
       <CardHeader>

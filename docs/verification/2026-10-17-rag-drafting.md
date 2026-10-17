@@ -1,6 +1,6 @@
 # RAG drafting verification — 2026-10-17
 
-**Outcome:** real synthetic indexing, retrieval, supported drafting and persisted browser review demonstrated. Task 8/controller review is pending. One live credential-negation bug was fixed with focused RED→GREEN tests; one real provider-latency timeout is retained beside its successful retry.
+**Outcome:** all eight Plan 3 tasks are completed and reviewed. The final scoped re-review approved all five fixes with zero open findings; the controller's fresh backend verification passed. Real synthetic indexing, retrieval, supported drafting and persisted browser review were demonstrated during Task 8. One live credential-negation bug was fixed with focused RED→GREEN tests; one real provider-latency timeout is retained beside its successful retry.
 
 ## Environment and isolation
 
@@ -11,7 +11,7 @@
 - Task-owned API port 8018 and Vite port 5188 were free before launch. Vite's task-local inline proxy pointed `/api` at 8018. Existing servers, including 8765 and both database ports, were preserved.
 - Prior page/context routes were explicitly removed before live requests. Later checks used an isolated browser context with no route interception. No fake HTTP responses were used in Task 8. A passive HTTPX observer recorded only provider path/status/ID/model/usage/latency, returning responses unchanged and never logging headers or keys.
 
-## Commands and automated verification
+## Commands and automated verification — historical Task 8
 
 Commands below are WSL commands. From Windows the prefix was `wsl.exe -d Ubuntu-24.04 --cd <directory>`. `uv` executable: `/home/cvzmh_saif/.local/bin/uv`.
 
@@ -26,11 +26,11 @@ uv run pytest -q tests/test_draft_guardrails.py
 uv run pytest -q tests/test_draft_guardrails.py -k avoid_sharing_warning
 uv run pytest -q tests/test_draft_guardrails.py
 
-# Backend: final suite / lint (support_test asserted before execution)
+# Backend: Task 8 final suite / lint (support_test asserted before execution)
 uv run pytest -q
 uv run ruff check app tests
 
-# customer-support-ui: final checks
+# customer-support-ui: Task 8 final checks
 npm test
 npm run lint
 npm run build
@@ -38,7 +38,7 @@ npm run build
 
 Focused results: first RED **3 failed / 3 passed** (literal live wording plus scoped warning cases), then **130 passed**. The unchanged-model retry exposed the adverb variant “تجنب تماماً”; second RED **1 failed / 7 passed**, then **132 passed**. Eight regression cases were added overall; later disclosure requests and “لا تتجنب…” remain unsafe. The production change only extends the existing locally scoped negation expression in `stage6_draft/guardrails.py`.
 
-| Final command | Observed result |
+| Task 8 final command | Observed result |
 |---|---|
 | `uv run pytest -q` | **665 passed**, zero skipped/failed, 62.75s. Task-local `task8-tests.py` asserted parsed and connected `support_test` first, pinned that URL for the child process, and saved `task8-pytest.log`. |
 | `uv run ruff check app tests` | Passed, no diagnostics. |
@@ -46,7 +46,24 @@ Focused results: first RED **3 failed / 3 passed** (literal live wording plus sc
 | `npm run lint` | Passed, no diagnostics. |
 | `npm run build` | Passed: TypeScript + Vite 8.3.3, 2,229 modules, 720ms Vite build. |
 
-These commands ran after the final application/test changes and documentation draft. Automated provider tests use controlled fakes, not paid model responses.
+These commands ran after Task 8's application/test changes and documentation draft, before the later final-review fixes. The 665/21 table is retained as evidence from that time. Automated provider tests use controlled fakes, not paid model responses.
+
+## Current final verification and review closure
+
+On 2026-10-17, the controller reported fresh WSL verification after the approved scoped re-review. These are controller-supplied results, not housekeeping reruns. `TEST_DATABASE_URL` was explicitly set to the dedicated `support_test` database; its full URL is omitted here.
+
+| Final check | Result and provenance |
+|---|---|
+| Backend `TEST_DATABASE_URL=<support_test URL> uv run pytest -q` | **689 passed in 69.23s**, fresh controller execution. |
+| Backend `uv run ruff check app tests` | All checks passed, fresh controller execution. |
+| Actual `data/test-kb/verify_pack.py` | Fresh controller execution: **13 documents / 13 bundle members / 14 accepted files / 11 bundle chunks**, all provenance hashes verified, **18 historical comparisons / 1 negative rejected / 0 provider calls**. |
+| Root `git diff --check` | Clean, fresh controller execution before housekeeping. |
+| UI `npm test` | **25 passed**, final-fix report on the same final UI code; not rerun by the controller. |
+| UI `npm run lint` / `npm run build` | ESLint and TypeScript/Vite production build passed, final-fix report; not rerun by the controller. |
+
+Review evidence lives in `.superpowers/sdd/2026-10-17-plan3-rag-drafting/`: `progress.md` records all eight task reviews; `final-review.md` preserves the original whole-feature findings; `final-fix-report.md` records their implementation and focused checks; `final-rereview.md` grants scoped spec/quality approval for I1, I2 and M1–M3 with zero open findings. The controller's fresh full-backend result satisfies that approval's remaining verification condition. Historical reports retain their original time-of-writing status.
+
+The **translated Arabic pack is parser/integrity validated only**. It adds no new live retrieval/drafting quality result: localization and bundling change bytes, chunk IDs and potentially ranking. All 13 localized source hashes and original provenance remain intact. The live IDs, timeout, successful retry and costs below refer to the original Task 8 sources/runs.
 
 ## Corpus and actual retrieval
 
@@ -120,6 +137,6 @@ API/Vite PID pairs: **509081/509082**, **519886/519887**, **534223/534224**. Res
 
 All task-owned servers were stopped at handoff; `ss -ltnp` confirmed **8018 and 5188 free**, and the existing 8765 process plus database listeners remained. The task's isolated browser context was closed.
 
-Final graph refresh command (root): `/home/cvzmh_saif/.local/share/uv/tools/graphifyy/bin/python .superpowers/sdd/2026-10-17-plan3-rag-drafting/task8-graph.py`. It uses the installed graphify scoped AST/Markdown update, backs up existing graph artifacts, preserves unrelated source nodes and records counts in `task8-graph-summary.json`. It does not call an external semantic model. The intended source/doc diff was self-reviewed and `git diff --check` was clean; controller review remains separate.
+Historical Task 8 graph refresh command (root): `/home/cvzmh_saif/.local/share/uv/tools/graphifyy/bin/python .superpowers/sdd/2026-10-17-plan3-rag-drafting/task8-graph.py`. It used the installed graphify scoped AST/Markdown update, backed up existing graph artifacts, preserved unrelated source nodes and recorded counts in `task8-graph-summary.json`. It did not call an external semantic model. Its source/doc diff was self-reviewed and `git diff --check` was clean. Final metadata refresh evidence is recorded separately in `final-housekeeping-report.md` and `final-housekeeping-graph-summary.json` in the same local task workspace, using new backups rather than overwriting Task 8 history.
 
-Remaining: controller review of Task 8 and its narrow guardrail change; variable provider latency; broader Arabic retrieval/negation evaluation; the deferred CLI invalid-`EMBED_DIM` diagnostic. [Plan 2 evaluation, packaging/CI, disclosure/data card/broader failure evidence and the weekly-report stretch work](../demo-readiness.md#known-limitations-and-remaining-work) remain open. No commits, staging or pushes were made by this task.
+Remaining: variable provider latency and broader Arabic retrieval/negation evaluation. The approved final-fix wave corrects the CLI invalid-`EMBED_DIM` diagnostic, outer-timeout/retrieval-fault boundaries, original-source LF portability and malformed historical trace rendering; its automated evidence does not extend this historical live run. [Plan 2 evaluation, packaging/CI, disclosure/data card/broader failure evidence and the weekly-report stretch work](../demo-readiness.md#known-limitations-and-remaining-work) remain open. No commits, staging or pushes were made by this task.

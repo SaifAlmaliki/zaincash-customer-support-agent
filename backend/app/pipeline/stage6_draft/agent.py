@@ -21,9 +21,10 @@ from openrouter.errors import OpenRouterError
 
 from app.config import Settings
 from app.kb.embeddings import EmbeddingError
-from app.kb.service import KnowledgeError, KnowledgeService
+from app.kb.service import KnowledgeError, KnowledgeExecutionError, KnowledgeService
 from app.llm import LLMUnavailable
 from app.pipeline.contracts import DraftResult
+from app.pipeline.execution import ticket_execution
 from app.pipeline.stage6_draft.context import DraftContext, DraftToolInputError, DraftToolLimit
 from app.pipeline.stage6_draft.credentials import CredentialChecker
 from app.pipeline.stage6_draft.drafting import DraftExecutionError
@@ -167,8 +168,13 @@ class RagDrafter:
         started = perf_counter()
         failure = None
         unexpected = None
+        cancelled = None
+        ticket_run = ticket_execution.get()
+        budget = ticket_run.draft_budget(self.settings.agent_timeout_s) if ticket_run else self.settings.agent_timeout_s
         try:
-            async with asyncio.timeout(self.settings.agent_timeout_s):
+            async with asyncio.timeout(budget):
+                if budget <= 0:
+                    raise TimeoutError
                 payload = {key: _bounded(_json(context.state[key]), self.settings.max_state_chars)
                            for key in ("ticket", "nt", "classifier", "extracted", "lookup", "decision")
                            if key in context.state}
@@ -199,12 +205,18 @@ class RagDrafter:
                                  credential_check_degraded=check.degraded, requests_credentials=check.requests_credentials)
                     # Deliver an expired deadline even if a synchronous check used
                     # the remainder without yielding to the event loop.
-                    if perf_counter() - started >= self.settings.agent_timeout_s:
+                    if perf_counter() - started >= budget:
                         raise TimeoutError
                 else:
                     searched = any(e.get("tool") == "search_knowledge_base" and e.get("status") == "ok"
                                    for e in context.trace)
                     context.reasons.append("no_kb_support" if searched and not context.retrieved else "draft_not_submitted")
+        except asyncio.CancelledError as exc:
+            # Finalize measured work before propagating the SAME cancellation.
+            # A genuine caller cancellation must not become a timeout result.
+            cancelled = exc
+            if ticket_run is not None and ticket_run.timeout.expired():
+                failure = "draft_timeout"
         except TimeoutError:
             failure = "draft_timeout"
         except (DraftToolLimit, GraphRecursionError):
@@ -230,7 +242,7 @@ class RagDrafter:
         reasons = tuple(dict.fromkeys(context.reasons))
         cost = context.cost_usd + usage.cost_usd + checker_cost
         rejected = failure or findings or submission is None or not context.retrieved
-        status = "error" if unexpected else "rejected" if rejected else "submitted"
+        status = "cancelled" if cancelled is not None else "error" if unexpected else "rejected" if rejected else "submitted"
         context.trace.append({"kind": "draft", "status": status,
                               "prompt_version": PROMPT_VERSION, "model": self.settings.gemini_model,
                               "embedding_model": self.settings.embedding_model,
@@ -246,7 +258,11 @@ class RagDrafter:
         result = DraftResult(text=submission.reply_ar if submission and context.retrieved else None,
                              citations=submission.citations if submission else (), trace=tuple(context.trace),
                              reasons=reasons, cost_usd=cost)
+        if cancelled is not None:
+            cancelled.draft_result = result
+            raise cancelled
         if unexpected is not None:
-            context.trace[-1]["error_type"] = type(unexpected).__name__
+            context.trace[-1]["error_type"] = (unexpected.diagnostic_type if isinstance(unexpected, KnowledgeExecutionError)
+                                              else type(unexpected).__name__)
             raise DraftExecutionError(unexpected, result) from unexpected
         return result

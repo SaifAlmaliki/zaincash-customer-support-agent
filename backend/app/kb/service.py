@@ -34,6 +34,15 @@ class KnowledgeError(RuntimeError):
         self.cost_usd = cost_usd
 
 
+class KnowledgeExecutionError(RuntimeError):
+    """Unexpected retrieval fault: safe diagnostic identity and measured cost only."""
+
+    def __init__(self, cause: Exception, *, cost_usd: float = 0.0) -> None:
+        self.diagnostic_type = type(cause).__name__
+        super().__init__(f"{self.diagnostic_type}: unexpected knowledge retrieval fault.")
+        self.cost_usd = cost_usd
+
+
 class DocumentNotFoundError(KnowledgeError, LookupError):
     pass
 
@@ -495,9 +504,11 @@ class KnowledgeService:
         except asyncio.CancelledError as exc:
             exc.cost_usd = batch.cost_usd
             raise
-        except Exception:
-            raise KnowledgeError("Knowledge retrieval failed; retry after checking the index.",
-                                 cost_usd=batch.cost_usd) from None
+        except TimeoutError:
+            raise KnowledgeError("Knowledge retrieval timed out; retry after checking the index.",
+                                  cost_usd=batch.cost_usd) from None
+        except Exception as exc:
+            raise KnowledgeExecutionError(exc, cost_usd=batch.cost_usd) from None
 
     def _read_passages(self, statement, call: _DatabaseCall) -> tuple[Passage, ...]:
         with self._transaction(call) as session:

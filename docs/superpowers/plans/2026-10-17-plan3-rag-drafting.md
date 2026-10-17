@@ -1,6 +1,6 @@
 # Plan 3 RAG Drafting Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task after the user selects the execution method. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution complete:** the checked steps below record completed acceptance work, reconciled against the execution ledger and independent reviews on 2026-10-17. Implementation examples remain the original planning sketches; the reviewed final contracts are recorded in the task/final-fix reports.
 
 **Goal:** Complete document indexing, eight-tool investigation, grounded Iraqi-Arabic drafting and the existing workspace's RAG evidence flow.
 
@@ -9,6 +9,23 @@
 **Tech Stack:** Existing Python/uv, FastAPI, SQLAlchemy 2, psycopg, LangChain 1.x, LangGraph and ChatOpenRouter; add pgvector and pypdf. Existing React/TypeScript/Vite workspace and Vitest.
 
 **Spec:** `docs/superpowers/specs/2026-10-17-plan3-rag-drafting-design.md` (approved).
+
+## Completion and review record — 2026-10-17
+
+**All eight tasks are completed and reviewed.** Evidence: `.superpowers/sdd/2026-10-17-plan3-rag-drafting/progress.md`, task reports, the original `final-review.md`, `final-fix-report.md` and approved `final-rereview.md`. All five final findings (I1, I2, M1–M3) are resolved, with zero open findings. The controller subsequently reported fresh WSL backend verification: **689 passed in 69.23s**, Ruff passed, actual Arabic-pack verifier passed and `git diff --check` clean. **25 frontend tests**, lint and build passed on the same final UI code per the final-fix report; the controller did not rerun frontend checks.
+
+| Task | Completion / review disposition |
+|---|---|
+| 1 — Parsing and embeddings | Completed; scoped spec/quality review approved after deadline/cost fixes. |
+| 2 — Atomic indexing/retrieval | Completed; two fix rounds and later test-stability review approved; final retrieval-fault correction I2 approved. |
+| 3 — Investigation/tools | Completed; both phone-format fix rounds reviewed and approved. |
+| 4 — Guardrails/checker | Completed; scoped monetary/Arabic-negation fixes reviewed and approved. |
+| 5 — Agent/wiring | Completed; provider-response fix reviewed and approved; final outer-timeout handoff I1 approved. |
+| 6 — API/CLI/evidence | Completed; review approved, deferred CLI minor M1 resolved in final re-review. |
+| 7 — Workspace | Completed; recovery fix reviewed and approved; malformed historical trace minor M3 resolved in final re-review. |
+| 8 — Demo/verification/docs | Completed; corpus, live guardrail fix and Arabic pack reviewed; deferred LF portability minor M2 resolved in final re-review. |
+
+No task acceptance step is marked not applicable. Conditional file edits were made only where needed: Task 5's draft-specific adapter/cost handling lives in `stage6_draft/model.py`, so an additional `llm.py` edit was not required. Historical **665 backend / 21 frontend** results remain Task 8-time evidence in the [verification record](../../verification/2026-10-17-rag-drafting.md); current final readiness uses **689/25**. The translated 13-source Arabic pack is offline parser/integrity validated only, not new live retrieval/drafting quality evidence.
 
 ## Global Constraints
 
@@ -97,7 +114,7 @@ Public method signatures:
 
 **Produces:** `TextChunk`, `EmbeddingBatch`, `Passage`, `SearchResult`, `parse_document`, `OpenRouterEmbedder` and configuration validation.
 
-- [ ] Write parsing tests before implementation. The minimal acceptance case is:
+- [x] Write parsing tests before implementation. The minimal acceptance case is:
 
 ```python
 from app.kb.parse import parse_document
@@ -111,9 +128,9 @@ def test_arabic_text_and_bom_are_preserved():
 
 Add generated in-memory blank/encrypted PDF cases, empty/invalid UTF-8 text, oversized extraction, deterministic repeated chunking, overlap without infinite loops and preserved PDF page metadata. Assert failure messages tell the operator when OCR is needed.
 
-- [ ] Run `uv run pytest tests/test_kb_parse.py -q`; confirm failure is missing implementation, then add pypdf/pgvector dependencies with uv in `backend/`.
-- [ ] Implement parsing with paragraph-preferred bounded character slicing. Advance by at least one character each iteration; strip a BOM once at decode, retain internal Arabic text and page identity. Check limits before costly processing and while accumulating PDF pages.
-- [ ] Write `httpx.MockTransport` embedding tests for each Review Focus response defect. A valid reordered response must restore input order:
+- [x] Run `uv run pytest tests/test_kb_parse.py -q`; confirm failure is missing implementation, then add pypdf/pgvector dependencies with uv in `backend/`.
+- [x] Implement parsing with paragraph-preferred bounded character slicing. Advance by at least one character each iteration; strip a BOM once at decode, retain internal Arabic text and page identity. Check limits before costly processing and while accumulating PDF pages.
+- [x] Write `httpx.MockTransport` embedding tests for each Review Focus response defect. A valid reordered response must restore input order:
 
 ```python
 response = {"data": [
@@ -125,8 +142,8 @@ assert response["data"][0]["index"] != 0
 
 Use this response in the transport and assert returned vector zero is `[1.0, 0.0, ...]` by testing its first element and sum. Test nonfinite entries, zero vectors, duplicate/missing indexes, empty input, 33-input batching, a 401 and a timeout. Client construction accepts an injected transport so no network is used.
 
-- [ ] Implement the async adapter with `httpx.AsyncClient`, float encoding, model/dimensions in the body, finite/nonzero/dimension validation and bounded public exceptions. Collect reported usage/cost once per successful request; make the fallback embedding token price configurable and document its source.
-- [ ] Run `uv run pytest tests/test_kb_parse.py tests/test_embeddings.py -q` and `uv run ruff check app/kb app/config.py tests/test_kb_parse.py tests/test_embeddings.py`.
+- [x] Implement the async adapter with `httpx.AsyncClient`, float encoding, model/dimensions in the body, finite/nonzero/dimension validation and bounded public exceptions. Collect reported usage/cost once per successful request; make the fallback embedding token price configurable and document its source.
+- [x] Run `uv run pytest tests/test_kb_parse.py tests/test_embeddings.py -q` and `uv run ruff check app/kb app/config.py tests/test_kb_parse.py tests/test_embeddings.py`.
 
 ## Task 2: Atomic pgvector indexing and retrieval
 
@@ -135,7 +152,7 @@ Use this response in the transport and assert returned vector zero is `[1.0, 0.0
 **Consumes:** Task 1 interfaces and existing `UploadedDocument`/session factory.
 **Produces:** `KnowledgeService`, `store_document`, `document_view`, startup recovery and chunk inspection helpers.
 
-- [ ] Add a `support_test` fixture with a database-name assertion, schema reset and engine disposal. Never reset the application database. Define the deterministic embedder in `tests/kb_fakes.py`:
+- [x] Add a `support_test` fixture with a database-name assertion, schema reset and engine disposal. Never reset the application database. Define the deterministic embedder in `tests/kb_fakes.py`:
 
 ```python
 from app.kb.contracts import EmbeddingBatch
@@ -153,8 +170,8 @@ class FakeEmbedder:
         return EmbeddingBatch(vectors)
 ```
 
-- [ ] Write tests that upload two distinct policies, index them, and search for `تحويل`. Assert rank, text, source name, stable IDs, cutoff and category/untagged filtering. Assert a duplicate upload/index leaves chunk count unchanged. Run the test file and observe missing-service failures.
-- [ ] Create index/chunk models with cascade foreign keys, unique document/chunk identities, per-attempt ownership and a cosine HNSW index:
+- [x] Write tests that upload two distinct policies, index them, and search for `تحويل`. Assert rank, text, source name, stable IDs, cutoff and category/untagged filtering. Assert a duplicate upload/index leaves chunk count unchanged. Run the test file and observe missing-service failures.
+- [x] Create index/chunk models with cascade foreign keys, unique document/chunk identities, per-attempt ownership and a cosine HNSW index:
 
 ```python
 Index("ix_kb_chunks_embedding", "embedding", postgresql_using="hnsw",
@@ -163,10 +180,10 @@ Index("ix_kb_chunks_embedding", "embedding", postgresql_using="hnsw",
 
 Register models on both API and CLI schema initialization. Use a `Vector(768)` mapped column; construct stable chunk IDs from SHA-256(document digest + chunking version + chunk index + text).
 
-- [ ] Implement claim/read → parse/embed → publish using short sessions. Lock the source row when claiming; refuse an active attempt; no transaction spans an embedding await. Publish only when source and attempt still exist and match. Replace chunks and mark indexed in one transaction. On failure preserve source and record a retryable error.
-- [ ] Add deterministic interleaving tests with events: two index callers, deletion during embedding, stale attempt completion, provider failure and process-recovery state. Ensure model changes prevent searches against incompatible old vectors. Source deletion must cascade but never affect evidence already copied into a ticket result.
-- [ ] Use `embedding.cosine_distance(query_vector)` and parameterized SQLAlchemy predicates for retrieval. Include only indexed/compatible chunks; category means requested category OR empty tags. Compute score as `1 - distance`, apply cutoff, limit 1–10, return `SearchResult` with query embedding cost.
-- [ ] Run `uv run pytest tests/test_kb_service.py -q` with Postgres running, then the Task 1 tests and targeted ruff checks.
+- [x] Implement claim/read → parse/embed → publish using short sessions. Lock the source row when claiming; refuse an active attempt; no transaction spans an embedding await. Publish only when source and attempt still exist and match. Replace chunks and mark indexed in one transaction. On failure preserve source and record a retryable error.
+- [x] Add deterministic interleaving tests with events: two index callers, deletion during embedding, stale attempt completion, provider failure and process-recovery state. Ensure model changes prevent searches against incompatible old vectors. Source deletion must cascade but never affect evidence already copied into a ticket result.
+- [x] Use `embedding.cosine_distance(query_vector)` and parameterized SQLAlchemy predicates for retrieval. Include only indexed/compatible chunks; category means requested category OR empty tags. Compute score as `1 - distance`, apply cutoff, limit 1–10, return `SearchResult` with query embedding cost.
+- [x] Run `uv run pytest tests/test_kb_service.py -q` with Postgres running, then the Task 1 tests and targeted ruff checks.
 
 ## Task 3: Ticket-scoped investigation and all eight tools
 
@@ -175,10 +192,10 @@ Register models on both API and CLI schema initialization. Use a `Vector(768)` m
 **Consumes:** `PipelineState`, `Passage`, `KnowledgeService`, existing transaction/ticket/incident tables.
 **Produces:** `DraftContext`, `SqlInvestigationRepo` and `build_tools(context, knowledge, investigation)`.
 
-- [ ] Define `DraftContext` with pipeline state, isolated retrieved map, trace list, accumulated cost, tool count, reasons, submission and an async execution lock. Define a validated submission schema with `reply_ar`, citations, optional transaction reference and bounded internal note.
-- [ ] Write tests for transaction exact/fuzzy search, recent records anchored to receipt time, prior ticket history excluding current/future contacts, open/closed incident windows and maximum 10 returned records. Seed explicit rows in `support_test` with unrelated customer records to verify context restrictions.
-- [ ] Implement SQL queries in the read-only repository using fresh sessions and the existing record conversion conventions. All async tools call blocking database work through `asyncio.to_thread`; hard-limit dates, text/argument sizes and result counts.
-- [ ] Build eight `@tool` definitions with documented schemas. All tools execute through one per-ticket guard. Its state transition is:
+- [x] Define `DraftContext` with pipeline state, isolated retrieved map, trace list, accumulated cost, tool count, reasons, submission and an async execution lock. Define a validated submission schema with `reply_ar`, citations, optional transaction reference and bounded internal note.
+- [x] Write tests for transaction exact/fuzzy search, recent records anchored to receipt time, prior ticket history excluding current/future contacts, open/closed incident windows and maximum 10 returned records. Seed explicit rows in `support_test` with unrelated customer records to verify context restrictions.
+- [x] Implement SQL queries in the read-only repository using fresh sessions and the existing record conversion conventions. All async tools call blocking database work through `asyncio.to_thread`; hard-limit dates, text/argument sizes and result counts.
+- [x] Build eight `@tool` definitions with documented schemas. All tools execute through one per-ticket guard. Its state transition is:
 
 ```python
 async with context.lock:
@@ -194,8 +211,8 @@ async with context.lock:
 
 Define these exception types in `context.py`. Keep the lock around operation execution to serialize parallel calls for a single ticket. Always append a bounded failed-call trace in an exception path. `submit_draft` uses `return_direct=True`; it writes the one validated submission. `flag_for_human` only adds a reason/note.
 
-- [ ] Test tools directly with `ainvoke`: seven concurrent invocations execute at most six operations; submit followed by another call cannot mutate state. A retrieved passage populates only its own context. Reject unrelated identifiers and unknown category/reason shapes, preserving a readable trace.
-- [ ] Run `uv run pytest tests/test_draft_tools.py -q` and targeted ruff checks.
+- [x] Test tools directly with `ainvoke`: seven concurrent invocations execute at most six operations; submit followed by another call cannot mutate state. A retrieved passage populates only its own context. Reject unrelated identifiers and unknown category/reason shapes, preserving a readable trace.
+- [x] Run `uv run pytest tests/test_draft_tools.py -q` and targeted ruff checks.
 
 ## Task 4: Deterministic checks and Jev credential review
 
@@ -204,7 +221,7 @@ Define these exception types in `context.py`. Keep the lock around operation exe
 **Consumes:** Existing normalization/candidate/date/extraction helpers, pipeline state and retrieved passages.
 **Produces:** `check_draft`, `CredentialCheck`, `JevCredentialChecker` and an explicit degraded checker for unavailable Jev.
 
-- [ ] Write parameterized credential tests before implementation:
+- [x] Write parameterized credential tests before implementation:
 
 ```python
 @pytest.mark.parametrize(("reply", "unsafe"), [
@@ -218,9 +235,9 @@ def test_credential_requests_respect_local_negation(reply, unsafe):
     assert requests_credentials(reply) is unsafe
 ```
 
-- [ ] Add fixtures for citation IDs from another run, no citations, invalid `used_txn_ref`, invented amounts/dates/phones/references, Arabic-Indic equivalents, matched transaction evidence, safe numbered nonfinancial steps, 121-word text and non-Arabic output. Assert each exact finding identifier.
-- [ ] Implement focused finding functions and a single aggregation function. Normalize digits/Arabic variants with existing utilities; compare semantic financial/date/phone/reference values, not arbitrary character substrings. Evaluate credential negation at a local clause boundary so one safe sentence cannot suppress an unsafe request elsewhere.
-- [ ] Wrap Jev's existing runnable shape in a checker that asks a single `requests_credentials` Noul. Parse finite output in [0,1], return token-based cost, and treat invalid/unavailable responses as degraded rather than a safe numerical zero:
+- [x] Add fixtures for citation IDs from another run, no citations, invalid `used_txn_ref`, invented amounts/dates/phones/references, Arabic-Indic equivalents, matched transaction evidence, safe numbered nonfinancial steps, 121-word text and non-Arabic output. Assert each exact finding identifier.
+- [x] Implement focused finding functions and a single aggregation function. Normalize digits/Arabic variants with existing utilities; compare semantic financial/date/phone/reference values, not arbitrary character substrings. Evaluate credential negation at a local clause boundary so one safe sentence cannot suppress an unsafe request elsewhere.
+- [x] Wrap Jev's existing runnable shape in a checker that asks a single `requests_credentials` Noul. Parse finite output in [0,1], return token-based cost, and treat invalid/unavailable responses as degraded rather than a safe numerical zero:
 
 ```python
 questions = {"requests_credentials": Noul(
@@ -231,7 +248,7 @@ questions = {"requests_credentials": Noul(
 response = await runnable.ainvoke({"state": {"reply_ar": reply}, "questions": questions})
 ```
 
-- [ ] Run `uv run pytest tests/test_draft_guardrails.py tests/test_credential_check.py -q` and targeted ruff checks. Ensure malformed Jev output and provider errors are covered with fakes.
+- [x] Run `uv run pytest tests/test_draft_guardrails.py tests/test_credential_check.py -q` and targeted ruff checks. Ensure malformed Jev output and provider errors are covered with fakes.
 
 ## Task 5: Agent, failure conversion and pipeline wiring
 
@@ -239,9 +256,9 @@ response = await runnable.ainvoke({"state": {"reply_ar": reply}, "questions": qu
 
 **Consumes:** Tasks 1–4; produces `RagDrafter` and database-backed factory wiring.
 
-- [ ] Use a scripted LangChain chat-model fake that returns real `AIMessage.tool_calls`, supports `bind_tools`, and supplies deterministic usage. Script search → submit with an Arabic reply; prove the actual `create_agent` loop executes tools and returns `DraftResult`, not merely a mocked agent wrapper.
-- [ ] Write failure cases for empty retrieval, valid/invalid citations, retained earlier fraud escalation, plain assistant text without submission, timeout during retrieval/model/checker, invalid tool arguments, seven tool calls in one response and submission followed by mutation. Concurrent two-ticket runs must not exchange citations, state or cost.
-- [ ] Implement isolated agent creation with the existing ChatOpenRouter model and request retry conventions. Use explicit tools, a low-temperature versioned prompt and bounded recursion:
+- [x] Use a scripted LangChain chat-model fake that returns real `AIMessage.tool_calls`, supports `bind_tools`, and supplies deterministic usage. Script search → submit with an Arabic reply; prove the actual `create_agent` loop executes tools and returns `DraftResult`, not merely a mocked agent wrapper.
+- [x] Write failure cases for empty retrieval, valid/invalid citations, retained earlier fraud escalation, plain assistant text without submission, timeout during retrieval/model/checker, invalid tool arguments, seven tool calls in one response and submission followed by mutation. Concurrent two-ticket runs must not exchange citations, state or cost.
+- [x] Implement isolated agent creation with the existing ChatOpenRouter model and request retry conventions. Use explicit tools, a low-temperature versioned prompt and bounded recursion:
 
 ```python
 agent = create_agent(model=model_factory(), tools=build_tools(context, knowledge, investigation),
@@ -256,9 +273,9 @@ async with asyncio.timeout(settings.agent_timeout_s):
 
 Convert timeout, no submission, no knowledge, provider and budget failures to the exact spec reasons. Preserve completed evidence/cost. Collect model responses during execution so a later exception does not discard earlier usage. Deduplicate response IDs when aggregating usage. Retain rejected draft text and append findings to trace.
 
-- [ ] Add `knowledge`/`investigation` dependencies through explicit factory parameters or a documented public session factory accessor on `SqlTransactionRepo`; do not inspect its private `_sf` field from unrelated modules. Existing injected drafter wins. Database-backed configured runs use `RagDrafter`; explicit disabled/no-db runs use a skipped trace. Enabled but unconfigured drafting returns an unavailable escalation.
-- [ ] Merge reviewer findings into decision notes and include degraded credential checks in run summaries. Keep existing classification semantics and use the existing dataclass serialization paths. Add drafting and embedding model IDs to run metadata.
-- [ ] Run `uv run pytest tests/test_rag_drafter.py tests/test_factory.py tests/test_graph.py -q`, then the Task 3–4 suites and targeted ruff checks.
+- [x] Add `knowledge`/`investigation` dependencies through explicit factory parameters or a documented public session factory accessor on `SqlTransactionRepo`; do not inspect its private `_sf` field from unrelated modules. Existing injected drafter wins. Database-backed configured runs use `RagDrafter`; explicit disabled/no-db runs use a skipped trace. Enabled but unconfigured drafting returns an unavailable escalation.
+- [x] Merge reviewer findings into decision notes and include degraded credential checks in run summaries. Keep existing classification semantics and use the existing dataclass serialization paths. Add drafting and embedding model IDs to run metadata.
+- [x] Run `uv run pytest tests/test_rag_drafter.py tests/test_factory.py tests/test_graph.py -q`, then the Task 3–4 suites and targeted ruff checks.
 
 ## Task 6: API/CLI indexing and persisted citation projection
 
@@ -266,10 +283,10 @@ Convert timeout, no submission, no knowledge, provider and budget failures to th
 
 **Consumes:** Shared document service, `KnowledgeService`, real drafter and stored evidence. Produces routes/CLI/status/evidence defined by the spec.
 
-- [ ] Add app-level injectable knowledge service construction so API tests cannot accidentally call paid providers. Write API tests with fake embeddings and real PostgreSQL: upload, automatic index, duplicate, explicit retry, chunk inspection, category search, disabled provider and safe failures.
-- [ ] Keep `GET/POST /api/knowledge` and download/delete compatibility. Implement `POST /{id}/index` with 202 acceptance, `GET /{id}/chunks` with bounded pagination and `POST /search` with validated query/category/k. Invalid file/query/category input returns 422; missing document 404; unavailable provider 503. Concurrent active index requests return its existing state instead of duplicate work.
-- [ ] Use `BackgroundTasks` with independent sessions and the service's 120-second deadline. Initialize/recover jobs in the local single-worker lifespan. Auto-index only after source commit. Project real status and error text on polling.
-- [ ] Persist retrieved passage snapshots in trace and resolve only cited IDs for detail responses:
+- [x] Add app-level injectable knowledge service construction so API tests cannot accidentally call paid providers. Write API tests with fake embeddings and real PostgreSQL: upload, automatic index, duplicate, explicit retry, chunk inspection, category search, disabled provider and safe failures.
+- [x] Keep `GET/POST /api/knowledge` and download/delete compatibility. Implement `POST /{id}/index` with 202 acceptance, `GET /{id}/chunks` with bounded pagination and `POST /search` with validated query/category/k. Invalid file/query/category input returns 422; missing document 404; unavailable provider 503. Concurrent active index requests return its existing state instead of duplicate work.
+- [x] Use `BackgroundTasks` with independent sessions and the service's 120-second deadline. Initialize/recover jobs in the local single-worker lifespan. Auto-index only after source commit. Project real status and error text on polling.
+- [x] Persist retrieved passage snapshots in trace and resolve only cited IDs for detail responses:
 
 ```python
 sources = {item["id"]: item
@@ -280,9 +297,9 @@ value["citation_sources"] = [sources[c] for c in result.citations if c in source
 
 Use typed/validated projection helpers for old/malformed trace entries. Expose guardrail findings/internal note separately and preserve them after the source document is deleted.
 
-- [ ] Add `support ingest-kb PATH` with file/directory support, `--retry-stored` for old uploads, deterministic extension filtering and per-document status output. Reuse source validation/store/index functions. Test a temporary Markdown directory, duplicate invocation and failure exit status using `CliRunner` and injected fakes.
-- [ ] Replace hardcoded capability flags with configured/readiness indicators and indexed-document count. Update stage descriptions. Test keys never appear in responses, and missing/empty index is not reported ready.
-- [ ] Run `uv run pytest tests/test_rag_api.py tests/test_workspace_api.py tests/test_cli.py -q`, followed by targeted ruff checks.
+- [x] Add `support ingest-kb PATH` with file/directory support, `--retry-stored` for old uploads, deterministic extension filtering and per-document status output. Reuse source validation/store/index functions. Test a temporary Markdown directory, duplicate invocation and failure exit status using `CliRunner` and injected fakes.
+- [x] Replace hardcoded capability flags with configured/readiness indicators and indexed-document count. Update stage descriptions. Test keys never appear in responses, and missing/empty index is not reported ready.
+- [x] Run `uv run pytest tests/test_rag_api.py tests/test_workspace_api.py tests/test_cli.py -q`, followed by targeted ruff checks.
 
 ## Task 7: Knowledge and review workspace integration
 
@@ -290,10 +307,10 @@ Use typed/validated projection helpers for old/malformed trace entries. Expose g
 
 **Consumes:** Task 6 response contracts. Produces the full upload/search/review interface using existing styling/components.
 
-- [ ] Extend types for document status/count/error/model, passage/source metadata and guardrail findings. Add API methods for index, chunks and search with the existing request/error wrapper.
-- [ ] Replace storage-only upload copy with actual returned indexing state. Poll only while an index is running; clean up timers on unmount and preview-mode changes. Add index/retry controls and show actionable failures.
-- [ ] Implement chunk inspection and policy test search in a focused component. Use existing Cards, Inputs and Buttons; disable mutations in preview. Render passage text with `dir="auto"`, source metadata and similarity as similarity, not confidence.
-- [ ] Add citation cards in review and distinguish real tool calls from guardrail/model/skipped trace entries:
+- [x] Extend types for document status/count/error/model, passage/source metadata and guardrail findings. Add API methods for index, chunks and search with the existing request/error wrapper.
+- [x] Replace storage-only upload copy with actual returned indexing state. Poll only while an index is running; clean up timers on unmount and preview-mode changes. Add index/retry controls and show actionable failures.
+- [x] Implement chunk inspection and policy test search in a focused component. Use existing Cards, Inputs, and Buttons; disable mutations in preview. Render passage text with `dir="auto"`, source metadata and similarity as similarity, not confidence.
+- [x] Add citation cards in review and distinguish real tool calls from guardrail/model/skipped trace entries:
 
 ```tsx
 const tools = result.agent_trace.filter((event) => event.kind === "tool")
@@ -301,25 +318,25 @@ const findings = result.guardrail_findings ?? []
 ```
 
 Keep original draft and final reviewed reply separate. Show retained evidence when a source document has been deleted, and an explicit missing-evidence state for legacy results.
-- [ ] Verify pending/failed/indexed and zero-results states in the browser, including mobile width and preview/live isolation. Use network evidence to confirm preview controls do not submit mutations.
-- [ ] Run `npm test`, `npm run lint` and `npm run build` from `customer-support-ui/`.
+- [x] Verify pending/failed/indexed and zero-results states in the browser, including mobile width and preview/live isolation. Use network evidence to confirm preview controls do not submit mutations.
+- [x] Run `npm test`, `npm run lint` and `npm run build` from `customer-support-ui/`.
 
 ## Task 8: Demo corpus, full verification and readiness record
 
 **Files:** Create 12 Markdown policy documents under `data/kb/`; create `docs/demo-readiness.md` and `docs/verification/2026-10-17-rag-drafting.md`. Update root/UI README, `pipeline/runner.md`, `.env.example` and this plan's checkboxes based on observed results.
 
-**Execution record (2026-10-17):** Tasks 1–7 are implemented and independently reviewed (see the execution ledger). Task 8 corpus, live verification and readiness documentation have implementer evidence in [the verification record](../../verification/2026-10-17-rag-drafting.md): 665 backend tests, 21 frontend tests, both lints/build and real provider/browser checks. Task 8's checkboxes below remain unchecked until the controller reviews that evidence and the live-discovered credential-negation fix. Implementation/testing evidence alone does not imply independent review approval.
+**Execution record (2026-10-17):** Task 8's corpus, live-discovered credential-negation fix, provider/browser evidence and Arabic upload pack passed independent review. Its deferred LF portability minor was resolved and approved in the final re-review. The [verification record](../../verification/2026-10-17-rag-drafting.md) retains the original 665/21 table and appends current final 689/25 evidence with explicit controller/report attribution. Final graph housekeeping uses a new scoped helper and backups; exact outputs and preservation checks are in `final-housekeeping-report.md` in the local execution workspace.
 
-- [ ] Write one clearly labelled fictional document per taxonomy category, with Iraqi-Arabic guidance and a short English title. Include safe escalation and credential warnings, but no claimed real ZainCash fees, reimbursement guarantees or account access.
-- [ ] Add demo inputs aligned with existing synthetic transactions: supported failed transfer, supported general inquiry, fraud escalation and an unsupported question. Keep these separate from the future held-out evaluation data.
-- [ ] Run the existing and new backend suite against `support_test`:
+- [x] Write one clearly labelled fictional document per taxonomy category, with Iraqi-Arabic guidance and a short English title. Include safe escalation and credential warnings, but no claimed real ZainCash fees, reimbursement guarantees or account access.
+- [x] Add demo inputs aligned with existing synthetic transactions: supported failed transfer, supported general inquiry, fraud escalation and an unsupported question. Keep these separate from the future held-out evaluation data.
+- [x] Run the existing and new backend suite against `support_test`:
 
 ```bash
 uv run pytest -q
 uv run ruff check app tests
 ```
 
-- [ ] Run frontend checks once after the final UI changes:
+- [x] Run frontend checks once after the final UI changes:
 
 ```bash
 npm test
@@ -327,10 +344,10 @@ npm run lint
 npm run build
 ```
 
-- [ ] Perform a live embedding/index/search check and at least one supported drafting run with synthetic inputs using the configured OpenRouter model. Check actual source relevance, tool count, citation existence, preserved escalation, draft language, provider usage and latency. Do not infer quality from connectivity alone.
-- [ ] Run browser upload/index/search → ticket → citations/trace → edit/approve → reload. Exercise failed indexing and empty knowledge with test fixtures or controlled documents. Capture commands, counts and observed outcomes in the verification record.
-- [ ] Refresh graphify after source changes, inspect the intended diff and `git diff --check`, and review changed code against the specification. Fix findings and rerun only affected checks.
-- [ ] Update README status: Plan 1 and the workspace are implemented; Plan 3 status depends on verified outcomes. List Plan 2 evaluation, packaging/CI, disclosure/data card/failure evidence and the stretch weekly report as remaining. Separate automated passes from live provider verification and any unresolved blocker.
+- [x] Perform a live embedding/index/search check and at least one supported drafting run with synthetic inputs using the configured OpenRouter model. Check actual source relevance, tool count, citation existence, preserved escalation, draft language, provider usage and latency. Do not infer quality from connectivity alone.
+- [x] Run browser upload/index/search → ticket → citations/trace → edit/approve → reload. Exercise failed indexing and empty knowledge with test fixtures or controlled documents. Capture commands, counts and observed outcomes in the verification record.
+- [x] Refresh graphify after source changes, inspect the intended diff and `git diff --check`, and review changed code against the specification. Fix findings and rerun only affected checks.
+- [x] Update README status: Plan 1 and the workspace are implemented; Plan 3 status depends on verified outcomes. List Plan 2 evaluation, packaging/CI, disclosure/data card/failure evidence and the stretch weekly report as remaining. Separate automated passes from live provider verification and any unresolved blocker.
 
 ## Plan self-review
 
@@ -341,4 +358,4 @@ npm run build
 
 ## Execution handoff
 
-The user authorized full implementation and live synthetic verification. Tasks 1–7 have independent review evidence. Task 8 and the final whole-plan review remain pending controller sign-off; remaining evaluation, packaging and disclosure work is tracked in [demo readiness](../../demo-readiness.md).
+The user authorized full implementation and live synthetic verification. All eight tasks have independent review evidence; all findings from the whole-feature review are resolved by the approved scoped re-review, and the controller's fresh full-backend checks passed. The implementation remains uncommitted by the agents. Remaining evaluation, packaging and disclosure work is tracked in [demo readiness](../../demo-readiness.md); translated-pack validation remains parser-only.

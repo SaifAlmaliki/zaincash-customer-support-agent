@@ -17,7 +17,7 @@ from app.db.session import make_engine, make_sessionmaker, reset_db
 from app.kb.contracts import EmbeddingBatch
 from app.kb.documents import store_document
 from app.kb.embeddings import EmbeddingError
-from app.kb.service import KnowledgeError, KnowledgeService
+from app.kb.service import KnowledgeError, KnowledgeExecutionError, KnowledgeService
 from app.pipeline.contracts import Decision, ExtractedField, LookupResult, Ticket
 from app.pipeline.stage6_draft import context as draft_context
 from app.pipeline.stage6_draft import investigation as draft_investigation
@@ -583,13 +583,13 @@ async def test_database_faults_remain_distinct_and_record_paid_search_cost(api, 
     try:
         with pytest.raises(RuntimeError, match="database programming fault"):
             await tools["get_customer_recent_transactions"].ainvoke({"phone": PHONE})
-        with pytest.raises(KnowledgeError):
+        with pytest.raises(KnowledgeExecutionError):
             await tools["search_knowledge_base"].ainvoke({"query": "تحويل"})
     finally:
         event.remove(sf.kw["bind"], "before_cursor_execute", fail)
     assert context.cost_usd == pytest.approx(0.125)
     assert [t["cost_usd"] for t in context.trace] == [0, 0.125]
-    assert [t["error_type"] for t in context.trace] == ["RuntimeError", "KnowledgeError"]
+    assert [t["error_type"] for t in context.trace] == ["RuntimeError", "RuntimeError"]
 
 
 async def test_outer_timeout_retains_tool_owned_cost_and_cancelled_waiter_does_not_execute(api, state, sf, settings):
