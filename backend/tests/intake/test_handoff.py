@@ -80,8 +80,8 @@ def _review(state, language):
     shown = ""
     if amount is not None and amount.status == "known":
         shown = amount.normalized or amount.value or ""
-    customer = f"The transfer failed. Amount {shown}." if shown else "The transfer failed."
-    employee = f"فشل التحويل. المبلغ {shown}." if shown else "فشل التحويل."
+    customer = f"The transfer failed. Amount {shown}" if shown else "The transfer failed."
+    employee = f"فشل التحويل. المبلغ {shown}" if shown else "فشل التحويل."
     return ReviewText(customer_text=customer, employee_text_ar=employee, fact_keys=list(_MATERIAL))
 
 

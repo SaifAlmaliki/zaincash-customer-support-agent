@@ -80,7 +80,7 @@ describe("intake api", () => {
     expect(sent.headers["Content-Type"]).toBeUndefined()
     expect(sent.body?.get("request_id")).toBe("req-1")
     expect(progress).toEqual([1])
-    expect(JSON.stringify(sent.headers)).not.toContain("secret-token".slice(0, 0))
+    expect(String(sent.body?.get("file"))).not.toContain("secret-token")
     vi.unstubAllGlobals()
   })
 })

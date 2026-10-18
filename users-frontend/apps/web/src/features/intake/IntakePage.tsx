@@ -17,20 +17,15 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const [draft, setDraft] = useState("")
   const [previews, setPreviews] = useState<{ name: string; url: string }[]>([])
   const [confirmNew, setConfirmNew] = useState(false)
-  const [announcedId, setAnnouncedId] = useState<string | null>(null)
   const reviewHeading = useRef<HTMLHeadingElement | null>(null)
   const reviewRequest = useRef(false)
   const text = copy[locale]
   const credentials = controller.access()
+  const latestAssistant = session?.messages.filter((message) => message.role === "assistant").at(-1)
 
   useEffect(() => {
     if (!controller.getSnapshot().session) void controller.initialize("ar")
   }, [controller])
-
-  useEffect(() => {
-    const latest = session?.messages.filter((message) => message.role === "assistant").at(-1)
-    if (latest && latest.id !== announcedId) setAnnouncedId(latest.id)
-  }, [announcedId, session?.messages])
 
   useEffect(() => {
     if (reviewRequest.current && session?.review) {
@@ -116,7 +111,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
       <main className="intake-layout">
         <div className="intake-conversation">
           {session ? (
-            <ChatTranscript messages={session.messages} copy={text} announcedId={announcedId} />
+            <ChatTranscript messages={session.messages} copy={text} announcedId={latestAssistant?.id ?? null} />
           ) : (
             <p className="intake-muted">{text.empty}</p>
           )}
@@ -134,7 +129,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
         </div>
         <aside className="intake-side">
           {snapshot.error ? (
-            <p role="alert" className="intake-alert">
+            <p role="alert" className="intake-alert" dir="auto">
               {snapshot.error}
             </p>
           ) : null}

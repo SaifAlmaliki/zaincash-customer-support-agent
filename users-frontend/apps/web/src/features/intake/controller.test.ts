@@ -148,6 +148,7 @@ describe("intake controller", () => {
     const file = new File([new Uint8Array([1, 2])], "error.png", { type: "image/png" })
     const uploaded = controller.upload(file)
     const sent = controller.send("hello", "en", ["att-1"])
+    await vi.waitFor(() => expect(api.upload).toHaveBeenCalled())
     release({
       attachment: {
         id: "att-1",
@@ -194,11 +195,21 @@ describe("intake controller", () => {
     const controller = new IntakeController(api, memoryStorage())
     await controller.initialize("en")
     const sent = controller.send("old report", "en", [])
+    await vi.waitFor(() => expect(api.message).toHaveBeenCalled())
     const started = controller.startNew("en")
     release(emptySession({ messages: [{ id: "old", role: "user", text: "old report", language: "en", created_at: "2026-10-18T09:00:00Z", attachment_ids: [] }] }))
     await sent
     await started
     expect(controller.getSnapshot().session?.messages ?? []).toEqual([])
+  })
+
+  it("shows an error when a session cannot be created", async () => {
+    const api = fakeApi()
+    vi.mocked(api.create).mockRejectedValueOnce(new IntakeRequestError("The conversation could not be updated. Try again.", 404, "intake_error"))
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en")
+    expect(controller.getSnapshot().session).toBeNull()
+    expect(controller.getSnapshot().error).toMatch(/could not be updated/i)
   })
 
   it("stops polling an in-flight turn after the deadline", async () => {

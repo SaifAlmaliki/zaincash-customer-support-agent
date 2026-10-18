@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import {
   ArrowLeft,
@@ -121,7 +121,7 @@ function ReviewEditor({
             <p>{result.credential_check_degraded === true ? "The credential checker was unavailable or returned an invalid result. Review the reply for requests for sensitive credentials." : result.credential_check_degraded == null ? "No valid checker outcome was saved; do not assume this check passed." : "The checker returned a usable result; findings above show any flagged request."}</p>
             {result.requests_credentials != null && <p>Credential-request score: {result.requests_credentials.toFixed(3)} (must be below 0.200).</p>}
           </div>
-          <div className="internal-note"><strong>Internal note</strong>{result.internal_note ? <p className="passage-text" dir="auto">{result.internal_note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
+          <div className="internal-note"><strong>Internal note</strong>{note ? <p className="passage-text" dir="auto">{note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
         </CardContent>
       </Card>
       )}
@@ -280,11 +280,16 @@ function ReviewEditor({
 export function TicketReviewPage() {
   const { id } = useParams(),
     workspace = useWorkspace()
-  const [pollMs, setPollMs] = useState(0)
-  const query = useResource<Result>(`/results/${id}`, workspace.revision, pollMs)
+  const query = useResource<Result>(`/results/${id}`, workspace.revision)
   const result = query.data
+  const reload = useRef(query.reload)
   useEffect(() => {
-    setPollMs(result?.status === "processing" ? 2000 : 0)
+    reload.current = query.reload
+  }, [query.reload])
+  useEffect(() => {
+    if (result?.status !== "processing") return
+    const timer = window.setInterval(() => reload.current(), 2000)
+    return () => window.clearInterval(timer)
   }, [result?.status])
   if (query.error)
     return <ErrorState message={query.error} retry={query.reload} />

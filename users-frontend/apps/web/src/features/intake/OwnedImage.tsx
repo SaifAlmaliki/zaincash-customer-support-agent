@@ -17,23 +17,31 @@ export function OwnedImage({
 }) {
   const [url, setUrl] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
+  const [shownId, setShownId] = useState(attachment.id)
+  if (shownId !== attachment.id) {
+    setShownId(attachment.id)
+    setUrl(null)
+    setFailed(false)
+  }
 
   useEffect(() => {
     if (!credentials) return
     const controller = new AbortController()
     let objectUrl: string | null = null
-    setFailed(false)
+    let active = true
     void api
       .image(credentials, attachment.id, controller.signal)
       .then((blob) => {
+        if (!active) return
         objectUrl = URL.createObjectURL(blob)
         setUrl(objectUrl)
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return
+        if (!active || (error instanceof DOMException && error.name === "AbortError")) return
         setFailed(true)
       })
     return () => {
+      active = false
       controller.abort()
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }

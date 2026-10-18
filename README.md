@@ -1,6 +1,8 @@
 # ZainCash Support Pipeline
 
-This is a back-office pipeline for ZainCash support tickets written in Iraqi dialect. For each ticket it decides the category, sets a priority, extracts the key details, finds the matching transaction, routes the ticket to the right team, and drafts a reply for a person to approve. It is not a chatbot, and it never sends anything on its own. If it is unsure about a ticket, it escalates it to a person with a note.
+This is a back-office pipeline for ZainCash support tickets written in Iraqi dialect. For each ticket it decides the category, sets a priority, extracts the key details, finds the matching transaction, routes the ticket to the right team, and drafts a reply for a person to approve. The employee pipeline is not a chatbot, and it never sends a reply on its own. If it is unsure about a ticket, it escalates it to a person with a note.
+
+Customers can describe a problem in a separate intake conversation. That conversation gathers the report, asks only for missing context, and shows a review before anything is submitted. Submission creates one normal ticket for this same pipeline. It does not recover money, change an account, or mark the problem resolved.
 
 Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation**.
 
@@ -171,6 +173,15 @@ npm run dev
 ```
 
 Open http://localhost:5173 and select **Live workspace**. API docs are at http://localhost:8000/api/docs.
+
+**Terminal 3 — customer intake.** From `users-frontend/`:
+
+```bash
+npm ci
+npm --workspace web run dev
+```
+
+Open http://localhost:5174. The customer app talks to the same API through `/api`. Leave `INTAKE_MODEL` empty to use `GEMINI_MODEL`, or set it to an OpenRouter model that supports images and structured output. Uploaded screenshots stay in `INTAKE_UPLOAD_DIR` (`data/intake-uploads` by default). A customer can review a partial report, correct a detail by sending another message, and submit once. The receipt means the report was received for an employee to review. Operators retry a failed intake ticket with the existing batch API; the stored ticket text is not rewritten.
 
 ### Show it in the browser
 

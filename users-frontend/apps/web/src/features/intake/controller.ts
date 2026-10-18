@@ -62,10 +62,13 @@ export class IntakeController {
   private pollStarted = 0
   private readonly uploadIds = new Map<string, string>()
 
-  constructor(
-    private readonly api: IntakeApi,
-    private readonly storage: SessionStorage,
-  ) {}
+  private readonly api: IntakeApi
+  private readonly storage: SessionStorage
+
+  constructor(api: IntakeApi, storage: SessionStorage) {
+    this.api = api
+    this.storage = storage
+  }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -156,7 +159,17 @@ export class IntakeController {
   }
 
   private async boot(language: Language, generation: number) {
-    let saved = null as ReturnType<SessionStorage["load"]>
+    try {
+      await this.bootNow(language, generation)
+    } catch (error) {
+      if (generation !== this.generation) return
+      if (error instanceof DOMException && error.name === "AbortError") return
+      this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
+    }
+  }
+
+  private async bootNow(language: Language, generation: number) {
+    let saved: ReturnType<SessionStorage["load"]>
     try {
       saved = this.storage.load()
     } catch {

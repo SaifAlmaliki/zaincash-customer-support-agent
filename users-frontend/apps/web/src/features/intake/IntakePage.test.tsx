@@ -55,7 +55,11 @@ function fakeApi(overrides: Partial<SessionView> = {}): IntakeApi {
     create: vi.fn(async () => ({ credentials: { session_id: "session-1", token: "secret-token" }, session })),
     get: vi.fn(async () => session),
     message: vi.fn(async () => session),
-    review: vi.fn(async () => ({ ...session, language: "ar", review: review ? { ...review, language: "ar" } : null })),
+    review: vi.fn(async (_credentials, command): Promise<SessionView> => ({
+      ...session,
+      language: command.language,
+      review: { ...review, language: command.language },
+    })),
     retry: vi.fn(async () => session),
     submit: vi.fn(async () => ({
       ticket_reference: "INTAKE-demo",

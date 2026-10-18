@@ -204,15 +204,19 @@ class TurnStore:
         if len(attachment_ids) > self.max_images_per_message:
             raise ImageRejected("Attach at most three screenshots to one message.")
         message_id = uuid.uuid4()
+        attachments = []
         for attachment_id in attachment_ids:
             attachment = session.get(IntakeAttachmentRow, attachment_id)
             if attachment is None or attachment.session_id != row.id:
                 raise ImageRejected("Attach a screenshot from this conversation.")
             if attachment.removed or attachment.message_id is not None:
                 raise ImageRejected("That screenshot is no longer available.")
-            attachment.message_id = message_id
+            attachments.append(attachment)
         operation_id = None
         session.add(self._message(row.id, message_id, "user", text, language, self._next_sequence(session, row.id), operation_id, now))
+        session.flush()
+        for attachment in attachments:
+            attachment.message_id = message_id
 
     def _locked_attempt(self, session, claim: OperationClaim):
         row = session.scalar(select(IntakeSessionRow).where(IntakeSessionRow.id == claim.session_id).with_for_update())

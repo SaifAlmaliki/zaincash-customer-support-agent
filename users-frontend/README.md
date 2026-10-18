@@ -1,21 +1,19 @@
-# shadcn/ui monorepo template
+# Customer intake
 
-This is a Vite monorepo template with shadcn/ui.
+This workspace is the customer conversation for a ZainCash support report. It is separate from the employee review app. A customer describes the problem, can attach screenshots, reviews the summary, and then submits one ticket. Submission does not recover money or close the problem.
 
-## Adding components
-
-To add components to your app, run the following command at the root of your `web` app:
+From this directory:
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+npm ci
+npm --workspace web run dev
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+The app is http://localhost:5174 and proxies `/api` to http://127.0.0.1:8000. The employee app uses port 5173.
 
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button";
+```bash
+npm --workspace web run test
+npm --workspace web run typecheck
+npm --workspace web run lint
+npm --workspace web run build
 ```

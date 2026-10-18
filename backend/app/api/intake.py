@@ -36,7 +36,7 @@ def _status(view, request_id: UUID) -> int:
     return 202 if view.turn_status == "processing" and view.active_request_id == request_id else 200
 
 
-async def _safe_dispatch(app, submission) -> None:
+def _safe_dispatch(app, submission) -> None:
     if not submission.dispatch:
         return
     try:
