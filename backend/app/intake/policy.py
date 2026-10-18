@@ -139,7 +139,7 @@ def _asked_already(state: IntakeState, key: str) -> bool:
 
 
 def _question_keys(state: IntakeState, taxonomy: Taxonomy | None) -> list[str]:
-    ordered = material_keys(state.category, taxonomy) + list(state.additional_needed) + list(HIGH_VALUE)
+    ordered = material_keys(state.category, taxonomy) + [key for key in state.additional_needed if key in HIGH_VALUE]
     return list(dict.fromkeys(ordered))
 
 

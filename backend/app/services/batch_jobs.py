@@ -7,6 +7,7 @@ from time import perf_counter
 
 from app.db.models import RunRow
 from app.db.repository import SqlTransactionRepo, save_outcomes
+from app.services.intake_recovery import fail_intake_placeholders, reconcile_intake_run
 from app.pipeline.contracts import DraftResult, TicketOutcome
 from app.pipeline.execution import TicketExecution, ticket_execution
 from app.pipeline.graph import outcome_from_state, summarize
@@ -73,6 +74,10 @@ async def process_batch(app, run_id, tickets, mode):
         run.total_cost_usd = summary.total_cost_usd
         run.degraded = summary.degraded
         run.finished_at = datetime.now(UTC)
+        if persistence_failed and fail_intake_placeholders(
+            session, run_id, "Some results could not be saved. Durable results were retained; retry this batch."
+        ):
+            reconcile_intake_run(session, run)
         session.commit()
 
 
@@ -86,4 +91,6 @@ def run_job(app, run_id, tickets, mode):
             run.status = "failed"
             run.finished_at = datetime.now(UTC)
             run.counts = run.counts | {"error": "Batch interrupted. Completed results were retained."}
+            if fail_intake_placeholders(session, run_id, "Batch interrupted. Completed results were retained."):
+                reconcile_intake_run(session, run)
             session.commit()

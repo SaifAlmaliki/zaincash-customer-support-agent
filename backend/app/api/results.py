@@ -1,9 +1,13 @@
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import Response
 from sqlalchemy import select
 
 from app.api.dependencies import SessionDep
 from app.api.schemas import ReviewInput
 from app.db.models import TicketResultRow, TicketRow
+from app.intake.projection import employee_attachment
 from app.services.reviews import record_review
 from app.services.workspace_queries import latest_results_query, result_view
 
@@ -33,6 +37,12 @@ def get_result(result_id: int, session: SessionDep):
     if result is None:
         raise HTTPException(404, "Ticket result not found.")
     return result_view(session, result, detail=True)
+
+
+@router.get("/{result_id}/intake/attachments/{attachment_id}")
+def read_intake_attachment(result_id: int, attachment_id: UUID, request: Request, session: SessionDep):
+    image = employee_attachment(session, result_id, attachment_id, request.app.state.intake_store)
+    return Response(content=image.data, media_type=image.mime_type, headers={"Cache-Control": "no-store"})
 
 
 @router.post("/{result_id}/reviews")

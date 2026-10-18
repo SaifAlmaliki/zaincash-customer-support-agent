@@ -2,6 +2,7 @@
 from sqlalchemy import func, select
 
 from app.db.models import ReviewRow, RunRow, TicketResultRow, TicketRow, TransactionRow
+from app.intake.projection import intake_result_view
 from app.services.draft_evidence import draft_evidence
 
 STAGES = [
@@ -37,13 +38,18 @@ def result_view(session, result, *, detail=False):
         )]
         txn = session.get(TransactionRow, result.matched_txn_ref) if result.matched_txn_ref else None
         value["transaction"] = columns(txn) if txn else None
+    intake = intake_result_view(session, result.ticket_id)
+    if intake is not None:
+        for attachment in intake["attachments"]:
+            attachment["download_url"] = f"/api/results/{result.id}/intake/attachments/{attachment['id']}"
+    value["intake"] = intake if detail else None
     return value
 
 
 def run_view(session, run: RunRow):
     value = columns(run)
     value["processed"] = session.scalar(select(func.count()).select_from(TicketResultRow).where(
-        TicketResultRow.run_id == run.id
+        TicketResultRow.run_id == run.id, TicketResultRow.status != "processing"
     ))
     value["total"] = run.counts.get("expected_total", run.counts.get("total", 0))
     return value

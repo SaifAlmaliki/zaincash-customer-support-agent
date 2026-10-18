@@ -214,3 +214,5 @@ class OperationClaim:
     attempt_id: UUID
     revision: int
     context: TurnContext
+    kind: str = "message"
+    payload: dict = field(default_factory=dict)

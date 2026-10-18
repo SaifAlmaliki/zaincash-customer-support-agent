@@ -13,6 +13,8 @@ def record_review(session, result_id: int, review: ReviewInput, teams):
         raise HTTPException(404, "Ticket result not found.")
     if result.updated_at != review.expected_updated_at:
         raise HTTPException(409, "This ticket was updated by another reviewer. Refresh before saving.")
+    if result.status == "processing":
+        raise HTTPException(409, "This ticket is still processing.")
     if result.status == "failed":
         raise HTTPException(409, "Processing failed. Run the ticket again before reviewing it.")
     final_text = (review.final_text or "").strip() or None

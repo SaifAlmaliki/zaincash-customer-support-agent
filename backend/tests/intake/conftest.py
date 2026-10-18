@@ -1,4 +1,6 @@
 """Real support_test fixtures for intake. Never resets the development database."""
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import make_url
@@ -70,3 +72,25 @@ def intake_client(tmp_path):
         client.factory = factory
         yield client
     engine.dispose()
+
+
+@pytest.fixture
+def reviewed(intake_client):
+    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    sid = created["credentials"]["session_id"]
+    headers = {"Authorization": f"Bearer {created['credentials']['token']}"}
+    response = intake_client.post(f"/api/intake/sessions/{sid}/messages", headers=headers, json={
+        "request_id": str(uuid4()), "expected_revision": 0,
+        "text": "What is the transfer fee?", "language": "en", "attachment_ids": [],
+    })
+    assert response.status_code == 200, response.text
+    view = response.json()
+    if view.get("review") is None:
+        reviewed_response = intake_client.post(f"/api/intake/sessions/{sid}/review", headers=headers, json={
+            "request_id": str(uuid4()), "expected_revision": view["revision"],
+            "allow_partial": True, "language": "en",
+        })
+        assert reviewed_response.status_code == 200, reviewed_response.text
+        view = reviewed_response.json()
+    assert view["review"]["revision"] == view["revision"]
+    return {"sid": sid, "headers": headers, "view": view}
