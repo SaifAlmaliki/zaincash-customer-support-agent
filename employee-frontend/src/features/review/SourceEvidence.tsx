@@ -49,7 +49,7 @@ export function SourceEvidence({ result }: { result: Result }) {
           <ShieldAlert size={20} />
           <div>
             <strong>Needs a closer look</strong>
-            <p>{result.escalation_note}</p>
+            <p>Held for a person. The written analysis is in Internal note.</p>
             <div>
               {result.escalation_reasons.map((reason) => (
                 <Badge key={reason} variant="outline">

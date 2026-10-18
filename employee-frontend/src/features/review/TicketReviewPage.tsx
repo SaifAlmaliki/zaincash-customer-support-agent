@@ -33,6 +33,18 @@ import type { Result, ReviewInput } from "@/lib/types"
 import { SourceEvidence } from "./SourceEvidence"
 import { PipelineTrace } from "./PipelineTrace"
 
+function reviewerNote(result: Result) {
+  const own = result.internal_note?.trim()
+  if (own) return own
+  const parts = (result.escalation_note ?? "").split(/(?<=\.)\s+/).map((part) => part.trim()).filter(Boolean)
+  const seen = new Set<string>()
+  const unique = parts.filter((part) => (seen.has(part) ? false : seen.add(part)))
+  const escalated = unique.filter((part) => part.startsWith("Escalated:"))
+  const analysis = unique.filter((part) => !part.startsWith("Escalated:"))
+  const summary = escalated.sort((a, b) => b.length - a.length)[0]
+  return [summary, ...analysis].filter(Boolean).join(" ")
+}
+
 function ReviewEditor({
   result,
   onSaved,
@@ -48,6 +60,7 @@ function ReviewEditor({
     [reject, setReject] = useState(false)
   const approved = ["approved", "edited"].includes(result.status)
   const findings = result.guardrail_findings ?? []
+  const note = reviewerNote(result)
   async function save(action: ReviewInput["action"]) {
     if (saving) return
     setSaving(true)
@@ -97,7 +110,7 @@ function ReviewEditor({
             <p>{result.credential_check_degraded === true ? "The credential checker was unavailable or returned an invalid result. Review the reply for requests for sensitive credentials." : result.credential_check_degraded == null ? "No valid checker outcome was saved; do not assume this check passed." : "The checker returned a usable result; findings above show any flagged request."}</p>
             {result.requests_credentials != null && <p>Credential-request score: {result.requests_credentials.toFixed(3)} (must be below 0.200).</p>}
           </div>
-          <div className="internal-note"><strong>Internal note</strong>{result.internal_note ? <p className="passage-text" dir="auto">{result.internal_note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
+          <div className="internal-note"><strong>Internal note</strong>{note ? <p className="passage-text" dir="auto">{note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
         </CardContent>
       </Card>
       <Card className="draft-card">
