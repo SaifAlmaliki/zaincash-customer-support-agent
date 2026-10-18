@@ -1,0 +1,248 @@
+Knowledge PDF index preview
+Parser: backend/app/kb/parse.py
+
+## account_kyc.pdf
+render: shaped-rtl
+bytes: 28601
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=708
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 708  pdf chars: 705
+--- extracted text ---
+Account verification — fictional demo policy
+Category: account_kyc
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا السؤال عن توثيق الحساب أو رفض الهوية أو رفع مستوى الحساب أو تغيير معلوماته، وجّه الزبون لمسار التوثيق
+داخل التطبيق الرسمي. خليه يوصف سبب الرفض الظاهر بدون إرسال صورة هوية أو مستمسكات بمحادثة الدعم
+التجريبية.
+ يراجع الحالات غير الواضحة بشرياً. هذا المصدر ما يحتوي قائمة مستمسكات معتمدة أوAccount & Security فريق
+حدود مالية حقيقية؛ إذا السؤال يحتاج هاي التفاصيل، بيّن إن ما عدنا مصدر موثوق هنا وصعّده. لا توعد بالموافقة أو
+تدّعي تعديل الحساب.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## agent_dispute.pdf
+render: shaped-rtl
+bytes: 28533
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=683
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 683  pdf chars: 681
+--- extracted text ---
+Agent dispute — fictional demo policy
+Category: agent_dispute
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا الشحن أو السحب عند الوكيل ما انحسب، أو الزبون يعترض على عمولة، اجمع وصف المشكلة ومرجع الوصل غير
+السري من التذكرة. قارن المبلغ بالسجل التجريبي إذا موجود، وخلي الزبون يحتفظ بالوصل للمراجعة بالقناة الرسمية
+بدون نشر بياناته.
+. لا تحكم إن العمولة صحيحة أو مخالفة من دون مصدر معتمد، ولا تطلب دفعةAgent Network وجّه الشكوى لفريق
+ثانية لحل المشكلة. صعّد أي تضارب بالسجل أو شبهة احتيال لمراجعة بشرية، ولا توعد بتعويض أو موعد حسم.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## app_bug.pdf
+render: shaped-rtl
+bytes: 28635
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=686
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 686  pdf chars: 684
+--- extracted text ---
+App troubleshooting — fictional demo policy
+Category: app_bug
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا التطبيق يطفي أو ميزة ما تشتغل وماكو فلوس مفقودة، خليه يتأكد من الاتصال ويعيد فتح التطبيق. يگدر يوصف
+رسالة الخطأ وإصدار التطبيق بدون صور تكشف معلومات حساسة. لا تطلب حذف بياناته أو تثبيت ملف من رابط
+مجهول.
+. لا تعلن عن انقطاع عام إلا إذا سجل الحوادث التجريبي يؤيده.Tech Support إذا العطل مستمر، وجّه الحالة لفريق
+إذا أكو مبلغ ناقص أو تحويل معلّق، صعّد الحالة المالية للفريق المختص بدل معاملتها كعطل بسيط. لا توعد بموعد
+إصلاح.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## bill_payment.pdf
+render: shaped-rtl
+bytes: 27954
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=715
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 715  pdf chars: 712
+--- extracted text ---
+Bill payment — fictional demo policy
+Category: bill_payment
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا دفع فاتورة الكهرباء أو الانترنت أو شحن الرصيد ظاهر ناجح بالسجل التجريبي والجهة بعدها تكول مو مدفوع، فرّق
+بين حالة العملية وبين تأكيد الجهة المستفيدة. استخدم مرجع العملية والمبلغ الموجودين بالتذكرة أو السجل المطابق
+فقط.
+ حتى يراجع المطابقة مع الجهة. إذاPayments Ops لا توصي بدفع الفاتورة مرة ثانية قبل التدقيق. وجّه الحالة لفريق
+ماكو عملية مطابقة، اشرح إن التأكيد ناقص وصعّدها لإنسان. لا توعد بوقت تسوية أو رجوع مبلغ ولا تدّعي إن الفاتورة
+تسددت عند الجهة.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## card_issue.pdf
+render: shaped-rtl
+bytes: 28159
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=666
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 666  pdf chars: 662
+--- extracted text ---
+Card issue — fictional demo policy
+Category: card_issue
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+.إذا البطاقة مرفوضة أو مقفولة أو ما وصلت أو أكو خصم مكرر على شراء واحد، وضّح نوع المشكلة من كلام الزبون
+ممكن يوصف رسالة الرفض واسم المتجر بدون تفاصيل البطاقة السرية. لا تطلب رقم البطاقة الكامل أو رمز الأمان
+ أو صورة البطاقة.CVV
+ حتى يراجعها إنسان. الخصم المكرر يحتاج تدقيق بالسجل، مو وعد تلقائي باسترجاع. إذاCards وجّه الحالة لفريق
+الزبون ما يعرف الحركة، صعّد شبهة الاحتيال. لا تدّعي إنك فعّلت البطاقة أو أوقفتها.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## failed_transfer.pdf
+render: shaped-rtl
+bytes: 29614
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=815
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 815  pdf chars: 812
+--- extracted text ---
+Pending transfer — fictional demo policy
+Category: failed_transfer
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا الزبون يكول حولت فلوس وانقطعت من رصيدي بس ما وصلت للمستلم، راجع رقم العملية والمبلغ والتاريخ
+، وضّح بالعراقي إن التحويل بعده معلّق حسبpending الموجودين بالتذكرة والسجل التجريبي. إذا الحالة بالسجل
+السجل، مو مكتمل ولا مثبت إنه فشل نهائياً. لا تنصح بإعادة التحويل حتى ما تتكرر العملية.
+ للمراجعة البشرية. إذا المرجع مو موجود أو المبلغ مختلف، وضّح إن المعلوماتPayments Ops وجّه الحالة لفريق
+تحتاج تدقيق وصعّدها. لا توعد بوقت وصول أو استرجاع ولا تدّعي إنك حرّكت الفلوس أو دخلت للحساب. أي مبلغ أو
+تاريخ بالرد لازم يجي من التذكرة أو العملية المطابقة فقط.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## fraud_report.pdf
+render: shaped-rtl
+bytes: 28836
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=726
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 726  pdf chars: 723
+--- extracted text ---
+Fraud escalation — fictional demo policy
+Category: fraud_report
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا واحد اتصل وادّعى إنه موظف وطلب الرمز، أو أكو سحب أو حركة الزبون ما سواها، اعتبرها شبهة احتيال تحتاج
+إنسان بأولوية عالية. انصح الزبون يوقف التواصل ويا المتصل وما يشارك أي رمز جديد، ويتواصل من داخل التطبيق أو
+قناة رسمية يتحقق منها بنفسه.
+ مستمر حتى لو نكتب مسودة مساعدة. لا تلوم الزبون، ولا تعيد ذكر الرمزAccount & Security خلّي التصعيد لفريق
+اللي شاركه، ولا تدّعي تجميد الحساب أو إيقاف العملية. لا توعد باسترجاع أو تعويض، ولا تحول شبهة الاحتيال إلى
+استفسار عادي.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## general_inquiry.pdf
+render: shaped-rtl
+bytes: 28648
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=726
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 726  pdf chars: 723
+--- extracted text ---
+Safe support inquiry — fictional demo policy
+Category: general_inquiry
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا الزبون يسأل شلون يشرح مشكلته للدعم بأمان، يكدر يكتب وصف مختصر للمشكلة ورسالة الخطأ ومرجع العملية
+غير السري إذا عنده. يذكر المعلومات المطلوبة للمشكلة فقط، بدون إرسال أسرار الحساب أو صور مستمسكات
+بمحادثة العرض.
+إذا السؤال عن عمولة أو حدود أو عروض أو أماكن وكلاء، هذا المصدر ما يحتوي أرقام أو شروط حقيقية. لا تخمّن؛
+ للمراجعة من مصدر رسمي. لا توعدGeneral Care وضّح إن التفاصيل مو متوفرة بالدليل التجريبي ووجّهها لفريق
+برسوم ثابتة أو استحقاق عرض أو وقت جواب.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## login_access.pdf
+render: shaped-rtl
+bytes: 28051
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=680
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 680  pdf chars: 677
+--- extracted text ---
+Login access — fictional demo policy
+Category: login_access
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا رمز التحقق ما يوصل أو الزبون ناسي الرقم السري والحساب مقفول، اسأله يوصف رسالة الخطأ بدون إرسال
+أسرار. يگدر يتأكد من اتصال الشبكة ويستخدم مسار استعادة الدخول داخل التطبيق الرسمي. لا تخمّن الرمز ولا تقترح
+تجاوز قفل الحساب.
+ حتى يراجعها إنسان. إذا أكو دخول مو من الزبون أو حركةAccount & Security إذا المشكلة مستمرة، صعّدها لفريق
+ما يعرفها، تعامل وياها كشبهة احتيال وصعّدها فوراً. لا تدّعي إن الحساب انفتح أو تعدلت بياناته.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## other.pdf
+render: shaped-rtl
+bytes: 27727
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=709
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 709  pdf chars: 706
+--- extracted text ---
+Unclear request — fictional demo policy
+Category: other
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا الرسالة مو واضحة أو ما تنطبق على أصناف الدعم، اطلب وصف مختصر للمشكلة بدون أسرار. وجّه الطلب لفريق
+ إذا يحتاج فهم بشري. إذا يظهر خطر مالي أو احتيال، حافظ على التصعيد للفريق المناسب.General Care
+هذا الدليل يدعم أسئلة المحفظة التجريبية فقط. الأسئلة خارج الموضوع أو اللي تحتاج معرفة مو موجودة بالمصادر
+تبقى بلا جواب موضوعي: سجّل عدم وجود دعم معرفي وصعّدها بدل اختراع جواب أو استشهاد غير مرتبط. لا تستخدم
+هذا النص كدليل على معلومات علمية أو طبية أو قانونية.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## refund_request.pdf
+render: shaped-rtl
+bytes: 28183
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=659
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 659  pdf chars: 657
+--- extracted text ---
+Merchant refund — fictional demo policy
+Category: refund_request
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا الزبون ألغى طلب من متجر أو خدمة ويريد فلوسه، راجع وصف الشراء ومرجع العملية والمبلغ بالسجل التجريبي إذا
+متوفر. إلغاء الطلب مو دليل إن الاسترجاع اكتمل. خليه يحتفظ بتأكيد الإلغاء غير السري للمراجعة الرسمية.
+. إذا العملية مو مطابقة أو تأكيد المتجر ناقص، وضّح شنو اللي يحتاج تدقيق بشري. لاDisputes وجّه الطلب لفريق
+تذكر مدة استرجاع أو مبلغ تعويض من عندك، ولا تدّعي إنك وافقت على الاسترجاع أو نفذته.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+
+## wrong_recipient.pdf
+render: shaped-rtl
+bytes: 28419
+markdown chunks: 1 page=None
+pdf chunks: #0 pages 1-1 chars=645
+sentinel kept: True
+normalized text matches markdown: False
+markdown chars: 645  pdf chars: 642
+--- extracted text ---
+Wrong recipient — fictional demo policy
+Category: wrong_recipient
+. — مو سياسة حقيقية لزين كاشSYNTHETIC / FICTIONAL DEMO ONLY
+إذا الزبون حوّل لرقم غلط بالغلط، هاي مراجعة نزاع مو عطل تحويل تقني. راجع رقم العملية والمبلغ ورقم المستلم
+ يحتاج يراجعDisputes المذكورين بالتذكرة مقابل السجل التجريبي، ولا تكشف معلومات شخص ثاني. وضّح إن فريق
+الحالة قبل أي قرار.
+لا توعد بإلغاء التحويل أو رجوع الفلوس، ولا تطلب من الزبون يدفع مبلغ إضافي حتى يسترجعها. إذا أكو ضغط أو تهديد
+أو شبهة نصب، خلّي التصعيد البشري واضح ومستمر.
+ أو كلمة المرور. هذا دليل عرض خيالي، وما يحدد رسوم أو ضمانPIN  أو الرقم السريOTP لا تطلب رمز التحقق
+تعويض أو صلاحية دخول لأي حساب حقيقي.
+

@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.db import document_models  # noqa: F401 -- register sources for CLI initialization too
 from app.db.models import Base
+from app.intake import db_models as intake_db_models  # noqa: F401 -- register before create_all/drop_all
 from app.kb import models as kb_models  # noqa: F401 -- register before create_all/drop_all
 
 

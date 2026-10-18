@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     test_database_url: str = "postgresql+psycopg://support:support@localhost:5433/support_test"
     taxonomy_path: str = str(REPO_ROOT / "data" / "taxonomy.yaml")
 
+    # Empty means the intake adapter uses gemini_model. A configured ID must be non-blank.
+    intake_model: str = ""
+    intake_timeout_s: float = Field(default=60, gt=0, allow_inf_nan=False)
+    intake_max_model_requests: int = Field(default=3, ge=1, le=20, strict=True)
+    intake_upload_dir: str = str(REPO_ROOT / "data" / "intake-uploads")
+    intake_max_image_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
+    intake_max_image_pixels: int = Field(default=20_000_000, gt=0)
+    intake_max_images_per_message: int = Field(default=3, gt=0)
+    intake_max_images_per_session: int = Field(default=10, gt=0)
+
     # USD per 1M tokens. Check current pricing before reporting costs.
     price_gemini_flash_in: float = 0.75
     price_gemini_flash_out: float = 3.75
@@ -48,6 +58,21 @@ class Settings(BaseSettings):
     # https://developers.openai.com/api/docs/models/text-embedding-3-small (2026-10-17)
     # OpenRouter-reported cost takes precedence; update this when changing models.
     price_embedding_in: float = Field(default=0.02, ge=0, allow_inf_nan=False)
+
+    @field_validator("intake_max_model_requests", mode="before")
+    @classmethod
+    def parse_intake_request_limit(cls, value):
+        if isinstance(value, str) and value.strip().isdecimal():
+            return int(value.strip())
+        return value
+
+    @field_validator("intake_model")
+    @classmethod
+    def validate_intake_model(cls, value: str) -> str:
+        stripped = value.strip()
+        if value and not stripped:
+            raise ValueError("INTAKE_MODEL must be a non-empty model ID")
+        return stripped
 
     @field_validator("agent_max_tool_calls", mode="before")
     @classmethod
