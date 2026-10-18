@@ -1,0 +1,219 @@
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { Button } from "@workspace/ui/components/button"
+import { ChatTranscript } from "./ChatTranscript"
+import { MessageComposer } from "./MessageComposer"
+import { ReceiptPanel } from "./ReceiptPanel"
+import { ReviewPanel } from "./ReviewPanel"
+import { ScreenshotPicker } from "./ScreenshotPicker"
+import { copy } from "./copy"
+import type { IntakeController } from "./controller"
+import type { Language } from "./types"
+import "./intake.css"
+
+export function IntakePage({ controller }: { controller: IntakeController }) {
+  const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
+  const session = snapshot.session
+  const [locale, setLocale] = useState<Language>(session?.language ?? "en")
+  const [draft, setDraft] = useState("")
+  const [previews, setPreviews] = useState<{ name: string; url: string }[]>([])
+  const [confirmNew, setConfirmNew] = useState(false)
+  const [announcedId, setAnnouncedId] = useState<string | null>(null)
+  const reviewHeading = useRef<HTMLHeadingElement | null>(null)
+  const reviewRequest = useRef(false)
+  const text = copy[locale]
+  const credentials = controller.access()
+
+  useEffect(() => {
+    if (!controller.getSnapshot().session) void controller.initialize("ar")
+  }, [controller])
+
+  useEffect(() => {
+    const latest = session?.messages.filter((message) => message.role === "assistant").at(-1)
+    if (latest && latest.id !== announcedId) setAnnouncedId(latest.id)
+  }, [announcedId, session?.messages])
+
+  useEffect(() => {
+    if (reviewRequest.current && session?.review) {
+      reviewHeading.current?.focus()
+      reviewRequest.current = false
+    }
+  }, [session?.review])
+
+  useEffect(() => {
+    return () => {
+      for (const preview of previews) URL.revokeObjectURL(preview.url)
+    }
+  }, [previews])
+
+  const unsent = session?.attachments.filter((item) => !item.removed && !item.message_id) ?? []
+  const canSend = Boolean(draft.trim() || unsent.length) && !snapshot.busy && session?.turn_status !== "processing"
+  const hasContent = Boolean(session?.messages.length || session?.attachments.some((item) => !item.removed))
+
+  async function chooseLanguage(next: Language) {
+    setLocale(next)
+    if (session?.phase === "review_ready" && session.review) {
+      reviewRequest.current = true
+      await controller.requestReview(session.review.quality !== "sufficient_context", next)
+    }
+  }
+
+  async function send() {
+    if (!canSend) return
+    const attachmentIds = unsent.map((item) => item.id)
+    const body = draft
+    await controller.send(body, locale, attachmentIds)
+    if (!controller.getSnapshot().error) {
+      setDraft("")
+      setPreviews((current) => {
+        for (const preview of current) URL.revokeObjectURL(preview.url)
+        return []
+      })
+      document.getElementById("intake-message")?.focus()
+    }
+  }
+
+  async function selectFiles(files: FileList) {
+    const local = [...files].map((file) => ({ name: file.name, url: URL.createObjectURL(file) }))
+    setPreviews((current) => [...current, ...local])
+    for (const file of files) {
+      try {
+        await controller.upload(file)
+        setPreviews((current) => {
+          const match = current.find((item) => item.name === file.name)
+          if (match) URL.revokeObjectURL(match.url)
+          return current.filter((item) => item.name !== file.name)
+        })
+      } catch {
+        setPreviews((current) => {
+          const match = current.find((item) => item.name === file.name)
+          if (match) URL.revokeObjectURL(match.url)
+          return current.filter((item) => item.name !== file.name)
+        })
+        break
+      }
+    }
+  }
+
+  return (
+    <div className="intake-shell" dir={locale === "ar" ? "rtl" : "ltr"} lang={locale}>
+      <header className="intake-header">
+        <div className="intake-brand">
+          <span className="intake-mark" aria-hidden="true" />
+          <div>
+            <p className="intake-title">{text.title}</p>
+            <p className="intake-subtitle">{text.subtitle}</p>
+          </div>
+        </div>
+        <div className="intake-languages" role="group" aria-label={text.english}>
+          <Button type="button" variant={locale === "en" ? "default" : "outline"} onClick={() => void chooseLanguage("en")}>
+            {text.english}
+          </Button>
+          <Button type="button" variant={locale === "ar" ? "default" : "outline"} onClick={() => void chooseLanguage("ar")}>
+            {text.arabic}
+          </Button>
+        </div>
+      </header>
+      <main className="intake-layout">
+        <div className="intake-conversation">
+          {session ? (
+            <ChatTranscript messages={session.messages} copy={text} announcedId={announcedId} />
+          ) : (
+            <p className="intake-muted">{text.empty}</p>
+          )}
+          {session && !session.messages.length ? <p className="intake-muted">{text.empty}</p> : null}
+          <ScreenshotPicker
+            copy={text}
+            attachments={session?.attachments ?? []}
+            previews={previews}
+            progress={snapshot.uploads}
+            disabled={snapshot.busy || session?.turn_status === "processing"}
+            onSelect={(files) => void selectFiles(files)}
+            onRemove={(attachmentId) => void controller.remove(attachmentId)}
+          />
+          <MessageComposer copy={text} value={draft} sendDisabled={!canSend} onChange={setDraft} onSubmit={() => void send()} />
+        </div>
+        <aside className="intake-side">
+          {snapshot.error ? (
+            <p role="alert" className="intake-alert">
+              {snapshot.error}
+            </p>
+          ) : null}
+          {snapshot.resumeUnavailable ? <p className="intake-muted">{text.resumeUnavailable}</p> : null}
+          {session?.receipt ? <ReceiptPanel receipt={session.receipt} copy={text} /> : null}
+          {session?.review && !session.receipt ? (
+            <>
+              <ReviewPanel
+                review={session.review}
+                attachments={session.attachments}
+                credentials={credentials}
+                api={controller.transport()}
+                copy={text}
+                headingRef={(node) => {
+                  reviewHeading.current = node
+                }}
+              />
+              <div className="intake-actions">
+                <Button
+                  type="button"
+                  disabled={snapshot.busy}
+                  onClick={() => {
+                    document.getElementById("intake-message")?.focus()
+                  }}
+                >
+                  {text.continueChat}
+                </Button>
+                <Button type="button" disabled={snapshot.busy || session.turn_status === "processing"} onClick={() => void controller.submit()}>
+                  {text.submit}
+                </Button>
+              </div>
+            </>
+          ) : null}
+          {session && !session.review && !session.receipt ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={snapshot.busy || !hasContent}
+              onClick={() => {
+                reviewRequest.current = true
+                void controller.requestReview(true, locale)
+              }}
+            >
+              {text.reviewNow}
+            </Button>
+          ) : null}
+          {session?.turn_status === "processing" || snapshot.pollingExhausted ? (
+            <Button type="button" variant="outline" onClick={() => void controller.refresh()}>
+              {text.refresh}
+            </Button>
+          ) : null}
+          {session?.turn_status === "retryable_failure" || snapshot.error ? (
+            <Button type="button" variant="outline" onClick={() => void controller.retry()}>
+              {text.retry}
+            </Button>
+          ) : null}
+          <Button type="button" variant="ghost" onClick={() => (hasContent ? setConfirmNew(true) : void controller.startNew(locale))}>
+            {text.startNew}
+          </Button>
+          {confirmNew ? (
+            <div role="dialog" aria-label={text.startNew}>
+              <p>{text.confirmNewBody}</p>
+              <Button
+                type="button"
+                onClick={() => {
+                  setConfirmNew(false)
+                  setDraft("")
+                  void controller.startNew(locale)
+                }}
+              >
+                {text.confirmNew}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setConfirmNew(false)}>
+                {text.cancel}
+              </Button>
+            </div>
+          ) : null}
+        </aside>
+      </main>
+    </div>
+  )
+}

@@ -27,6 +27,7 @@ const statusLabels: Record<string, string> = {
   edited: "Edited & approved",
   rejected: "Rejected",
   running: "Processing",
+  processing: "Processing",
   completed: "Completed",
   completed_with_errors: "Partial failure",
   failed: "Failed",

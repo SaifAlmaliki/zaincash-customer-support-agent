@@ -1,0 +1,185 @@
+.intake-shell {
+  min-height: 100svh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Figtree Variable", "Segoe UI", "Noto Naskh Arabic", Tahoma, sans-serif;
+}
+.intake-header,
+.intake-languages,
+.intake-brand,
+.intake-actions,
+.intake-shot-list {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.intake-header {
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 3px solid #da3345;
+}
+.intake-brand {
+  align-items: flex-start;
+}
+.intake-mark {
+  width: 14px;
+  height: 14px;
+  margin-top: 6px;
+  border-radius: 99px;
+  background: #da3345;
+}
+.intake-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.intake-subtitle,
+.intake-muted,
+.intake-speaker {
+  color: var(--muted-foreground);
+}
+.intake-subtitle,
+.intake-speaker,
+.intake-muted {
+  margin: 0;
+}
+.intake-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  padding: 16px;
+}
+.intake-conversation,
+.intake-side,
+.intake-review,
+.intake-receipt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.intake-thread {
+  display: flex;
+  min-height: 180px;
+  flex-direction: column;
+  gap: 10px;
+}
+.intake-bubble {
+  max-width: 42rem;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+}
+.intake-bubble p,
+.intake-review p,
+.intake-receipt p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.intake-user {
+  margin-inline-start: auto;
+  background: color-mix(in oklch, #da3345 8%, var(--card));
+}
+.intake-composer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  background: var(--background);
+}
+.intake-composer textarea,
+.intake-shots input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+.intake-composer textarea {
+  min-height: 84px;
+  padding: 12px;
+}
+.intake-label {
+  font-weight: 650;
+}
+.intake-side {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+}
+.intake-review h2,
+.intake-receipt h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+.intake-partial,
+.intake-alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+.intake-partial {
+  background: color-mix(in oklch, #da3345 10%, var(--card));
+}
+.intake-alert {
+  background: color-mix(in oklch, var(--destructive) 12%, var(--card));
+}
+.intake-review dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.intake-review dl div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.4fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.intake-review dt {
+  color: var(--muted-foreground);
+}
+.intake-review dd {
+  margin: 0;
+}
+.intake-shot-list {
+  flex-wrap: wrap;
+  align-items: stretch;
+  padding: 0;
+  list-style: none;
+}
+.intake-shot-list img,
+.intake-review img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.intake-announce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+@media (min-width: 960px) {
+  .intake-layout {
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+    align-items: start;
+  }
+}
+@media (max-width: 720px) {
+  .intake-header,
+  .intake-actions,
+  .intake-languages {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .intake-composer textarea {
+    min-height: 72px;
+  }
+}

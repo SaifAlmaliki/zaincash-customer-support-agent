@@ -5,19 +5,19 @@ import type { IntakeCopy } from "./copy"
 export function MessageComposer({
   copy,
   value,
-  disabled,
+  sendDisabled,
   onChange,
   onSubmit,
 }: {
   copy: IntakeCopy
   value: string
-  disabled: boolean
+  sendDisabled: boolean
   onChange: (value: string) => void
   onSubmit: () => void
 }) {
   function submit(event?: FormEvent) {
     event?.preventDefault()
-    if (!disabled) onSubmit()
+    if (!sendDisabled) onSubmit()
   }
 
   return (
@@ -31,7 +31,6 @@ export function MessageComposer({
         dir="auto"
         rows={3}
         value={value}
-        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         onCompositionStart={(event) => {
           event.currentTarget.dataset.composing = "true"
@@ -45,7 +44,7 @@ export function MessageComposer({
           submit()
         }}
       />
-      <Button type="submit" disabled={disabled}>
+      <Button type="submit" disabled={sendDisabled}>
         {copy.send}
       </Button>
     </form>

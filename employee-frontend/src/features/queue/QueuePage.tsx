@@ -77,6 +77,7 @@ export function QueuePage() {
     escalated: rows.filter((row) => row.status === "escalated").length,
     approved: rows.filter((row) => ["approved", "edited"].includes(row.status))
       .length,
+    processing: rows.filter((row) => row.status === "processing").length,
   }
   const filtered = useMemo(
     () =>
@@ -173,6 +174,7 @@ export function QueuePage() {
                 ["all", "All tickets"],
                 ["pending_review", "Needs review"],
                 ["escalated", "Escalated"],
+                ["processing", "Processing"],
                 ["approved", "Approved"],
               ] as const
             ).map(([value, label]) => (

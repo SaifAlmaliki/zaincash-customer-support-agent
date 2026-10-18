@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import {
   ArrowLeft,
@@ -32,6 +32,8 @@ import { dateLabel, teams, timeLabel, humanize } from "@/lib/format"
 import type { Result, ReviewInput } from "@/lib/types"
 import { SourceEvidence } from "./SourceEvidence"
 import { PipelineTrace } from "./PipelineTrace"
+import { IntakeEvidence } from "./IntakeEvidence"
+import { canReview } from "./review-availability"
 
 function reviewerNote(result: Result) {
   const own = result.internal_note?.trim()
@@ -59,6 +61,7 @@ function ReviewEditor({
   const [saving, setSaving] = useState(false),
     [reject, setReject] = useState(false)
   const approved = ["approved", "edited"].includes(result.status)
+  const reviewable = canReview(result.status)
   const findings = result.guardrail_findings ?? []
   const note = reviewerNote(result)
   async function save(action: ReviewInput["action"]) {
@@ -100,6 +103,14 @@ function ReviewEditor({
   }
   return (
     <div className="review-editor-stack">
+      {!reviewable && (
+        <p className="processing-hold" role="status">
+          {result.status === "failed"
+            ? "Processing needs attention. The submitted report is still here."
+            : "This ticket is still processing. Review opens after a saved outcome."}
+        </p>
+      )}
+      {reviewable && (
       <Card>
         <CardHeader><CardTitle className="section-title"><ShieldAlert size={17} />Draft checks & internal note</CardTitle></CardHeader>
         <CardContent>
@@ -110,9 +121,10 @@ function ReviewEditor({
             <p>{result.credential_check_degraded === true ? "The credential checker was unavailable or returned an invalid result. Review the reply for requests for sensitive credentials." : result.credential_check_degraded == null ? "No valid checker outcome was saved; do not assume this check passed." : "The checker returned a usable result; findings above show any flagged request."}</p>
             {result.requests_credentials != null && <p>Credential-request score: {result.requests_credentials.toFixed(3)} (must be below 0.200).</p>}
           </div>
-          <div className="internal-note"><strong>Internal note</strong>{note ? <p className="passage-text" dir="auto">{note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
+          <div className="internal-note"><strong>Internal note</strong>{result.internal_note ? <p className="passage-text" dir="auto">{result.internal_note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
         </CardContent>
       </Card>
+      )}
       <Card className="draft-card">
         <CardHeader>
           <CardTitle className="section-title">
@@ -121,7 +133,7 @@ function ReviewEditor({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!result.draft_text && (
+          {reviewable && !result.draft_text && (
             <div className="draft-unavailable">
               <FileText size={17} />
               <span>
@@ -173,7 +185,7 @@ function ReviewEditor({
           {team !== result.team && (
             <Button
               variant="outline"
-              disabled={saving || !reviewer.trim()}
+              disabled={saving || !reviewable || !reviewer.trim()}
               onClick={() => void save("reassign")}
             >
               Save team assignment
@@ -182,7 +194,7 @@ function ReviewEditor({
           <div className="review-actions">
             <Button
               variant="outline"
-              disabled={saving || result.status === "failed"}
+              disabled={saving || !reviewable}
               onClick={() => setReject(true)}
             >
               <X size={16} />
@@ -191,9 +203,9 @@ function ReviewEditor({
             <Button
               disabled={
                 saving ||
+                !reviewable ||
                 !text.trim() ||
-                !reviewer.trim() ||
-                result.status === "failed"
+                !reviewer.trim()
               }
               onClick={() =>
                 void save(
@@ -268,8 +280,12 @@ function ReviewEditor({
 export function TicketReviewPage() {
   const { id } = useParams(),
     workspace = useWorkspace()
-  const query = useResource<Result>(`/results/${id}`, workspace.revision)
+  const [pollMs, setPollMs] = useState(0)
+  const query = useResource<Result>(`/results/${id}`, workspace.revision, pollMs)
   const result = query.data
+  useEffect(() => {
+    setPollMs(result?.status === "processing" ? 2000 : 0)
+  }, [result?.status])
   if (query.error)
     return <ErrorState message={query.error} retry={query.reload} />
   if (query.loading) return <LoadingState />
@@ -298,7 +314,10 @@ export function TicketReviewPage() {
         <StatusBadge status={result.status} />
       </PageHeader>
       <div className="review-layout">
-        <SourceEvidence result={result} />
+        <div>
+          <IntakeEvidence intake={result.intake} />
+          <SourceEvidence result={result} />
+        </div>
         <ReviewEditor
           key={result.id}
           result={result}

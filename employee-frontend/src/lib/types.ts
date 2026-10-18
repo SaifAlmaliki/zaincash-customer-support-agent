@@ -36,6 +36,22 @@ export type Review = {
   final_text: string | null
   created_at: string
 }
+export type IntakeFact = {
+  key: string
+  status: string
+  value?: string | null
+  normalized?: string | null
+}
+export type IntakeEvidenceData = {
+  summary_ar: string
+  quality: string | null
+  facts: Record<string, IntakeFact>
+  additional_issues: IntakeFact[]
+  unknown_keys: string[]
+  messages: { id: string; role: string; text: string; language?: string }[]
+  attachments: { id: string; filename: string; download_url: string }[]
+  submitted_at?: string | null
+}
 export type Result = {
   id: number
   ticket_id: number
@@ -72,6 +88,7 @@ export type Result = {
   jev_model_version?: string | null
   reviews?: Review[]
   transaction?: Record<string, string | number | null> | null
+  intake?: IntakeEvidenceData | null
 }
 export type ReviewInput = {
   action: "approve" | "edit_approve" | "reject" | "reassign"

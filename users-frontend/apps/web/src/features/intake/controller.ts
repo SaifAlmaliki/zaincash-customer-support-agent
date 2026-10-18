@@ -78,6 +78,10 @@ export class IntakeController {
     return this.credentials
   }
 
+  transport() {
+    return this.api
+  }
+
   async initialize(language: Language) {
     if (!this.initPromise) {
       const generation = this.generation
