@@ -1493,12 +1493,6 @@
     "ast_hash": "f0402b67b6ce880f65666bb49e841696",
     "semantic_hash": ""
   },
-  ".inspect-users-frontend.sh": {
-    "mtime": 1792320138.7020895,
-    "seen": 1792320172.3223188,
-    "ast_hash": "8c47a7e5c6902dc052a7591be4688133",
-    "semantic_hash": ""
-  },
   "docs/superpowers/plans/2026-10-18-customer-intake.md": {
     "mtime": 1792320145.348668,
     "seen": 1792320172.33559,

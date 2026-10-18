@@ -399,128 +399,6 @@ summary:focus-visible {
 .metric-green .metric-top svg {
   color: var(--green);
 }
-.pipeline-strip {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--card);
-  margin-bottom: 26px;
-  padding: 13px 18px 12px;
-}
-.pipeline-caption {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 550;
-}
-.pipeline-caption > svg {
-  color: #da3345;
-}
-.pipeline-help {
-  color: var(--muted-foreground);
-  font-size: 10px;
-  margin-left: auto;
-  font-weight: 400;
-}
-.pipeline-steps {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  margin-top: 15px;
-}
-.pipeline-step-wrap {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-.pipeline-step {
-  padding: 5px 3px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-align: left;
-  min-width: 0;
-  width: 100%;
-}
-.pipeline-step:hover {
-  background: var(--muted);
-}
-.step-icon {
-  width: 33px;
-  height: 33px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  background: var(--background);
-  border-radius: 8px;
-  color: #6f7785;
-  flex-shrink: 0;
-}
-.pipeline-step-wrap:last-child .step-icon {
-  color: #b13343;
-  background: var(--accent-soft);
-  border-color: #f9d9df;
-}
-.pipeline-step strong {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 550;
-  white-space: nowrap;
-}
-.pipeline-step strong small {
-  color: #9297a2;
-  font-size: 8px;
-}
-.pipeline-step > span:last-child > span {
-  font-size: 8px;
-  color: var(--muted-foreground);
-  display: block;
-  margin-top: 3px;
-}
-.step-chevron {
-  flex-shrink: 0;
-  color: #b2b7c0;
-  margin-inline: 2px 7px;
-}
-.stage-dialog {
-  max-width: 540px;
-}
-.stage-outcome {
-  background: var(--muted);
-  border-radius: 8px;
-  padding: 14px 16px;
-}
-.stage-outcome h4 {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-.stage-outcome p,
-.stage-outcome li {
-  font-size: 12px;
-  line-height: 1.6;
-}
-.stage-outcome ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.stage-outcome li {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--border);
-}
-.stage-outcome li:last-child {
-  border: 0;
-  padding-bottom: 0;
-}
-.stage-outcome strong {
-  font-weight: 600;
-}
 .queue-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 236px;
@@ -2151,19 +2029,6 @@ summary:focus-visible {
   .queue-aside .human-note {
     grid-column: span 2;
   }
-  .pipeline-step {
-    gap: 5px;
-  }
-  .pipeline-step > span:last-child > span {
-    display: none;
-  }
-  .step-icon {
-    height: 28px;
-    width: 28px;
-  }
-  .step-icon > svg {
-    width: 15px;
-  }
   .metric-card {
     padding: 16px;
   }
@@ -2219,23 +2084,6 @@ summary:focus-visible {
   }
   .metric-card p {
     line-height: 1.6;
-  }
-  .pipeline-steps {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-  .pipeline-step > span:last-child > span {
-    display: block;
-  }
-  .step-icon {
-    height: 32px;
-    width: 32px;
-  }
-  .pipeline-help {
-    font-size: 9px;
-  }
-  .pipeline-step-wrap:nth-child(3) > .step-chevron {
-    visibility: hidden;
   }
   .review-layout,
   .new-batch-layout,
@@ -2361,28 +2209,6 @@ summary:focus-visible {
   .metric-card p {
     font-size: 9px;
   }
-  .pipeline-strip {
-    padding: 13px;
-    margin-bottom: 21px;
-  }
-  .pipeline-caption {
-    font-size: 11px;
-  }
-  .pipeline-help {
-    display: none;
-  }
-  .pipeline-step > span:last-child > span {
-    display: none;
-  }
-  .pipeline-step strong small {
-    display: none;
-  }
-  .pipeline-step strong {
-    font-size: 10px;
-  }
-  .step-chevron {
-    margin: 0 2px;
-  }
   .queue-tabs {
     gap: 18px;
     padding-inline: 15px;
@@ -2495,9 +2321,6 @@ summary:focus-visible {
   }
   .example-button {
     font-size: 10px;
-  }
-  .stage-dialog {
-    max-width: calc(100% - 2rem);
   }
 }
 @media (prefers-reduced-motion: reduce) {

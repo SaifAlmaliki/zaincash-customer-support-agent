@@ -27,7 +27,6 @@ import {
   PageHeader,
   StatusBadge,
 } from "@/components/shared/workspace-ui"
-import { PipelineStrip } from "@/components/shared/PipelineStrip"
 import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
 import {
@@ -56,7 +55,6 @@ export function RunsPage() {
           New batch
         </Button>
       </PageHeader>
-      <PipelineStrip />
       {query.error && (
         <ErrorState message={query.error} retry={query.reload} />
       )}

@@ -27,7 +27,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PipelineStrip } from "@/components/shared/PipelineStrip"
 import {
   Confidence,
   EmptyState,
@@ -163,7 +162,6 @@ export function QueuePage() {
           tone="metric-green"
         />
       </div>
-      <PipelineStrip results={rows} />
       {query.error && (
         <ErrorState message={query.error} retry={query.reload} />
       )}
