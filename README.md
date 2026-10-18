@@ -114,93 +114,82 @@ Orchestration, outside any single stage:
 
 The full design is in [`docs/superpowers/specs/2026-10-07-support-pipeline-design.md`](docs/superpowers/specs/2026-10-07-support-pipeline-design.md).
 
-## Run locally
+## Run the app
 
-### Arabic knowledge pack for the judge demo
+From the repository root in WSL, use two terminals and leave both running. Once, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY`.
 
-Upload **[`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md)** for a single-file Arabic KB demo. It contains all **13 valid tested sources**: the 12 corpus policies plus the recovered temporary source used in runs 39/40. Alternatively, upload the 13 files in [`data/test-kb/ar/`](data/test-kb/ar/) individually; choose one format, not both.
+**Terminal 1 — database and API.** Run these one at a time from the repository root. Leave the last command running.
 
-The [Arabic upload/search/draft/review guide](data/test-kb/README.md) includes example questions and expected-source guidance. [Provenance and SHA-256 hashes](data/test-kb/provenance.json) distinguish these newly localized, **offline-parser-validated** copies from the earlier live-tested original bytes. The malformed upload sample is isolated under `data/test-kb/negative/` and is not KB content.
-
-### Start the application
-
-From the repository root, in three terminals. Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` first.
-
-Database:
-
-```bash
-docker compose up -d --wait db
-uv --directory backend run support seed-db \
-  --transactions tests/fixtures/sample_transactions.jsonl \
-  --incidents tests/fixtures/sample_incidents.jsonl
-```
-
-Backend:
+Point Python at Ubuntu’s trusted certificates. This terminal needs the variable; a value only in `.env` does not fix TLS on this network.
 
 ```bash
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+```
+
+Start Postgres and wait until it is healthy. The database stays on port **5433**.
+
+```bash
+docker compose up -d --wait db
+```
+
+Install the backend Python packages.
+
+```bash
 uv --directory backend sync
+```
+
+Create the tables and load the synthetic transactions and the service incident. Safe to run again. The demo tickets match these records.
+
+```bash
+uv --directory backend run support seed-db --transactions tests/fixtures/sample_transactions.jsonl --incidents tests/fixtures/sample_incidents.jsonl
+```
+
+Start the API and leave this terminal open. Wait for `Uvicorn running on http://0.0.0.0:8000`.
+
+```bash
 uv --directory backend run uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Frontend:
+**Terminal 2 — UI.** Open a second terminal.
+
+Move into the UI project.
 
 ```bash
-cd customer-support-ui
+cd employee-frontend
+```
+
+Install the UI packages. The next time you start, you can skip this and run only the command below.
+
+```bash
 npm ci
-npm run dev -- --port 5173
 ```
 
-Open http://localhost:5173. API docs are at http://localhost:8000/api/docs. Postgres is on port 5433.
-
-## Quickstart (WSL Ubuntu, Docker Engine, uv)
-
-Run from the repository root in WSL:
+Start the UI and leave this terminal open.
 
 ```bash
-test -f .env || cp .env.example .env
-# Set OPENROUTER_API_KEY and TYPESAFE_API_KEY in .env before continuing.
-# GEMINI_MODEL defaults to google/gemini-3.8-flash.
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt  # Use WSL's installed CA certificates.
-docker compose up -d db
-cd backend
-uv sync
-uv run support seed-db --transactions tests/fixtures/sample_transactions.jsonl \
-  --incidents tests/fixtures/sample_incidents.jsonl
-uv run support run-batch tests/fixtures/sample_tickets.jsonl --mode cascade --out ../out/run.json
+npm run dev
 ```
 
-`seed-db` creates the schema and loads the synthetic records. Postgres is exposed on host port **5433**.
+Open http://localhost:5173 and select **Live workspace**. API docs are at http://localhost:8000/api/docs.
 
-`--mode` is one of `jev`, `gemini` or `cascade` (the default). Add `--no-db --transactions <file>` to run without Postgres:
+### Show it in the browser
 
-```bash
-uv run support run-batch tests/fixtures/sample_tickets.jsonl --mode jev --no-db \
-  --transactions tests/fixtures/sample_transactions.jsonl --out ../out/smoke-jev.json
-```
+1. **Knowledge base** → upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md) and wait until it says **Indexed**. Upload that one file. Do not also upload the copies in [`data/test-kb/ar/`](data/test-kb/ar/).
+2. **New batch** → upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), keep **Jev → Gemini fallback**, and start processing.
+3. Open the four results: a pending transfer matched to `ZC2410000123`, a general question, a P1 fraud escalation, and an out-of-scope question. Edit one reply and choose **Save & approve**. Approval is stored. Nothing is sent.
 
-Ticket files can be `.jsonl`, `.json` or `.csv`. Each row needs `text`; `external_id`, `channel`, `customer_phone` and `received_at` are optional. `cascade` needs both API keys; `gemini` needs `OPENROUTER_API_KEY`. `jev` needs `TYPESAFE_API_KEY` and can also use `OPENROUTER_API_KEY` for fallback extraction.
+What each ticket and policy should show is in [`data/demo/README.md`](data/demo/README.md) and [`data/test-kb/README.md`](data/test-kb/README.md).
 
-Gemini requests use `https://openrouter.ai/api/v1` through `langchain-openrouter`. Set `GEMINI_MODEL` to an OpenRouter model ID to change models; existing unqualified `gemini-*` names are accepted and prefixed with `google/`. Run metadata records the qualified ID. Costs use OpenRouter's reported charge when available; the token-based fallback defaults to Gemini 3.8 Flash's standard $0.75 input / $3.75 output per million tokens.
+### Optional checks
 
-Run the checks from `backend/`:
+From `backend/`:
 
 ```bash
 uv run pytest -q
 uv run ruff check app tests
 ```
 
-The Postgres integration tests need the database service running; they use the separate `support_test` database.
-
-### Corporate-network troubleshooting
-
-If OpenRouter fails with `CERTIFICATE_VERIFY_FAILED` and your organization’s trusted CA is already installed in Ubuntu, point the SDK at the system CA bundle before running the CLI or starting the API:
-
-```bash
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-```
-
-Export this variable in the shell that launches the process; adding it only to `.env` does not configure the SDK's TLS trust. Restart an already-running API after changing credentials or models. The original direct Google API was blocked on this network; OpenRouter was successfully verified with the system CA bundle.
+The Postgres tests need the database running and use the separate `support_test` database. A terminal batch, without the UI, is `uv --directory backend run support run-batch tests/fixtures/sample_tickets.jsonl --mode cascade --out out/run.json`. `--mode` is `jev`, `gemini`, or `cascade`.
 
 ## Status
 
