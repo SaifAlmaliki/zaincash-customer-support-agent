@@ -18,25 +18,13 @@ import { categoryLabel, dateLabel, downloadJson, humanize } from "@/lib/format"
 import type { Insights } from "@/lib/types"
 
 export function InsightsPage() {
-  const workspace = useWorkspace(),
-    preview = workspace.mode === "preview"
-  const query = useResource<Insights>(
-    preview ? null : "/insights",
-    workspace.revision
-  )
-  const counts = preview
-    ? workspace.preview.reduce<Record<string, number>>((acc, row) => {
-        const key = row.category || "other"
-        acc[key] = (acc[key] || 0) + 1
-        return acc
-      }, {})
-    : query.data?.categories || {}
+  const workspace = useWorkspace()
+  const query = useResource<Insights>("/insights", workspace.revision)
+  const counts = query.data?.categories || {}
   const categories = Object.entries(counts).sort((a, b) => b[1] - a[1])
   const max = Math.max(...Object.values(counts), 1)
   const weeks = query.data?.weeks || []
-  const reasons = preview
-    ? { low_confidence: 2, fraud_suspected: 1 }
-    : query.data?.reasons || {}
+  const reasons = query.data?.reasons || {}
   return (
     <>
       <PageHeader
@@ -45,14 +33,14 @@ export function InsightsPage() {
       >
         <Button
           variant="outline"
-          disabled={!query.data || preview}
+          disabled={!query.data}
           onClick={() => downloadJson(query.data, "support-insights.json")}
         >
           <Download size={16} />
           Export report
         </Button>
       </PageHeader>
-      {!preview && query.error && (
+      {query.error && (
         <ErrorState message={query.error} retry={query.reload} />
       )}
       <div className="insights-hero">
@@ -66,11 +54,9 @@ export function InsightsPage() {
         </div>
         <div>
           <strong>
-            {preview ? workspace.preview.length : query.data?.total || 0}
+            {query.data?.total || 0}
           </strong>
-          <span>
-            {preview ? "illustrative tickets" : "unique tickets analyzed"}
-          </span>
+          <span>unique tickets analyzed</span>
         </div>
       </div>
       <div className="two-column">

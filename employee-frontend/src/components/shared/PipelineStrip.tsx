@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { ChevronRight, Code2, Workflow } from "lucide-react"
-import { stages } from "@/lib/stages"
+import { ChevronRight, Workflow } from "lucide-react"
+import { queueStepStatus, stageOutcomes, stages } from "@/lib/stages"
+import type { Result } from "@/lib/types"
 import {
   Dialog,
   DialogContent,
@@ -9,14 +10,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-export function PipelineStrip() {
+export function PipelineStrip({ results }: { results?: Result[] }) {
   const [selected, setSelected] = useState<(typeof stages)[number] | null>(null)
+  const outcome = selected ? stageOutcomes[selected.id] : null
+  const statuses = selected
+    ? queueStepStatus(selected.id, results || []).filter((row) => row.count > 0)
+    : []
   return (
     <section className="pipeline-strip" aria-label="Ticket processing workflow">
       <div className="pipeline-caption">
         <Workflow size={16} />
         <span>One pipeline. Every ticket.</span>
-        <span className="pipeline-help">Select a step to see its code</span>
+        <span className="pipeline-help">Select a step to see its outcome</span>
       </div>
       <div className="pipeline-steps">
         {stages.map((stage, index) => (
@@ -51,16 +56,22 @@ export function PipelineStrip() {
         <DialogContent className="stage-dialog">
           <DialogHeader>
             <DialogTitle>{selected?.label}</DialogTitle>
-            <DialogDescription>{selected?.description}</DialogDescription>
+            <DialogDescription>{outcome?.summary}</DialogDescription>
           </DialogHeader>
-          <div className="source-files">
-            <h4>
-              <Code2 size={16} />
-              Implementation files
-            </h4>
-            {selected?.files.map((file) => (
-              <code key={file}>backend/app/pipeline/{file}</code>
-            ))}
+          <div className="stage-outcome">
+            <h4>{results ? "This queue" : "What this step decides"}</h4>
+            {results && !results.length ? (
+              <p>No tickets in this queue yet.</p>
+            ) : (
+              <ul>
+                {(results ? statuses : outcome?.statuses || []).map((row) => (
+                  <li key={row.label}>
+                    <span>{row.label}</span>
+                    {"count" in row && <strong>{row.count}</strong>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </DialogContent>
       </Dialog>

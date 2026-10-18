@@ -9,12 +9,11 @@ const pendingKey = "zaincash.pending-indexes.v1"
 
 export function canRequestIndex(
   document: Pick<KnowledgeDocument, "id" | "status">,
-  pending: PendingIndexes,
-  live: boolean
+  pending: PendingIndexes
 ) {
   // Acceptance can outlive a background job that failed before a durable claim.
   // Explicit re-requests are safe because the API deduplicates active admission.
-  return live && document.status !== "indexing" && !pending.get(document.id)?.claimed
+  return document.status !== "indexing" && !pending.get(document.id)?.claimed
 }
 
 export function restorePendingIndexes(storage?: Pick<Storage, "getItem">): PendingIndexes {

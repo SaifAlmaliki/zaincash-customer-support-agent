@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import {
-  ArrowRight,
   CheckCheck,
   ChevronLeft,
   ChevronRight,
@@ -65,16 +64,13 @@ export function QueuePage() {
   const [team, setTeam] = useState("all"),
     [category, setCategory] = useState("all"),
     [page, setPage] = useState(0)
-  const isPreview = workspace.mode === "preview"
   const query = useResource<{ items: Result[]; total: number }>(
-    isPreview ? null : `/results?limit=500${runId ? `&run_id=${runId}` : ""}`,
+    `/results?limit=500${runId ? `&run_id=${runId}` : ""}`,
     workspace.revision,
     10000,
     loadQueue
   )
-  const rows = isPreview
-    ? workspace.preview
-    : query.data?.items || EMPTY_RESULTS
+  const rows = query.data?.items || EMPTY_RESULTS
   const counts = {
     all: rows.length,
     pending_review: rows.filter((row) => row.status === "pending_review")
@@ -126,7 +122,7 @@ export function QueuePage() {
           onClick={() =>
             downloadJson(
               rows,
-              `${isPreview ? "preview" : "live"}-support-results.json`
+              "support-results.json"
             )
           }
         >
@@ -142,11 +138,7 @@ export function QueuePage() {
         <Metric
           label="Tickets in queue"
           value={counts.all}
-          detail={
-            isPreview
-              ? "Illustrative ticket set"
-              : "Latest result for each ticket"
-          }
+          detail="Latest result for each ticket"
           icon={<Inbox size={19} />}
         />
         <Metric
@@ -171,8 +163,8 @@ export function QueuePage() {
           tone="metric-green"
         />
       </div>
-      <PipelineStrip />
-      {!isPreview && query.error && (
+      <PipelineStrip results={rows} />
+      {query.error && (
         <ErrorState message={query.error} retry={query.reload} />
       )}
       <div className="queue-layout">
@@ -256,7 +248,7 @@ export function QueuePage() {
               </Button>
             )}
           </div>
-          {!isPreview && query.loading && !query.data ? (
+          {query.loading && !query.data ? (
             <LoadingState />
           ) : visible.length ? (
             <Table className="ticket-table">
@@ -267,14 +259,19 @@ export function QueuePage() {
                   <TableHead>Priority</TableHead>
                   <TableHead>Confidence</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Open ticket</span>
-                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((row, index) => (
-                  <TableRow key={row.id} className="ticket-row">
+                  <TableRow
+                    key={row.id}
+                    className="ticket-row clickable-row"
+                    onClick={(event) => {
+                      if ((event.target as HTMLElement).closest("a, button"))
+                        return
+                      navigate(`/tickets/${row.id}`)
+                    }}
+                  >
                     <TableCell>
                       <div className="ticket-identity">
                         <span className={`ticket-avatar avatar-${index % 4}`}>
@@ -320,16 +317,6 @@ export function QueuePage() {
                     <TableCell>
                       <StatusBadge status={row.status} />
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Review ${row.ticket.external_id}`}
-                        onClick={() => navigate(`/tickets/${row.id}`)}
-                      >
-                        <ChevronRight size={17} />
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -344,22 +331,14 @@ export function QueuePage() {
               description={
                 rows.length
                   ? "Try a different category, team or search term."
-                  : "Upload support tickets to classify and route them, or explore the review flow with labelled preview data."
+                  : "Upload support tickets to classify and route them."
               }
             >
               {!rows.length && (
-                <div className="inline-actions">
-                  <Button onClick={() => navigate("/runs/new")}>
-                    <Plus size={16} />
-                    Add tickets
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => workspace.setMode("preview")}
-                  >
-                    Explore preview
-                  </Button>
-                </div>
+                <Button onClick={() => navigate("/runs/new")}>
+                  <Plus size={16} />
+                  Add tickets
+                </Button>
               )}
             </EmptyState>
           )}
@@ -449,10 +428,7 @@ export function QueuePage() {
                     to={`/tickets/${row.id}`}
                     key={row.id}
                   >
-                    <span>
-                      {row.ticket.external_id}
-                      <ArrowRight size={14} />
-                    </span>
+                    <span>{row.ticket.external_id}</span>
                     <strong>{categoryLabel(row.category)}</strong>
                     <small>
                       {row.escalation_reasons.includes("fraud_suspected")

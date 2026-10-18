@@ -1,5 +1,4 @@
 export type Mode = "jev" | "gemini" | "cascade"
-export type WorkspaceMode = "live" | "preview"
 export type TicketInput = {
   external_id?: string
   text: string

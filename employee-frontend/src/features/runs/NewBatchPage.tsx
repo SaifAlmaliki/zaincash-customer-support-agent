@@ -240,7 +240,6 @@ export function NewBatchPage() {
                 disabled={
                   busy ||
                   !selected.length ||
-                  workspace.mode === "preview" ||
                   !configured ||
                   Boolean(workspace.connectionError)
                 }
@@ -278,38 +277,23 @@ export function NewBatchPage() {
                 uncertain cases. Low-confidence results are flagged for human
                 review.
               </p>
-              {workspace.mode === "preview" ? (
+              {!configured && (
                 <div className="setup-callout">
-                  <strong>Preview mode is active</strong>
+                  <LockKeyhole size={18} />
+                  <strong>Model setup needed</strong>
                   <p>
-                    Switch to live to process these tickets with the backend.
+                    Set{" "}
+                    {mode === "jev"
+                      ? "TYPESAFE_API_KEY"
+                      : mode === "gemini"
+                        ? "OPENROUTER_API_KEY"
+                        : "OPENROUTER_API_KEY and TYPESAFE_API_KEY"}{" "}
+                    in the backend <code>.env</code>, then restart the API.
                   </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => workspace.setMode("live")}
-                  >
-                    Use live workspace
+                  <Button variant="outline" onClick={workspace.refresh}>
+                    Check connection
                   </Button>
                 </div>
-              ) : (
-                !configured && (
-                  <div className="setup-callout">
-                    <LockKeyhole size={18} />
-                    <strong>Model setup needed</strong>
-                    <p>
-                      Set{" "}
-                      {mode === "jev"
-                        ? "TYPESAFE_API_KEY"
-                        : mode === "gemini"
-                          ? "OPENROUTER_API_KEY"
-                          : "OPENROUTER_API_KEY and TYPESAFE_API_KEY"}{" "}
-                      in the backend <code>.env</code>, then restart the API.
-                    </p>
-                    <Button variant="outline" onClick={workspace.refresh}>
-                      Check connection
-                    </Button>
-                  </div>
-                )
               )}
             </CardContent>
           </Card>

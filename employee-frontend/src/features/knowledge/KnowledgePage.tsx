@@ -30,15 +30,9 @@ import { useKnowledgeLibrary } from "./use-knowledge-library"
 import { KnowledgeSearch } from "./KnowledgeSearch"
 
 export function KnowledgePage() {
-  const { mode } = useWorkspace()
-  return <KnowledgeWorkspace key={mode} />
-}
-
-function KnowledgeWorkspace() {
   const workspace = useWorkspace(),
     input = useRef<HTMLInputElement>(null)
-  const live = workspace.mode === "live"
-  const query = useKnowledgeLibrary(live, workspace.revision)
+  const query = useKnowledgeLibrary(workspace.revision)
   const mutation = useRef<AbortController | null>(null)
   useEffect(() => () => mutation.current?.abort(), [])
   const [search, setSearch] = useState(""),
@@ -53,7 +47,7 @@ function KnowledgeWorkspace() {
     doc.filename.toLowerCase().includes(search.toLowerCase())
   )
   function beginMutation() {
-    if (!live || mutation.current) return null
+    if (mutation.current) return null
     const controller = new AbortController()
     mutation.current = controller
     setBusy(true)
@@ -131,14 +125,13 @@ function KnowledgeWorkspace() {
       >
         <Button
           size="lg"
-          disabled={workspace.mode === "preview" || busy}
+          disabled={busy}
           onClick={() => input.current?.click()}
         >
           <FileUp size={17} />
           {busy ? "Working…" : "Upload document"}
         </Button>
       </PageHeader>
-      {!live && <p className="knowledge-message" role="status">Preview is read-only for knowledge. Switch to the live workspace to upload, index or test policy search.</p>}
       {notice && <p className="knowledge-message" role="status">{notice}</p>}
       {actionError && <div className="error-state" role="alert">{actionError}</div>}
       <div className="knowledge-layout">
@@ -150,8 +143,7 @@ function KnowledgeWorkspace() {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault()
-                  if (workspace.mode === "live")
-                    void upload(e.dataTransfer.files[0])
+                  void upload(e.dataTransfer.files[0])
                 }}
               >
                 <div className="upload-symbol">
@@ -165,7 +157,7 @@ function KnowledgeWorkspace() {
                 </p>
                 <Button
                   variant="outline"
-                  disabled={workspace.mode === "preview" || busy}
+                  disabled={busy}
                   onClick={() => input.current?.click()}
                 >
                   Browse files
@@ -175,14 +167,14 @@ function KnowledgeWorkspace() {
                   type="file"
                   className="sr-only"
                   aria-label="Upload knowledge document"
-                  disabled={workspace.mode !== "live" || busy}
+                  disabled={busy}
                   accept=".pdf,.md,.txt"
                   onChange={(e) => void upload(e.target.files?.[0])}
                 />
               </div>
             </CardContent>
           </Card>
-          {query.error && live && (
+          {query.error && (
             <ErrorState message={query.error} retry={query.refresh} />
           )}
           {query.paused && <p className="knowledge-message" role="status">Automatic status checks paused after 3 minutes. Accepted requests remain pending. Refresh status checks for a result; if no worker claim was recorded, use Request indexing again to request recovery.</p>}
@@ -193,7 +185,7 @@ function KnowledgeWorkspace() {
                 Documents
                 <span className="muted small">{documents.length} shown / {query.documents.length} stored</span>
               </CardTitle>
-              <Button variant="ghost" size="sm" disabled={!live || busy} onClick={query.refresh}><RefreshCw size={14} />Refresh status</Button>
+              <Button variant="ghost" size="sm" disabled={busy} onClick={query.refresh}><RefreshCw size={14} />Refresh status</Button>
             </CardHeader>
             <CardContent>
               <div className="input-with-icon">
@@ -205,7 +197,7 @@ function KnowledgeWorkspace() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              {query.loading && workspace.mode === "live" ? (
+              {query.loading ? (
                 <LoadingState />
               ) : documents.length ? (
                 <div className="document-list">
@@ -238,7 +230,7 @@ function KnowledgeWorkspace() {
                           <Button variant="outline" size="sm" disabled={busy || !requestable || !configured} onClick={() => void indexDocument(doc)} aria-label={`${indexAction}: ${doc.filename}`}>
                             {indexAction}
                           </Button>
-                          <Button variant="ghost" size="sm" disabled={!live} aria-pressed={selectedId === doc.id} onClick={() => setSelectedId(doc.id)}>Inspect passages<span className="sr-only">: {doc.filename}</span></Button>
+                          <Button variant="ghost" size="sm" aria-pressed={selectedId === doc.id} onClick={() => setSelectedId(doc.id)}>Inspect passages<span className="sr-only">: {doc.filename}</span></Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -254,7 +246,7 @@ function KnowledgeWorkspace() {
                         variant="ghost"
                         size="icon"
                         aria-label={`Delete ${doc.filename}`}
-                        disabled={!live || busy || active}
+                        disabled={busy || active}
                         onClick={() => setRemove(doc)}
                       >
                         <Trash2 size={16} />
@@ -271,16 +263,12 @@ function KnowledgeWorkspace() {
                       ? "No matching documents"
                       : "Your document library is empty"
                   }
-                  description={
-                    workspace.mode === "preview"
-                      ? "Switch to the live workspace to upload and store policy documents."
-                      : "Add your first synthetic support policy to get started."
-                  }
+                  description="Add your first synthetic support policy to get started."
                 />
               )}
             </CardContent>
           </Card>
-          <KnowledgeSearch live={live} configured={configured} selected={selected} onClose={() => setSelectedId(null)} />
+          <KnowledgeSearch configured={configured} selected={selected} onClose={() => setSelectedId(null)} />
         </div>
         <aside className="evidence-stack">
           <Card>
@@ -306,7 +294,7 @@ function KnowledgeWorkspace() {
                     <strong>Chunk & embed</strong>
                     <p>Prepare searchable passages with pgvector.</p>
                   </div>
-                  <BadgeLabel text={!live ? "Live only" : configured ? "Configured" : "Needs setup"} />
+                  <BadgeLabel text={configured ? "Configured" : "Needs setup"} />
                 </li>
                 <li>
                   <span>3</span>
@@ -314,7 +302,7 @@ function KnowledgeWorkspace() {
                     <strong>Retrieve & cite</strong>
                     <p>Ground the agent’s draft in relevant policy passages.</p>
                   </div>
-                  <BadgeLabel text={!live ? "Live only" : workspace.health?.knowledge?.ready ? "Ready" : "Needs index"} />
+                  <BadgeLabel text={workspace.health?.knowledge?.ready ? "Ready" : "Needs index"} />
                 </li>
               </ol>
             </CardContent>
@@ -322,8 +310,8 @@ function KnowledgeWorkspace() {
           <Card>
             <CardHeader><CardTitle className="section-title">Knowledge readiness</CardTitle></CardHeader>
             <CardContent>
-              <p className="muted small">{!live ? "Preview uses illustrative review data." : workspace.health?.knowledge ? `${workspace.health.knowledge.indexed_document_count} searchable documents · ${workspace.health.knowledge.status}` : "Readiness is unavailable. Check the API connection."}</p>
-              {live && workspace.health?.knowledge && <>
+              <p className="muted small">{workspace.health?.knowledge ? `${workspace.health.knowledge.indexed_document_count} searchable documents · ${workspace.health.knowledge.status}` : "Readiness is unavailable. Check the API connection."}</p>
+              {workspace.health?.knowledge && <>
                 <p className="field-help">{workspace.health.knowledge.embedding_model} · {workspace.health.knowledge.embedding_dimensions} dimensions</p>
                 <p className="field-help">{!workspace.health.knowledge.enabled ? "Knowledge retrieval is disabled. Enable RAG to index and search." : !configured ? "Configure the embedding provider to index and search policies." : workspace.health.knowledge.ready ? "Indexed policy passages are available for grounded drafts." : "Index a policy successfully before expecting a grounded draft."}</p>
                 <p className="field-help">{workspace.health.drafting?.credential_check_configured ? "Credential checking is configured." : "Credential checking is not configured; affected drafts are marked for review."} Readiness reflects configuration and stored indexes, not a live provider check.</p>
@@ -348,7 +336,7 @@ function KnowledgeWorkspace() {
         </aside>
       </div>
       <ConfirmDialog
-        open={live && remove !== null}
+        open={remove !== null}
         onClose={() => setRemove(null)}
         title="Delete this document?"
         description={`${remove?.filename || "This document"} and its searchable passages will be removed. Evidence already saved with a draft remains in that review.`}

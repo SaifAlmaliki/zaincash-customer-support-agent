@@ -40,8 +40,8 @@ function ChunkInspection({ document, onClose }: { document: KnowledgeDocument; o
   </Card>
 }
 
-export function KnowledgeSearch({ live, configured, selected, onClose }: {
-  live: boolean; configured: boolean; selected: KnowledgeDocument | null; onClose: () => void
+export function KnowledgeSearch({ configured, selected, onClose }: {
+  configured: boolean; selected: KnowledgeDocument | null; onClose: () => void
 }) {
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState("")
@@ -54,7 +54,7 @@ export function KnowledgeSearch({ live, configured, selected, onClose }: {
   useEffect(() => () => active.current?.abort(), [])
   async function search(event: FormEvent) {
     event.preventDefault()
-    if (!live || !configured || active.current || !query.trim() || !Number.isInteger(Number(k)) || Number(k) < 1 || Number(k) > 10) return
+    if (!configured || active.current || !query.trim() || !Number.isInteger(Number(k)) || Number(k) < 1 || Number(k) > 10) return
     const controller = new AbortController()
     active.current = controller
     setBusy(true)
@@ -71,21 +71,21 @@ export function KnowledgeSearch({ live, configured, selected, onClose }: {
     }
   }
   return <>
-    {live && selected && <ChunkInspection key={`${selected.id}-${selected.updated_at}`} document={selected} onClose={onClose} />}
+    {selected && <ChunkInspection key={`${selected.id}-${selected.updated_at}`} document={selected} onClose={onClose} />}
     <Card>
       <CardHeader><CardTitle className="section-title"><Search size={17} />Test policy search</CardTitle></CardHeader>
       <CardContent>
         <p className="muted small">Find passages a drafting agent could use. Each live search uses the configured embedding provider.</p>
         <form onSubmit={(event) => void search(event)} className="knowledge-search-form">
           <label className="field-label" htmlFor="policy-query">Policy question</label>
-          <Input id="policy-query" dir="auto" placeholder="Ask about a support policy…" value={query} onChange={(event) => setQuery(event.target.value)} maxLength={2000} required disabled={!live || busy || !configured} />
+          <Input id="policy-query" dir="auto" placeholder="Ask about a support policy…" value={query} onChange={(event) => setQuery(event.target.value)} maxLength={2000} required disabled={busy || !configured} />
           <div className="knowledge-search-controls">
             <div><span className="field-label">Category</span><FilterSelect label="Search category" value={category} onChange={setCategory} options={[{ value: "", label: "All categories" }, ...Object.entries(categories).map(([value, label]) => ({ value, label }))]} /></div>
-            <label className="field-label" htmlFor="policy-k">Maximum passages<Input id="policy-k" type="number" min={1} max={10} step={1} required value={k} onChange={(event) => setK(event.target.value)} disabled={!live || busy || !configured} /></label>
-            <Button type="submit" disabled={!live || !configured || busy || !query.trim()}><Search size={15} />{busy ? "Searching…" : "Search policies"}</Button>
+            <label className="field-label" htmlFor="policy-k">Maximum passages<Input id="policy-k" type="number" min={1} max={10} step={1} required value={k} onChange={(event) => setK(event.target.value)} disabled={busy || !configured} /></label>
+            <Button type="submit" disabled={!configured || busy || !query.trim()}><Search size={15} />{busy ? "Searching…" : "Search policies"}</Button>
           </div>
         </form>
-        {!live || !configured ? <p className="field-help">{!live ? "Policy search is available in the live workspace." : "Enable and configure knowledge indexing to test search."}</p> : null}
+        {!configured ? <p className="field-help">Enable and configure knowledge indexing to test search.</p> : null}
         {error && <div className="error-state" role="alert">{error} Review the query or provider configuration, then search again.</div>}
         {busy && <div role="status" className="loading-state">Searching indexed policy passages…</div>}
         {result && <div aria-live="polite">

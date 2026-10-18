@@ -15,7 +15,6 @@ import {
   ShieldCheck,
   CircleHelp,
   ArrowUpRight,
-  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,7 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useWorkspace } from "@/lib/workspace"
-import { FilterSelect, LoadingState } from "@/components/shared/workspace-ui"
+import { LoadingState } from "@/components/shared/workspace-ui"
 
 const navigation = [
   { to: "/", label: "Support queue", icon: Inbox },
@@ -43,7 +42,6 @@ export function WorkspaceLayout() {
     navigation.find(
       (item) => item.to !== "/" && location.pathname.startsWith(item.to)
     )?.label || "Support queue"
-  const preview = workspace.mode === "preview"
   return (
     <div className="workspace-app">
       <a className="skip-link" href="#main-content">
@@ -99,15 +97,6 @@ export function WorkspaceLayout() {
             >
               <item.icon size={18} strokeWidth={1.7} />
               <span>{item.label}</span>
-              {item.to === "/" && preview && (
-                <span className="nav-count">
-                  {
-                    workspace.preview.filter(
-                      (r) => r.status === "pending_review"
-                    ).length
-                  }
-                </span>
-              )}
             </NavLink>
           ))}
         </nav>
@@ -164,17 +153,6 @@ export function WorkspaceLayout() {
                   ? "API connected"
                   : "Connecting…"}
             </span>
-            <FilterSelect
-              label="Workspace data source"
-              value={workspace.mode}
-              options={[
-                { value: "live", label: "Live workspace" },
-                { value: "preview", label: "Preview workspace" },
-              ]}
-              onChange={(value) =>
-                workspace.setMode(value as "live" | "preview")
-              }
-            />
             <Tooltip>
               <TooltipTrigger
                 render={<span className="reviewer-avatar" tabIndex={0} />}
@@ -185,18 +163,6 @@ export function WorkspaceLayout() {
             </Tooltip>
           </div>
         </header>
-        {preview && (
-          <div className="preview-banner">
-            <Sparkles size={14} />
-            <span>
-              <strong>Preview workspace</strong> — illustrative synthetic
-              tickets. Changes here stay in this browser session.
-            </span>
-            <button onClick={() => workspace.setMode("live")}>
-              Switch to live <ArrowUpRight size={13} />
-            </button>
-          </div>
-        )}
         <main id="main-content" className="workspace-content">
           <Suspense fallback={<LoadingState />}>
             <Outlet />

@@ -38,8 +38,7 @@ it.each(["awaiting_indexing", "failed", "indexed"] as const)(
     expect(paused).toHaveBeenCalledOnce()
     const restored = restorePendingIndexes(storage)
     expect(restored.has(7)).toBe(true)
-    expect(canRequestIndex(unchanged, restored, true)).toBe(true)
-    expect(canRequestIndex(unchanged, restored, false)).toBe(false)
+    expect(canRequestIndex(unchanged, restored)).toBe(true)
 
     // An explicit re-request is admitted; acceptance is still not completion.
     acceptIndexRequest(restored, { ...unchanged, index_requested: true })
@@ -73,10 +72,10 @@ it("keeps observed active jobs pending and blocks re-request after pause and rel
   persistPendingIndexes(pending, { setItem: (_key, value) => { saved = value } })
   const restored = restorePendingIndexes({ getItem: () => saved })
   expect(restored.has(7)).toBe(true)
-  expect(canRequestIndex(document({ status: "indexing" }), restored, true)).toBe(false)
-  expect(canRequestIndex(document(), restored, true)).toBe(false)
-  expect(canRequestIndex(document({ status: "indexing" }), new Map(), true)).toBe(false)
-  expect(canRequestIndex(document(), new Map(), false)).toBe(false)
+  expect(canRequestIndex(document({ status: "indexing" }), restored)).toBe(false)
+  expect(canRequestIndex(document(), restored)).toBe(false)
+  expect(canRequestIndex(document({ status: "indexing" }), new Map())).toBe(false)
+  expect(canRequestIndex(document(), new Map())).toBe(true)
 })
 
 it("restores pre-claim acceptance after reload and removes persisted IDs only after a result", async () => {

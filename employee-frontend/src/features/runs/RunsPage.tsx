@@ -38,18 +38,13 @@ import {
   humanize,
   timeLabel,
 } from "@/lib/format"
-import { previewRuns } from "@/data/preview"
 import type { Run } from "@/lib/types"
 
 export function RunsPage() {
   const workspace = useWorkspace(),
     navigate = useNavigate()
-  const query = useResource<Run[]>(
-    workspace.mode === "preview" ? null : "/runs",
-    workspace.revision,
-    5000
-  )
-  const runs = workspace.mode === "preview" ? previewRuns : query.data || []
+  const query = useResource<Run[]>("/runs", workspace.revision, 5000)
+  const runs = query.data || []
   return (
     <>
       <PageHeader
@@ -62,7 +57,7 @@ export function RunsPage() {
         </Button>
       </PageHeader>
       <PipelineStrip />
-      {query.error && workspace.mode === "live" && (
+      {query.error && (
         <ErrorState message={query.error} retry={query.reload} />
       )}
       <Card className="data-card">
@@ -72,7 +67,7 @@ export function RunsPage() {
             Run history<span className="muted small">{runs.length} runs</span>
           </CardTitle>
         </CardHeader>
-        {query.loading && workspace.mode === "live" ? (
+        {query.loading ? (
           <LoadingState />
         ) : !runs.length ? (
           <EmptyState
@@ -94,12 +89,19 @@ export function RunsPage() {
                 <TableHead>Tickets</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Estimated cost</TableHead>
-                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {runs.map((run) => (
-                <TableRow key={run.id}>
+                <TableRow
+                  key={run.id}
+                  className="clickable-row"
+                  onClick={(event) => {
+                    if ((event.target as HTMLElement).closest("a, button"))
+                      return
+                    navigate(`/runs/${run.id}`)
+                  }}
+                >
                   <TableCell>
                     <Link className="ticket-id" to={`/runs/${run.id}`}>
                       Batch #{String(run.id).padStart(3, "0")}
@@ -123,19 +125,7 @@ export function RunsPage() {
                     <StatusBadge status={run.status} />
                   </TableCell>
                   <TableCell>
-                    {workspace.mode === "preview"
-                      ? "—"
-                      : `$${run.total_cost_usd.toFixed(4)}`}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Open batch ${run.id}`}
-                      onClick={() => navigate(`/runs/${run.id}`)}
-                    >
-                      <ArrowRight size={16} />
-                    </Button>
+                    {`$${run.total_cost_usd.toFixed(4)}`}
                   </TableCell>
                 </TableRow>
               ))}
@@ -150,19 +140,12 @@ export function RunsPage() {
 export function RunDetailPage() {
   const { id } = useParams(),
     workspace = useWorkspace()
-  const isPreview = workspace.mode === "preview"
-  const query = useResource<Run>(
-    isPreview ? null : `/runs/${id}`,
-    workspace.revision,
-    2500
-  )
-  const run = isPreview
-    ? previewRuns.find((item) => item.id === Number(id))
-    : query.data
-  if (!isPreview && query.error)
+  const query = useResource<Run>(`/runs/${id}`, workspace.revision, 2500)
+  const run = query.data
+  if (query.error)
     return <ErrorState message={query.error} retry={query.reload} />
   if (!run)
-    return !isPreview && query.loading ? (
+    return query.loading ? (
       <LoadingState />
     ) : (
       <EmptyState
@@ -243,13 +226,13 @@ export function RunDetailPage() {
         />
         <Metric
           label="Median latency"
-          value={isPreview ? "—" : duration(run.counts.latency_p50_ms || 0)}
+          value={duration(run.counts.latency_p50_ms || 0)}
           detail="Per processed ticket"
           icon={<Clock3 size={18} />}
         />
         <Metric
           label="Estimated run cost"
-          value={isPreview ? "—" : `$${run.total_cost_usd.toFixed(4)}`}
+          value={`$${run.total_cost_usd.toFixed(4)}`}
           detail="Based on recorded token usage"
           icon={<Coins size={18} />}
         />

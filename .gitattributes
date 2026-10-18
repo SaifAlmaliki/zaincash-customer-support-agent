@@ -1,0 +1,11 @@
+# Keep text as LF so Windows Git does not warn that LF will be replaced by CRLF.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary

@@ -49,10 +49,9 @@ uv --directory backend run support seed-db \
   --incidents tests/fixtures/sample_incidents.jsonl
 ```
 
-## Workspace modes
+## Data source
 
-- **Live workspace** uses FastAPI and PostgreSQL. Runs, result progress, documents, and review decisions are persisted. Failed requests remain errors; the UI does not replace them with simulated success.
-- **Preview workspace** uses the clearly labelled illustrative fixtures in `src/data/preview.ts`. Review edits are session-local and never issue live mutations. Preview data is not measured output and is not the held-out dataset required by the hackathon.
+The workspace reads and writes through FastAPI. PostgreSQL is the source of truth for runs, ticket results, documents, and review decisions. Failed requests remain errors; the UI does not replace them with simulated data.
 
 ## Workflow
 
@@ -99,7 +98,6 @@ src/
     imports.ts                    Ticket-file and evaluation-report validation
     stages.ts                     Stage labels and source file map
     format.ts                     Shared display/download helpers
-  data/preview.ts                 Isolated illustrative fixtures
   styles/workspace.css           Shared semantic layout and responsive styling
 ```
 

@@ -10,22 +10,21 @@ import {
   type PendingIndexes,
 } from "./index-lifecycle"
 
-// Keep accepted IDs across remounts/reloads, but never poll them in preview.
+// Keep accepted IDs across remounts/reloads.
 // Only terminal results or explicit deletion release an accepted request.
 const pending: PendingIndexes = restorePendingIndexes()
 
-export function useKnowledgeLibrary(live: boolean, revision: number) {
+export function useKnowledgeLibrary(revision: number) {
   const stopPolling = useRef<(() => void) | null>(null)
   const [reload, setReload] = useState(0)
   const [state, setState] = useState({
     documents: [] as KnowledgeDocument[],
-    pendingIds: live ? [...pending.keys()] : [],
-    loading: live,
+    pendingIds: [...pending.keys()],
+    loading: true,
     error: "",
     paused: false,
   })
   useEffect(() => {
-    if (!live) return
     const stop = pollKnowledge({
       pending,
       load: (signal) => request<KnowledgeDocument[]>("/knowledge", { signal }),
@@ -46,14 +45,14 @@ export function useKnowledgeLibrary(live: boolean, revision: number) {
     })
     stopPolling.current = stop
     return stop
-  }, [live, revision, reload])
+  }, [revision, reload])
   function refresh() {
     setState((old) => ({ ...old, error: "", paused: false }))
     setReload((old) => old + 1)
   }
   return {
     ...state,
-    canRequestIndex: (document: KnowledgeDocument) => canRequestIndex(document, pending, live),
+    canRequestIndex: (document: KnowledgeDocument) => canRequestIndex(document, pending),
     refresh,
     accepted: (document: IndexResponse) => {
       // A list requested before the mutation must not settle the new attempt.

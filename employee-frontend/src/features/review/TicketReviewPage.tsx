@@ -59,11 +59,9 @@ function ReviewEditor({
       expected_updated_at: result.updated_at,
     }
     try {
-      if (workspace.mode === "preview")
-        workspace.reviewPreview(result.id, review)
-      else await api.review(result.id, review)
+      await api.review(result.id, review)
       workspace.notify(
-        `${action === "reject" ? "Response rejected" : action === "reassign" ? "Team reassigned" : "Response approved"}${workspace.mode === "preview" ? " in preview only" : " and recorded"}.`
+        `${action === "reject" ? "Response rejected" : action === "reassign" ? "Team reassigned" : "Response approved"} and recorded.`
       )
       setReject(false)
       onSaved()
@@ -117,11 +115,6 @@ function ReviewEditor({
                 <strong>No generated draft</strong>No draft was saved for this result. Check the trace and findings, or write a response below.
               </span>
             </div>
-          )}
-          {workspace.mode === "preview" && (
-            <p className="field-help">
-              This response is an illustrative preview, not a model output.
-            </p>
           )}
           {result.draft_text && <div className="saved-reply"><strong>Original generated draft</strong><p className="passage-text" dir="auto" lang="ar">{result.draft_text}</p></div>}
           {result.final_text && <div className="saved-reply"><strong>Final reviewed reply</strong><p className="passage-text" dir="auto" lang="ar">{result.final_text}</p></div>}
@@ -262,17 +255,11 @@ function ReviewEditor({
 export function TicketReviewPage() {
   const { id } = useParams(),
     workspace = useWorkspace()
-  const query = useResource<Result>(
-    workspace.mode === "preview" ? null : `/results/${id}`,
-    workspace.revision
-  )
-  const result =
-    workspace.mode === "preview"
-      ? workspace.preview.find((row) => row.id === Number(id))
-      : query.data
-  if (workspace.mode === "live" && query.error)
+  const query = useResource<Result>(`/results/${id}`, workspace.revision)
+  const result = query.data
+  if (query.error)
     return <ErrorState message={query.error} retry={query.reload} />
-  if (workspace.mode === "live" && query.loading) return <LoadingState />
+  if (query.loading) return <LoadingState />
   if (!result)
     return (
       <EmptyState
@@ -300,7 +287,7 @@ export function TicketReviewPage() {
       <div className="review-layout">
         <SourceEvidence result={result} />
         <ReviewEditor
-          key={`${workspace.mode}-${result.id}`}
+          key={result.id}
           result={result}
           onSaved={() => {
             query.reload()
