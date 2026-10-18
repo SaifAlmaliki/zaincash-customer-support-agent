@@ -1,11 +1,19 @@
 """Customer intake routes. Ownership failures do not reveal whether a session exists."""
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from app.api.intake_schemas import CreateSessionInput, MessageInput, RemoveInput, RetryInput, ReviewInput, SubmitInput
+from app.api.intake_schemas import (
+    CreateSessionInput,
+    MessageInput,
+    RemoveInput,
+    RetryInput,
+    ReviewInput,
+    SubmitInput,
+)
 from app.intake.contracts import Credentials
 from app.services.intake_recovery import fail_intake_placeholders, reconcile_intake_run
 
@@ -36,8 +44,9 @@ async def _safe_dispatch(app, submission) -> None:
     except Exception:
         with app.state.session_factory() as session:
             fail_intake_placeholders(session, submission.run_id, "Dispatch failed. The submitted report was kept.")
-            from app.db.models import RunRow
             from datetime import UTC, datetime
+
+            from app.db.models import RunRow
             run = session.get(RunRow, submission.run_id)
             if run is not None and run.status == "running":
                 run.status = "failed"
@@ -73,8 +82,8 @@ async def retry_operation(session_id: UUID, request_id: UUID, body: RetryInput, 
 
 @router.post("/sessions/{session_id}/attachments", status_code=201)
 async def upload_attachment(
-    session_id: UUID, request: Request, file: UploadFile = File(...),
-    request_id: UUID = Form(...), expected_revision: int = Form(...),
+    session_id: UUID, request: Request, file: Annotated[UploadFile, File()],
+    request_id: Annotated[UUID, Form()], expected_revision: Annotated[int, Form()],
 ):
     content = await file.read()
     attachment, view = await run_in_threadpool(

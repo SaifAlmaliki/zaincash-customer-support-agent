@@ -19,6 +19,7 @@ def test_ambiguous_slash_date_is_not_fabricated():
 
 def test_utc_instant_just_before_baghdad_midnight_stays_on_the_previous_day():
     from datetime import timedelta
+
     from app.intake.dates import normalize_reported_date
     # 21:30 UTC on the 17th is 00:30 on the 18th in Baghdad.
     sent = datetime(2026, 10, 17, 21, 30, tzinfo=ZoneInfo("UTC"))

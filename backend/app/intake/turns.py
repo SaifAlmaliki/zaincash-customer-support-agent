@@ -8,7 +8,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import sessionmaker
 
 from app.intake.contracts import OperationClaim, SessionView, TurnResult
-from app.intake.db_models import IntakeAttachmentRow, IntakeMessageRow, IntakeOperationRow, IntakeSessionRow
+from app.intake.db_models import (
+    IntakeAttachmentRow,
+    IntakeMessageRow,
+    IntakeOperationRow,
+    IntakeSessionRow,
+)
 from app.intake.errors import ImageRejected, InvalidEvidence, RevisionConflict, TurnBusy
 from app.intake.repository import (
     IntakeRepository,

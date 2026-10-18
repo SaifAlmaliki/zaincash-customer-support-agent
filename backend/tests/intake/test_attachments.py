@@ -113,6 +113,7 @@ def test_active_turn_rejects_upload(store, repo, intake_db):
 
 def test_concurrent_uploads_stop_at_the_session_cap(intake_db, tmp_path, repo):
     from concurrent.futures import ThreadPoolExecutor
+
     from app.intake.attachments import AttachmentStore
     settings = intake_db[0].model_copy(update={"intake_upload_dir": str(tmp_path), "intake_max_images_per_session": 10})
     store = AttachmentStore(settings, intake_db[1])

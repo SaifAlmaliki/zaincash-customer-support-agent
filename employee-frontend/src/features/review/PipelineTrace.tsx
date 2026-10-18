@@ -1,12 +1,32 @@
-import { Code2, Workflow } from "lucide-react"
+import { Workflow } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { stages, agentTools } from "@/lib/stages"
+import { stages } from "@/lib/stages"
 import { duration } from "@/lib/format"
-import type { Result } from "@/lib/types"
+import type { Result, TraceEvent } from "@/lib/types"
 import { reviewEvidence } from "./review-evidence"
+import { checkFact, stageFacts, toolFact } from "./trace-facts"
+
+const STAGE_NODES: Record<string, string[]> = {
+  prepare: ["prepare"],
+  classify: ["jev_classify", "gemini_classify"],
+  extract: ["extract"],
+  lookup: ["lookup"],
+  decide: ["decide", "escalate_empty"],
+  draft: ["draft"],
+}
+
+function timing(events: TraceEvent[]) {
+  const elapsed = events.map((event) => event.elapsed_ms).filter((value): value is number => typeof value === "number")
+  if (!elapsed.length) return null
+  return `Finished after ${duration(Math.max(...elapsed))}`
+}
 
 export function PipelineTrace({ result }: { result: Result }) {
   const { stages: events, tools, otherEvents } = reviewEvidence(result)
+  const checks = otherEvents.flatMap((event) => {
+    const line = checkFact(event)
+    return line ? [line] : []
+  })
   return (
     <Card>
       <CardHeader>
@@ -17,36 +37,29 @@ export function PipelineTrace({ result }: { result: Result }) {
       </CardHeader>
       <CardContent>
         <p className="muted small">
-          Follow a result back to the step that produced it.
+          What each step found, in the order it ran.
         </p>
         <div className="stage-trace">
           {stages.map((stage, index) => {
-            const matching = events.filter(
-              (event) =>
-                event.node === stage.id ||
-                (stage.id === "classify" &&
-                  ["jev_classify", "gemini_classify"].includes(
-                    event.node || ""
-                  ))
+            const matching = events.filter((event) =>
+              (STAGE_NODES[stage.id] ?? [stage.id]).includes(event.node || "")
             )
+            const facts = stageFacts(stage.id, result)
+            const when = timing(matching)
             return (
               <details key={stage.id}>
                 <summary>
                   <span className="trace-number">{index + 1}</span>
                   <strong>{stage.label}</strong>
-                  <small>{matching.length ? "Completed" : "Source map"}</small>
+                  <small>{matching.length ? "Completed" : "Not recorded"}</small>
                 </summary>
                 <div>
-                  <p>{stage.description}</p>
-                  {stage.files.map((file) => (
-                    <code key={file}>pipeline/{file}</code>
-                  ))}
-                  {matching.map((event, i) => (
-                    <p key={i}>
-                      {event.node} finished at +
-                      {duration(event.elapsed_ms || 0)}
-                    </p>
-                  ))}
+                  <ul className="trace-facts">
+                    {facts.map((fact) => (
+                      <li key={fact}>{fact}</li>
+                    ))}
+                  </ul>
+                  {when && <p>{when}</p>}
                 </div>
               </details>
             )
@@ -54,30 +67,34 @@ export function PipelineTrace({ result }: { result: Result }) {
         </div>
         <details className="tool-reference">
           <summary>
-            <Code2 size={15} />
-            Agent tools <span>{tools.length} recorded</span>
+            <Workflow size={15} />
+            Lookups during drafting
+            <span>{tools.length} recorded</span>
           </summary>
           {tools.length ? (
-            tools.map((event, i) => (
-              <pre key={i}>{JSON.stringify(event, null, 2)}</pre>
-            ))
-          ) : (
-            <>
-              <p>
-                 No agent tool calls were recorded for this result. Available tools
-                 are listed below for reference.
-              </p>
-              {agentTools.map((tool) => (
-                <code key={tool}>{tool}</code>
+            <ul className="trace-facts">
+              {tools.map((event, index) => (
+                <li key={index}>{toolFact(event)}</li>
               ))}
-            </>
+            </ul>
+          ) : (
+            <p>The drafter did not record a transaction lookup or a policy search.</p>
           )}
         </details>
-        <details className="tool-reference">
-          <summary><Code2 size={15} />Draft & check events <span>{otherEvents.length} recorded</span></summary>
-          <p>Model, guardrail, draft and skipped events are not tool calls.</p>
-          {otherEvents.map((event, i) => <pre key={i}>{JSON.stringify(event, null, 2)}</pre>)}
-        </details>
+        {checks.length > 0 && (
+          <details className="tool-reference">
+            <summary>
+              <Workflow size={15} />
+              Draft checks
+              <span>{checks.length} recorded</span>
+            </summary>
+            <ul className="trace-facts">
+              {checks.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </details>
+        )}
       </CardContent>
     </Card>
   )

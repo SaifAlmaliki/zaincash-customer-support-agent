@@ -1,6 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from uuid import UUID, uuid4
-from concurrent.futures import ThreadPoolExecutor
 
 from app.intake.contracts import Credentials
 

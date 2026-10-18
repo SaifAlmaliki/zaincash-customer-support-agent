@@ -9,7 +9,14 @@ import httpx
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config import Settings
-from app.intake.contracts import Analysis, ImageInput, IntakeState, ModelCall, ReviewText, TurnContext
+from app.intake.contracts import (
+    Analysis,
+    ImageInput,
+    IntakeState,
+    ModelCall,
+    ReviewText,
+    TurnContext,
+)
 from app.intake.errors import ModelUnavailable
 
 _PROMPTS = Path(__file__).with_name("prompts")

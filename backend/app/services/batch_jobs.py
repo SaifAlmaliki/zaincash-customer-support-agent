@@ -7,10 +7,10 @@ from time import perf_counter
 
 from app.db.models import RunRow
 from app.db.repository import SqlTransactionRepo, save_outcomes
-from app.services.intake_recovery import fail_intake_placeholders, reconcile_intake_run
 from app.pipeline.contracts import DraftResult, TicketOutcome
 from app.pipeline.execution import TicketExecution, ticket_execution
 from app.pipeline.graph import outcome_from_state, summarize
+from app.services.intake_recovery import fail_intake_placeholders, reconcile_intake_run
 
 logger = logging.getLogger(__name__)
 TICKET_TIMEOUT_S = 180
