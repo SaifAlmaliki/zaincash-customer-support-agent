@@ -64,11 +64,16 @@ export function stageFacts(stageId: string, result: Partial<Result>): string[] {
   const extracted = result.extracted ?? {}
   const ticket = result.ticket
   if (stageId === "prepare") {
-    const channel = ticket?.channel ? humanize(ticket.channel) : "the selected channel"
+    const channels: Record<string, string> = {
+      app: "ZainCash app",
+      whatsapp: "WhatsApp",
+      call_note: "call note",
+    }
+    const channel = ticket?.channel ? channels[ticket.channel] || humanize(ticket.channel) : "support"
     const length = ticket?.text?.trim().length
     return [
       length
-        ? `Read a ${channel} message of ${length.toLocaleString("en-US")} characters.`
+        ? `Read the ${channel} message (${length.toLocaleString("en-US")} characters).`
         : "No customer message was recorded for this step.",
       "Arabic digits were converted to 0–9, and card numbers were hidden before the message was read.",
     ]
@@ -158,7 +163,7 @@ export function toolFact(event: TraceEvent) {
     text(args?.txn_ref) ||
     text(args?.phone) ||
     text(args?.service) ||
-    text(args?.reason)
+    (text(args?.reason) ? humanize(text(args?.reason)!) : null)
   const action = `${TOOLS[name] || humanize(name)}${detail ? `: ${detail}` : ""}`
   if (event.status === "ok") return `${action}. Completed.`
   if (event.status === "cancelled") return `${action}. Cancelled.`

@@ -55,8 +55,8 @@ export function PipelineTrace({ result }: { result: Result }) {
                 </summary>
                 <div>
                   <ul className="trace-facts">
-                    {facts.map((fact) => (
-                      <li key={fact}>{fact}</li>
+                    {facts.map((fact, factIndex) => (
+                      <li key={factIndex}>{fact}</li>
                     ))}
                   </ul>
                   {when && <p>{when}</p>}
@@ -89,8 +89,8 @@ export function PipelineTrace({ result }: { result: Result }) {
               <span>{checks.length} recorded</span>
             </summary>
             <ul className="trace-facts">
-              {checks.map((line) => (
-                <li key={line}>{line}</li>
+              {checks.map((line, index) => (
+                <li key={index}>{line}</li>
               ))}
             </ul>
           </details>

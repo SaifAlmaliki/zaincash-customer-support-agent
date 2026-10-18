@@ -18,8 +18,9 @@ it.each([null, {}, [null], [null, 42, "bad", [], { kind: "tool", tool: "search_k
     const trace = renderToStaticMarkup(<PipelineTrace result={result} />)
     expect(trace).toContain("Pipeline &amp; tool trace")
     if (Array.isArray(raw) && raw.length > 1) {
-      expect(trace).toContain("search_knowledge_base")
+      expect(trace).toContain("Searched the knowledge base")
       expect(trace).toContain("Completed")
+      expect(trace).not.toContain(".py")
     }
     expect(result.agent_trace).toBe(raw)
     expect(JSON.stringify(raw)).toBe(before)

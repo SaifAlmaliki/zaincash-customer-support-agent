@@ -1043,12 +1043,6 @@
     "ast_hash": "3e3b0626fb009ea6e0a9f7a33dbbfebb",
     "semantic_hash": ""
   },
-  "employee-frontend/src/components/shared/PipelineStrip.tsx": {
-    "mtime": 1792320123.7460706,
-    "seen": 1792320172.3290484,
-    "ast_hash": "007ef82d49b443479fdbecabb12e8e70",
-    "semantic_hash": ""
-  },
   "employee-frontend/src/components/shared/workspace-ui.tsx": {
     "mtime": 1792271148.9984622,
     "seen": 1792319628.1852183,
@@ -1176,9 +1170,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/queue/QueuePage.tsx": {
-    "mtime": 1792320122.9861007,
-    "seen": 1792320172.3300626,
-    "ast_hash": "2c5b5cc907433379ffc0a8a684a991a2",
+    "mtime": 1792320883.5897071,
+    "seen": 1792320955.2348065,
+    "ast_hash": "da9ce687084bea84f8ffc2856bedf6fb",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/CitationEvidence.tsx": {
@@ -1230,9 +1224,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/runs/RunsPage.tsx": {
-    "mtime": 1792319992.8261445,
-    "seen": 1792320172.3305602,
-    "ast_hash": "e46d74f22cfc823261b2d9edb4f01bd4",
+    "mtime": 1792320884.24653,
+    "seen": 1792320955.2352993,
+    "ast_hash": "f9e81da76a9bfaa2c606775389f30988",
     "semantic_hash": ""
   },
   "employee-frontend/src/hooks/use-resource.ts": {
@@ -1272,9 +1266,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/lib/stages.ts": {
-    "mtime": 1792320119.626105,
-    "seen": 1792320172.3308992,
-    "ast_hash": "cc5ae410ac6806720120cf681b6ee84b",
+    "mtime": 1792320881.1740217,
+    "seen": 1792320955.235733,
+    "ast_hash": "376f22be99bc7e499f7eb23f2a19dc6a",
     "semantic_hash": ""
   },
   "employee-frontend/src/lib/types.ts": {
@@ -1446,9 +1440,9 @@
     "semantic_hash": ""
   },
   "docs/superpowers/specs/2026-10-18-customer-intake-design.md": {
-    "mtime": 1792319633.6725285,
-    "seen": 1792320172.3358076,
-    "ast_hash": "02a4f21e95c462f10351f289992677ab",
+    "mtime": 1792320395.1087644,
+    "seen": 1792320955.2406971,
+    "ast_hash": "be3329a89b9f3c4cf36feb229f293624",
     "semantic_hash": ""
   },
   "employee-frontend/README.md": {
@@ -1494,9 +1488,9 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-10-18-customer-intake.md": {
-    "mtime": 1792320145.348668,
-    "seen": 1792320172.33559,
-    "ast_hash": "f422b270614bdc8bc6a5fc747b676dbe",
+    "mtime": 1792320395.1310186,
+    "seen": 1792320955.2405396,
+    "ast_hash": "f307226c1e62161dde185f0ea401b516",
     "semantic_hash": ""
   }
 }
