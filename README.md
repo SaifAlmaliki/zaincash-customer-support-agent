@@ -9,47 +9,61 @@ Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation
 ## How a ticket flows
 
 ```mermaid
-flowchart TD
-    %% Nodes (declared first so every box shows its label)
-    A([Support tickets arrive<br/>paste · CSV/JSON upload · CLI batch])
-    B[Clean the text<br/>Arabic digits → 0-9, hide card numbers]
-    C[Jev reads the ticket<br/>category · priority · red flags<br/>picks amount, date, phone, transaction ID]
-    D{Is Jev confident?}
-    E[Gemini gives a second opinion<br/>asked 3 times]
-    F{Gemini confident<br/>and agrees?}
-    G[Look up the transaction<br/>in synthetic demo records]
-    H[Route to the right team<br/>and set priority]
-    I[Keep escalation reasons<br/>fraud · several issues · missing info<br/>transaction not found · amount mismatch]
-    J[AI agent drafts a reply in Iraqi Arabic<br/>using policy documents + transaction]
-    K{Draft passes safety checks?<br/>cites policy · no invented numbers<br/>never asks for OTP/PIN}
-    R[Ready for review]
-    X[Escalate to a human<br/>with a short note explaining why]
-    Q[Support agent reviews<br/>Approve · Edit · Reject]
-    Z([Agent sends the approved reply<br/>nothing is sent automatically])
+flowchart LR
+    subgraph ticket["Path"]
+        direction TB
+        A([Support tickets arrive<br/>React intake · employee UI · CLI batch<br/>FastAPI stores one ticket in Postgres])
+        B[Clean the text<br/>Python, no model<br/>Arabic digits → 0-9, hide card numbers]
+        C[Jev reads the ticket<br/>TypeSafe Jev · 1 of 12 categories<br/>priority P1–P4 · 6 red flags · 4 field picks]
+        D{Is Jev confident?}
+        E[Gemini second opinion<br/>OpenRouter · structured output<br/>asked 3 times]
+        F{Gemini confident<br/>and agrees?}
+        G[Look up the transaction<br/>Python matcher · Postgres 16<br/>synthetic demo records]
+        H[Route to 1 of 7 teams<br/>Python rules · taxonomy file<br/>raise priority for fraud or stuck money]
+        I[Keep escalation reasons<br/>any reason in the list on the right]
+        J[Draft a reply in Iraqi Arabic<br/>LangChain agent · Gemini via OpenRouter<br/>pgvector policy search]
+        K{Draft passes safety checks?<br/>Python guardrails + Jev<br/>cites policy · no invented numbers<br/>never asks for OTP/PIN}
+        R[Ready for review]
+        X[Escalate to a human<br/>with a short note explaining why]
+        Q[Support agent reviews<br/>React employee workspace<br/>Approve · Edit · Reject]
+        Z([Agent sends the approved reply<br/>nothing is sent automatically])
 
-    %% Flow
-    A --> B --> C --> D
-    D -- Yes --> G
-    D -- No --> E --> F
-    F -- Yes --> G
-    F -- No --> X
-    G --> H --> I
-    I --> J --> K
-    K -- Check failed or earlier flags --> X
-    K -- Passed, no earlier flags --> R
-    X --> Q
-    R --> Q
-    Q --> Z
+        A --> B --> C --> D
+        D -- Yes --> G
+        D -- No --> E --> F
+        F -- Yes --> G
+        F -- No --> X
+        G --> H --> I
+        I --> J --> K
+        K -- Check failed or earlier flags --> X
+        K -- Passed, no earlier flags --> R
+        X --> Q
+        R --> Q
+        Q --> Z
+    end
+
+    subgraph lists["Full lists"]
+        direction TB
+        CAT["12 categories, and the team each one goes to<br/>Failed transfer → Payments Ops<br/>Bill payment → Payments Ops<br/>Wrong recipient → Disputes<br/>Refund request → Disputes<br/>Login and access → Account and Security<br/>Account verification → Account and Security<br/>Fraud report → Account and Security<br/>Agent dispute → Agent Network<br/>Card issue → Cards<br/>App issue → Tech Support<br/>General inquiry → General Care<br/>Other → General Care"]
+        TEAMS["7 teams<br/>Payments Ops<br/>Disputes<br/>Account and Security<br/>Agent Network<br/>Cards<br/>Tech Support<br/>General Care"]
+        PRI["Priorities P1–P4<br/>P1 money at risk now, or fraud<br/>P2 money lost or stuck<br/>P3 service blocked<br/>P4 information question"]
+        FLAGS["6 red flags<br/>Fraud suspected<br/>Money lost<br/>More than one issue<br/>Urgent or angry<br/>Names a specific transaction<br/>Asks for a person"]
+        FIELDS["4 field picks<br/>Transaction ID<br/>Amount<br/>Phone<br/>Date"]
+        WHY["Escalation reasons<br/>Low confidence<br/>Jev and Gemini disagree<br/>Fraud<br/>Several issues<br/>Asked for a person<br/>Missing details<br/>Transaction not found<br/>Several transactions match<br/>Amount mismatch<br/>Date mismatch<br/>Empty ticket<br/>Drafter unavailable<br/>Draft failed a check<br/>No policy supports a reply"]
+        CAT ~~~ TEAMS ~~~ PRI ~~~ FLAGS ~~~ FIELDS ~~~ WHY
+    end
 
     classDef terminal fill:#e8f5c8,stroke:#6b8f3c,color:#1a1a1a
     classDef decision fill:#d6ecff,stroke:#3b82f6,color:#1a1a1a
     classDef action fill:#efe6ff,stroke:#8b7cc9,color:#1a1a1a
     classDef escalate fill:#f8e6df,stroke:#c4a090,color:#1a1a1a
+    classDef note fill:#f6f1e7,stroke:#b9a88a,color:#1a1a1a
 
     class A,Z terminal
     class D,F,K decision
     class B,C,E,G,H,I,J,R action
     class X,Q escalate
+    class CAT,TEAMS,PRI,FLAGS,FIELDS,WHY note
 ```
 
 Colours in the diagram:
@@ -57,8 +71,56 @@ Colours in the diagram:
 - **Blue:** decisions the pipeline makes.
 - **Purple:** automatic steps.
 - **Orange:** steps a person handles.
+- **Sand:** the full lists. The path says "1 of 12" or "1 of 7"; that column is every category, team, priority, flag, field and escalation reason.
 
 Every path ends with a person approving the reply.
+
+### Category rules
+
+Jev assigns exactly one category from the list in the diagram. The same row in [`data/taxonomy.yaml`](data/taxonomy.yaml) sets the lowest priority and whether lookup has to find a transaction. The employee workspace reads this file too.
+
+| Category | Id | Team | Lowest priority | Transaction required |
+|---|---|---|---|---|
+| Failed transfer | `failed_transfer` | Payments Ops | P2 | Yes |
+| Bill payment | `bill_payment` | Payments Ops | P3 | Yes |
+| Wrong recipient | `wrong_recipient` | Disputes | P2 | Yes |
+| Refund request | `refund_request` | Disputes | P3 | Yes |
+| Login & access | `login_access` | Account & Security | P3 | No |
+| Account verification | `account_kyc` | Account & Security | P4 | No |
+| Fraud report | `fraud_report` | Account & Security | P1 | No |
+| Agent dispute | `agent_dispute` | Agent Network | P2 | Yes |
+| Card issue | `card_issue` | Cards | P3 | No |
+| App issue | `app_bug` | Tech Support | P3 | No |
+| General inquiry | `general_inquiry` | General Care | P4 | No |
+| Other | `other` | General Care | P4 | No |
+
+Priorities, from most urgent to least:
+
+- **P1** — money at risk now, or fraud. A fraud flag forces P1, and every fraud report is escalated.
+- **P2** — money lost or stuck. A money-lost flag cannot sit below P2.
+- **P3** — the customer is blocked from a service.
+- **P4** — an information question.
+
+The team is still assigned when a ticket is escalated. The note tells the reviewer why: low confidence, Jev and Gemini disagree, fraud, more than one issue, the customer asked for a person, a required field is missing, the transaction is missing or ambiguous, the amount or date does not match, the ticket is empty, the drafter was unavailable, the draft failed a check, or no policy supports a reply.
+
+### Stack on each phase
+
+LangGraph runs this path as one Python 3.11 graph. A model is called only on the phases that name one. Field extraction sits between a confident category and the lookup; the diagram folds that step into the arrow after Jev or Gemini.
+
+| Phase | What happens | Stack |
+|---|---|---|
+| Arrive | The customer intake app gathers the report and submits one ticket. An employee can also paste text, upload CSV or JSON, or start a CLI batch. | Intake and employee apps: React 19, Vite, TypeScript, Tailwind. The employee app also uses shadcn and React Router. API: FastAPI on Uvicorn. Intake model: Gemini through OpenRouter. Storage: Postgres 16. |
+| Clean | Arabic-Indic digits become 0–9, card numbers are masked, and regex lists the amounts, dates, phones and transaction IDs a model may choose. | Python, LangGraph node `prepare`. |
+| Classify | Choose the category, priority and red flags, and point at the real amount, date, phone and transaction ID. | Jev (TypeSafe System One) through `langchain-typesafe`. Scores are calibrated, and Jev selects only spans already in the ticket. |
+| Second opinion | Runs when Jev is unsure, when Jev fails during a cascade run, or when the batch is Gemini-only. Three samples have to agree. | Gemini through OpenRouter (`langchain-openrouter`), structured output. Python `combine()` keeps Jev, accepts Gemini, or escalates. |
+| Extract | A picked value is kept when it matches a span of the original text. Gemini may fill one required field when the regex list has nothing usable. | Python span checks, then Gemini for that gap only. |
+| Look up | Categories marked above as needing a transaction are matched on reference, amount and date in the synthetic records. | Python matcher, SQLAlchemy and psycopg, Postgres 16 (`pgvector/pgvector:pg16`). |
+| Route | The team comes from the category table. Priority is raised to that category's floor, and further for fraud or lost money. | Python rules in `stage5_decide/rules.py`. |
+| Draft | An agent writes an Iraqi-Arabic reply from policy passages and the matched transaction. It may call up to six read-only tools within 30 seconds. | LangChain agent, Gemini through OpenRouter. Policy search uses pgvector. Embeddings are `text-embedding-3-small` through OpenRouter, 768 dimensions. |
+| Safety | The draft has to cite a policy, use only numbers from the ticket or the transaction, and avoid asking for an OTP or PIN. A failed check escalates. | Python guardrails, plus Jev for credential wording. |
+| Review | A support agent approves, edits or rejects. The approved text stays in the workspace until a person sends it. | React employee workspace, FastAPI review API, Postgres. |
+
+The same steps as files and function names are in [Where each step lives](#where-each-step-lives).
 
 ## Where each step lives
 
