@@ -42,3 +42,32 @@ def test_midnight_date_survives_the_arabic_summary():
     assert "2026-10-17" in snapshot.ticket_text_ar
     assert snapshot.revision == 2
     assert uuid4()
+
+
+def test_review_keeps_optional_facts_and_displays_missing_material_fields():
+    source = message("Reference DEMO-2410000123 failed with E-12")
+    ctx = context([source], [fact("issue", "transfer failed", source), fact("txn_ref", "DEMO-2410000123", source),
+                             fact("exact_error", "E-12", source)], category="failed_transfer")
+    text = ReviewText(customer_text="Transfer failed", employee_text_ar="فشل التحويل",
+                      fact_keys=["issue", "actual", "expected", "date", "amount", "debited", "recipient_outcome"])
+    review = build_review(ctx, ctx.state, text, publication=1, language="en")
+    assert "DEMO-2410000123" in review.ticket_text_ar
+    assert "E-12" in review.ticket_text_ar
+    assert "amount" in review.unknown_keys
+    assert review.facts["amount"].status == "missing"
+
+
+def test_arabic_customer_and_employee_share_one_narrative():
+    source = message("لم يصل التحويل")
+    ctx = context([source], [fact("issue", source.text, source)], category="general_inquiry")
+    text = ReviewText(customer_text="لم يصل التحويل", employee_text_ar="وصل التحويل وتم حل المشكلة", fact_keys=["issue"])
+    review = build_review(ctx, ctx.state, text, publication=1, language="ar")
+    assert review.customer_text == review.employee_text_ar
+
+
+def test_number_punctuation_is_not_part_of_the_value_but_reference_prefix_is():
+    source = message("Amount 50000, reference DEMO-2410000123")
+    state = context([source], [fact("amount", "50000", source), fact("txn_ref", "DEMO-2410000123", source)]).state
+    validate_review_numbers(state, ReviewText(customer_text="Amount 50,000.", employee_text_ar="المبلغ 50000.", fact_keys=[]))
+    with pytest.raises(InvalidEvidence):
+        validate_review_numbers(state, ReviewText(customer_text="Reference OTHER-2410000123", employee_text_ar="المبلغ 50000", fact_keys=[]))

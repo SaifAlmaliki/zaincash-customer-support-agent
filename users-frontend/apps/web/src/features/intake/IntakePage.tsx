@@ -13,12 +13,14 @@ import "./intake.css"
 export function IntakePage({ controller }: { controller: IntakeController }) {
   const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
   const session = snapshot.session
-  const [locale, setLocale] = useState<Language>(session?.language ?? "en")
+  const [selectedLocale, setLocale] = useState<Language | null>(null)
+  const locale = selectedLocale ?? session?.language ?? "ar"
   const [draft, setDraft] = useState("")
   const [previews, setPreviews] = useState<{ name: string; url: string }[]>([])
   const [confirmNew, setConfirmNew] = useState(false)
   const reviewHeading = useRef<HTMLHeadingElement | null>(null)
   const reviewRequest = useRef(false)
+  const previewUrls = useRef(new Set<string>())
   const text = copy[locale]
   const credentials = controller.access()
   const latestAssistant = session?.messages.filter((message) => message.role === "assistant").at(-1)
@@ -35,13 +37,14 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   }, [session?.review])
 
   useEffect(() => {
+    const urls = previewUrls.current
     return () => {
-      for (const preview of previews) URL.revokeObjectURL(preview.url)
+      for (const url of urls) URL.revokeObjectURL(url)
     }
-  }, [previews])
+  }, [])
 
   const unsent = session?.attachments.filter((item) => !item.removed && !item.message_id) ?? []
-  const canSend = Boolean(draft.trim() || unsent.length) && !snapshot.busy && session?.turn_status !== "processing"
+  const canSend = Boolean(session && session.phase !== "submitted" && (draft.trim() || unsent.length)) && !snapshot.busy && session?.turn_status !== "processing"
   const hasContent = Boolean(session?.messages.length || session?.attachments.some((item) => !item.removed))
 
   async function chooseLanguage(next: Language) {
@@ -58,7 +61,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     const body = draft
     await controller.send(body, locale, attachmentIds)
     if (!controller.getSnapshot().error) {
-      setDraft("")
+      setDraft((current) => current === body ? "" : current)
       setPreviews((current) => {
         for (const preview of current) URL.revokeObjectURL(preview.url)
         return []
@@ -67,8 +70,9 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     }
   }
 
-  async function selectFiles(files: FileList) {
-    const local = [...files].map((file) => ({ name: file.name, url: URL.createObjectURL(file) }))
+  async function selectFiles(files: File[]) {
+    const local = files.map((file) => ({ name: file.name, url: URL.createObjectURL(file) }))
+    for (const item of local) previewUrls.current.add(item.url)
     setPreviews((current) => [...current, ...local])
     for (const file of files) {
       try {
@@ -116,26 +120,29 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
             <p className="intake-muted">{text.empty}</p>
           )}
           {session && !session.messages.length ? <p className="intake-muted">{text.empty}</p> : null}
-          <ScreenshotPicker
+          {session?.phase !== "submitted" ? <><ScreenshotPicker
             copy={text}
             attachments={session?.attachments ?? []}
             previews={previews}
             progress={snapshot.uploads}
             disabled={snapshot.busy || session?.turn_status === "processing"}
             onSelect={(files) => void selectFiles(files)}
-            onRemove={(attachmentId) => void controller.remove(attachmentId)}
+            onRemove={(attachmentId) => void controller.remove(attachmentId).catch(() => undefined)}
+            credentials={credentials}
+            api={controller.transport()}
           />
-          <MessageComposer copy={text} value={draft} sendDisabled={!canSend} onChange={setDraft} onSubmit={() => void send()} />
+          <MessageComposer copy={text} value={draft} sendDisabled={!canSend} onChange={setDraft} onSubmit={() => void send()} /></> : null}
         </div>
         <aside className="intake-side">
-          {snapshot.error ? (
+          {snapshot.busy || session?.turn_status === "processing" ? <p role="status">{text.processing}</p> : null}
+          {snapshot.error || session?.turn_status === "retryable_failure" ? (
             <p role="alert" className="intake-alert" dir="auto">
-              {snapshot.error}
+              {locale === "ar" ? text.updateError : snapshot.error || text.updateError}
             </p>
           ) : null}
           {snapshot.resumeUnavailable ? <p className="intake-muted">{text.resumeUnavailable}</p> : null}
           {session?.receipt ? <ReceiptPanel receipt={session.receipt} copy={text} /> : null}
-          {session?.review && !session.receipt ? (
+          {session?.review && !session.receipt && !snapshot.busy && session.turn_status === "idle" ? (
             <>
               <ReviewPanel
                 review={session.review}
@@ -157,7 +164,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                 >
                   {text.continueChat}
                 </Button>
-                <Button type="button" disabled={snapshot.busy || session.turn_status === "processing"} onClick={() => void controller.submit()}>
+                <Button type="button" disabled={snapshot.busy} onClick={() => void controller.submit()}>
                   {text.submit}
                 </Button>
               </div>

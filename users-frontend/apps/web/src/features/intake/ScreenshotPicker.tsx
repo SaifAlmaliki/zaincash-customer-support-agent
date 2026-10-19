@@ -1,6 +1,8 @@
 import { Button } from "@workspace/ui/components/button"
 import type { IntakeCopy } from "./copy"
-import type { Attachment } from "./types"
+import type { Attachment, Credentials } from "./types"
+import type { IntakeApi } from "./api"
+import { OwnedImage } from "./OwnedImage"
 
 export function ScreenshotPicker({
   copy,
@@ -10,14 +12,18 @@ export function ScreenshotPicker({
   disabled,
   onSelect,
   onRemove,
+  credentials,
+  api,
 }: {
   copy: IntakeCopy
   attachments: Attachment[]
   previews: { name: string; url: string }[]
   progress: Record<string, number>
   disabled: boolean
-  onSelect: (files: FileList) => void
+  onSelect: (files: File[]) => void
   onRemove: (attachmentId: string) => void
+  credentials: Credentials | null
+  api: IntakeApi
 }) {
   const visible = attachments.filter((item) => !item.removed)
   return (
@@ -32,7 +38,7 @@ export function ScreenshotPicker({
         multiple
         disabled={disabled}
         onChange={(event) => {
-          if (event.target.files?.length) onSelect(event.target.files)
+          if (event.target.files?.length) onSelect(Array.from(event.target.files))
           event.target.value = ""
         }}
       />
@@ -46,6 +52,7 @@ export function ScreenshotPicker({
         {visible.map((attachment) => (
           <li key={attachment.id}>
             <span dir="auto">{attachment.filename}</span>
+            <OwnedImage attachment={attachment} credentials={credentials} api={api} alt={attachment.filename} unavailable={copy.imageUnavailable} />
             <Button type="button" variant="outline" disabled={disabled} onClick={() => onRemove(attachment.id)}>
               {copy.remove}
             </Button>

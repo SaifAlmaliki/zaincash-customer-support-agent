@@ -39,12 +39,17 @@ def normalize_reported_date(value: str, source_time: datetime) -> str | None:
             return None
         return text
     folded = text.lower()
+    if re.search(r"\bbefore\b|قبل", folded):
+        return None
+    matches = []
     for word, delta in _RELATIVE.items():
         matched = (
             re.search(rf"(?<!\w){re.escape(word)}(?!\w)", folded) is not None
             if word.isascii() else word in text
         )
         if matched:
-            anchor = source_time.astimezone(BAGHDAD).date() + timedelta(days=delta)
-            return anchor.isoformat()
+            matches.append(delta)
+    if matches and len(set(matches)) == 1:
+        anchor = source_time.astimezone(BAGHDAD).date() + timedelta(days=matches[0])
+        return anchor.isoformat()
     return None

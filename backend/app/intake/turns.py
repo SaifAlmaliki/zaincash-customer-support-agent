@@ -22,7 +22,7 @@ from app.intake.repository import (
     session_view,
     turn_context,
 )
-from app.pipeline.stage1_normalize.normalize import sanitize_for_storage
+from app.intake.sanitize import sanitize_intake_text
 
 
 def _jsonable(value):
@@ -57,26 +57,32 @@ class TurnStore:
             if row.revision != expected_revision:
                 raise RevisionConflict("Reload the current conversation.")
             now = datetime.now(UTC)
+            customer_message = None
             if kind == "message":
-                self._append_customer_message(session, row, payload, now)
-                row.revision += 1
-                row.review = None
-                if row.phase == "review_ready":
-                    row.phase = "collecting"
+                customer_message = self._append_customer_message(session, row, payload, now)
             elif kind != "review":
                 raise InvalidEvidence("Unsupported conversation operation.")
+            row.revision += 1
+            row.review = None
+            row.phase = "collecting"
             row.turn_status = "processing"
             row.active_request_id = request_id
             row.error_code = None
             row.updated_at = now
             attempt_id = uuid.uuid4()
             stored_payload = _jsonable(payload)
+            if "text" in stored_payload:
+                stored_payload["text"] = sanitize_intake_text(stored_payload["text"])
+            operation_id = uuid.uuid4()
             session.add(IntakeOperationRow(
-                id=uuid.uuid4(), session_id=row.id, request_id=request_id, kind=kind,
+                id=operation_id, session_id=row.id, request_id=request_id, kind=kind,
                 fingerprint=incoming, status="processing", attempt_id=attempt_id,
                 claimed_revision=row.revision, request_json=stored_payload, result_json=None,
                 error_code=None, usage=[], created_at=now, updated_at=now,
             ))
+            session.flush()
+            if customer_message is not None:
+                customer_message.operation_id = operation_id
             session.commit()
             return OperationClaim(
                 row.id, request_id, attempt_id, row.revision, turn_context(session, row), kind, stored_payload
@@ -118,7 +124,7 @@ class TurnStore:
             row.updated_at = datetime.now(UTC)
             operation.status = "completed"
             operation.error_code = None
-            operation.usage = [*(operation.usage or []), *result.trace]
+            operation.usage = [*(operation.usage or []), *self._trace(claim, result.trace)]
             operation.result_json = {"revision": publication, "review_id": None if review is None else str(review.id)}
             operation.updated_at = row.updated_at
             session.commit()
@@ -133,7 +139,7 @@ class TurnStore:
             now = datetime.now(UTC)
             operation.status = "failed"
             operation.error_code = error_code
-            operation.usage = [*(operation.usage or []), *trace]
+            operation.usage = [*(operation.usage or []), *self._trace(claim, trace)]
             operation.updated_at = now
             row.turn_status = "retryable_failure"
             row.error_code = error_code
@@ -150,6 +156,8 @@ class TurnStore:
                 raise RevisionConflict("Reload the current conversation.")
             if operation.status == "completed":
                 return session_view(session, row)
+            if row.phase == "submitted" or row.active_request_id != request_id:
+                raise RevisionConflict("This operation has been superseded.")
             if row.turn_status == "processing" and row.active_request_id == request_id:
                 return session_view(session, row)
             if row.turn_status == "processing":
@@ -159,6 +167,9 @@ class TurnStore:
             if operation.status not in {"failed", "interrupted"}:
                 raise RevisionConflict("Reload the current conversation.")
             now = datetime.now(UTC)
+            row.revision += 1
+            row.review = None
+            row.phase = "collecting"
             attempt_id = uuid.uuid4()
             operation.attempt_id = attempt_id
             operation.status = "processing"
@@ -189,8 +200,8 @@ class TurnStore:
             session.commit()
             return len(rows)
 
-    def _append_customer_message(self, session, row: IntakeSessionRow, payload: dict, now: datetime) -> None:
-        text = sanitize_for_storage(str(payload.get("text") or ""))
+    def _append_customer_message(self, session, row: IntakeSessionRow, payload: dict, now: datetime) -> IntakeMessageRow:
+        text = sanitize_intake_text(str(payload.get("text") or ""))
         language = payload.get("language")
         if language not in {"ar", "en"}:
             raise InvalidEvidence("Choose Arabic or English.")
@@ -213,10 +224,12 @@ class TurnStore:
                 raise ImageRejected("That screenshot is no longer available.")
             attachments.append(attachment)
         operation_id = None
-        session.add(self._message(row.id, message_id, "user", text, language, self._next_sequence(session, row.id), operation_id, now))
+        message = self._message(row.id, message_id, "user", text, language, self._next_sequence(session, row.id), operation_id, now)
+        session.add(message)
         session.flush()
         for attachment in attachments:
             attachment.message_id = message_id
+        return message
 
     def _locked_attempt(self, session, claim: OperationClaim):
         row = session.scalar(select(IntakeSessionRow).where(IntakeSessionRow.id == claim.session_id).with_for_update())
@@ -235,9 +248,13 @@ class TurnStore:
             operation = self._operation(session, claim.session_id, claim.request_id)
             if operation is None:
                 return
-            operation.usage = [*(operation.usage or []), *[{"rejected": True, **item} for item in trace]]
+            operation.usage = [*(operation.usage or []), *[{**item, "rejected": True} for item in self._trace(claim, trace)]]
             operation.updated_at = datetime.now(UTC)
             session.commit()
+
+    @staticmethod
+    def _trace(claim: OperationClaim, trace: list[dict]) -> list[dict]:
+        return [{**item, "attempt_id": str(claim.attempt_id)} for item in trace]
 
     @staticmethod
     def _operation(session, session_id, request_id):

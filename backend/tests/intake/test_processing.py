@@ -30,3 +30,21 @@ def test_committed_but_unscheduled_ticket_survives_recovery(intake_client, revie
     detail = intake_client.get(f"/api/results/{row['id']}").json()
     assert detail["intake"]["messages"]
     assert recover_intake_processing(intake_client.app.state.session_factory) == 0
+
+
+def test_failed_outcome_save_preserves_placeholder_and_reconciles_counts(intake_client, reviewed, monkeypatch):
+    from app.services import batch_jobs
+    from app.services.intake_runtime import dispatch_intake
+
+    def cannot_save(*args):
+        raise RuntimeError("temporary persistence failure")
+
+    monkeypatch.setattr(batch_jobs, "save_outcomes", cannot_save)
+    intake_client.app.state.intake_dispatcher = dispatch_intake
+    _submit(intake_client, reviewed)
+    row = intake_client.get("/api/results").json()["items"][0]
+    assert row["status"] == "failed"
+    run = intake_client.get(f"/api/runs/{row['run_id']}").json()
+    assert run["processed"] == run["counts"]["total"] == 1
+    assert run["counts"]["by_status"] == {"failed": 1}
+    assert intake_client.get(f"/api/results/{row['id']}").json()["intake"]["messages"]

@@ -8,10 +8,11 @@ export interface SessionStorage {
 
 const STORAGE_KEY = "zaincash.intake.session"
 
-export function browserSessionStorage(storage: Storage = localStorage): SessionStorage {
+export function browserSessionStorage(storage?: Storage): SessionStorage {
+  const currentStorage = () => storage ?? window.localStorage
   return {
     load() {
-      const raw = storage.getItem(STORAGE_KEY)
+      const raw = currentStorage().getItem(STORAGE_KEY)
       if (!raw) return null
       try {
         const parsed = JSON.parse(raw) as SavedSession
@@ -22,10 +23,10 @@ export function browserSessionStorage(storage: Storage = localStorage): SessionS
       }
     },
     save(value) {
-      storage.setItem(STORAGE_KEY, JSON.stringify(value))
+      currentStorage().setItem(STORAGE_KEY, JSON.stringify(value))
     },
     clear() {
-      storage.removeItem(STORAGE_KEY)
+      currentStorage().removeItem(STORAGE_KEY)
     },
   }
 }

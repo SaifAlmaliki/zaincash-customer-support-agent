@@ -37,6 +37,8 @@ export type Review = {
   created_at: string
 }
 export type IntakeFact = {
+  evidence?: { kind: "message" | "image"; source_id: string; quote: string }[]
+  supersedes?: { kind: "message" | "image"; source_id: string; quote: string }[]
   key: string
   status: string
   value?: string | null

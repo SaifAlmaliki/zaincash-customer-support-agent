@@ -181,7 +181,9 @@ npm ci
 npm --workspace web run dev
 ```
 
-Open http://localhost:5174. The customer app talks to the same API through `/api`. Leave `INTAKE_MODEL` empty to use `GEMINI_MODEL`, or set it to an OpenRouter model that supports images and structured output. Uploaded screenshots stay in `INTAKE_UPLOAD_DIR` (`data/intake-uploads` by default). A customer can review a partial report, correct a detail by sending another message, and submit once. The receipt means the report was received for an employee to review. Operators retry a failed intake ticket with the existing batch API; the stored ticket text is not rewritten.
+Open http://localhost:5174. The customer app talks to the same API through `/api`. Set `INTAKE_MODEL=google/gemini-2.5-flash` in `.env` for the vision/structured-output model verified during the intake completion audit; `.env.example` includes it. An empty override still falls back to `GEMINI_MODEL`, but the prior `google/gemini-3.8-flash` selection was unreliable in this check. Restart the API after changing model settings. Uploaded screenshots stay in `INTAKE_UPLOAD_DIR` (`data/intake-uploads` under the repository by default). A customer can review a partial report, correct a detail by sending another message, and submit once. The receipt means the report was received for an employee to review. Operators retry a failed intake ticket with the existing batch API using its stored ID, text and customer fields unchanged.
+
+The [intake verification record](docs/verification/2026-10-18-customer-intake.md) includes the repaired gaps, **781/40/31** backend/customer/employee test results, browser handoff and an opt-in synthetic live-vision probe.
 
 ### Show it in the browser
 

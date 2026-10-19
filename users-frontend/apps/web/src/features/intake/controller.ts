@@ -57,9 +57,15 @@ export class IntakeController {
   private initPromise: Promise<void> | null = null
   private tail: Promise<void> = Promise.resolve()
   private submitFlight: Promise<void> | null = null
+  private sendFlight: Promise<void> | null = null
   private abort: AbortController | null = null
   private pollTimer: ReturnType<typeof setTimeout> | null = null
   private pollStarted = 0
+  private pollGeneration = 0
+  private pollAbort: AbortController | null = null
+  private language: Language = "ar"
+  private pendingUpload: File | null = null
+  private pendingRemoval: { attachmentId: string; request_id: string; expected_revision: number } | null = null
   private readonly uploadIds = new Map<string, string>()
 
   private readonly api: IntakeApi
@@ -86,21 +92,31 @@ export class IntakeController {
   }
 
   async initialize(language: Language) {
+    this.language = language
+    if (this.credentials && this.snapshot.session) return
     if (!this.initPromise) {
       const generation = this.generation
       this.initPromise = this.boot(language, generation).finally(() => {
-        this.initPromise = null
+        if (generation === this.generation) this.initPromise = null
       })
     }
     return this.initPromise
   }
 
   async send(text: string, language: Language, attachmentIds: string[]) {
-    return this.enqueue(() => this.sendNow(text, language, attachmentIds))
+    if (this.sendFlight) return this.sendFlight
+    this.sendFlight = this.enqueue(async () => {
+      if (this.unreconciled()) return
+      await this.sendNow(text, language, attachmentIds)
+    }).finally(() => { this.sendFlight = null })
+    return this.sendFlight
   }
 
   async requestReview(allowPartial: boolean, language: Language) {
-    return this.enqueue(() => this.reviewNow(allowPartial, language))
+    return this.enqueue(async () => {
+      if (this.unreconciled()) return
+      await this.reviewNow(allowPartial, language)
+    })
   }
 
   async submit() {
@@ -112,7 +128,11 @@ export class IntakeController {
   }
 
   async retry() {
-    return this.enqueue(() => this.retryNow())
+    return this.enqueue(async () => {
+      try { await this.retryNow() } catch (error) {
+        this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
+      }
+    })
   }
 
   async upload(file: File) {
@@ -133,6 +153,8 @@ export class IntakeController {
       this.credentials = null
       this.pending = null
       this.uploadIds.clear()
+      this.pendingUpload = null
+      this.pendingRemoval = null
       try {
         this.storage.clear()
       } catch {
@@ -147,7 +169,9 @@ export class IntakeController {
   async refresh() {
     return this.enqueue(async () => {
       const generation = this.generation
-      await this.reload(generation)
+      try { await this.reload(generation) } catch (error) {
+        if (generation === this.generation) this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
+      }
     })
   }
 
@@ -231,6 +255,11 @@ export class IntakeController {
   }
 
   private async submitNow() {
+    if (this.snapshot.session?.phase === "submitted") return
+    if ((this.pending && this.pending.kind !== "submit") || this.pendingUpload || this.pendingRemoval) {
+      this.unreconciled()
+      return
+    }
     const session = this.requireSession()
     if (!session?.review) {
       this.replace({ ...this.snapshot, error: "Review the report before submitting." })
@@ -267,7 +296,7 @@ export class IntakeController {
     } catch (error) {
       if (generation !== this.generation) return
       if (isConflict(error)) {
-        await this.reload(generation)
+        await this.reconcileConflict(generation)
         this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
         return
       }
@@ -283,7 +312,27 @@ export class IntakeController {
   }
 
   private async retryNow() {
+    if (!this.credentials) return this.initialize(this.language)
+    const generation = this.generation
+    await this.reload(generation)
+    if (generation !== this.generation) return
     const session = this.snapshot.session
+    if (session?.phase === "submitted") {
+      this.pending = null
+      this.persist()
+      this.replace({ ...this.snapshot, error: null })
+      return
+    }
+    if (session?.turn_status === "processing") return
+    if (session?.turn_status === "retryable_failure" && session.active_request_id &&
+        (!this.pending || this.pending.request_id === session.active_request_id)) {
+      await this.dispatch(generation, () =>
+        this.api.retry(this.credentials!, session.active_request_id!, session.revision, this.nextSignal()),
+      )
+      return
+    }
+    if (this.pendingUpload) return this.uploadNow(this.pendingUpload)
+    if (this.pendingRemoval) return this.removeNow(this.pendingRemoval.attachmentId)
     if (this.pending?.kind === "submit") return this.submitNow()
     if (this.pending?.kind === "message") {
       const command = this.pending.payload as MessageCommand
@@ -304,10 +353,17 @@ export class IntakeController {
   private async uploadNow(file: File) {
     const session = this.requireSession()
     if (!session) return
+    if (this.pending || this.pendingRemoval) { this.unreconciled(); return }
     const generation = this.generation
     const identity = await fileIdentity(file)
+    if (generation !== this.generation) return
+    if (this.pendingUpload && this.pendingUpload !== file) {
+      const prior = await fileIdentity(this.pendingUpload)
+      if (prior !== identity) { this.unreconciled(); return }
+    }
     const requestId = this.uploadIds.get(identity) ?? crypto.randomUUID()
     this.uploadIds.set(identity, requestId)
+    this.pendingUpload = file
     this.replace({
       ...this.snapshot,
       busy: true,
@@ -327,11 +383,19 @@ export class IntakeController {
         this.nextSignal(),
       )
       if (generation !== this.generation) return
+      this.uploadIds.delete(identity)
+      this.pendingUpload = null
       const uploads = { ...this.snapshot.uploads }
       delete uploads[file.name]
       this.replace({ ...this.snapshot, session: result.session, busy: false, error: null, uploads })
     } catch (error) {
       if (generation !== this.generation) throw error
+      if (error instanceof IntakeRequestError && error.status < 500 && error.code !== "invalid_response") {
+        this.pendingUpload = null
+        this.uploadIds.delete(identity)
+      }
+      try { await this.reload(generation) } catch { /* Retain the uncertain upload for retry. */ }
+      if (generation !== this.generation) return
       const uploads = { ...this.snapshot.uploads }
       delete uploads[file.name]
       this.replace({ ...this.snapshot, busy: false, error: safeMessage(error), uploads })
@@ -342,24 +406,32 @@ export class IntakeController {
   private async removeNow(attachmentId: string) {
     const session = this.requireSession()
     if (!session) return
+    if (this.pending || this.pendingUpload) { this.unreconciled(); return }
     const generation = this.generation
-    const command = {
+    const command = this.pendingRemoval?.attachmentId === attachmentId ? this.pendingRemoval : {
       request_id: crypto.randomUUID(),
       expected_revision: session.revision,
     }
+    this.pendingRemoval = { ...command, attachmentId }
     this.replace({ ...this.snapshot, busy: true, error: null })
     try {
-      const view = await this.api.remove(this.credentials!, attachmentId, command, this.nextSignal())
+      const view = await this.api.remove(this.credentials!, attachmentId,
+        { request_id: command.request_id, expected_revision: command.expected_revision }, this.nextSignal())
       if (generation !== this.generation) return
+      this.pendingRemoval = null
       this.replace({ ...this.snapshot, session: view, busy: false, error: null })
     } catch (error) {
       if (generation !== this.generation) return
+      try { await this.reload(generation) } catch { /* Preserve removal identity. */ }
+      if (generation !== this.generation) return
+      if (isConflict(error) || this.snapshot.session?.attachments.find((item) => item.id === attachmentId)?.removed) this.pendingRemoval = null
       this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
       throw error
     }
   }
 
   private async dispatch(generation: number, run: () => Promise<SessionView>) {
+    this.stopPoll()
     this.replace({ ...this.snapshot, busy: true, error: null, pollingExhausted: false })
     try {
       const view = await run()
@@ -371,7 +443,7 @@ export class IntakeController {
     } catch (error) {
       if (generation !== this.generation) return
       if (isConflict(error)) {
-        await this.reload(generation)
+        await this.reconcileConflict(generation)
         this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
         return
       }
@@ -388,9 +460,10 @@ export class IntakeController {
 
   private async reload(generation: number) {
     if (!this.credentials) return
+    this.stopPoll()
     const view = await this.api.get(this.credentials, this.nextSignal())
     if (generation !== this.generation) return
-    this.replace({ ...this.snapshot, session: view, busy: false, pollingExhausted: false })
+    this.replace({ ...this.snapshot, session: view, busy: false, error: null, pollingExhausted: false })
     this.watch(view)
   }
 
@@ -403,8 +476,11 @@ export class IntakeController {
     this.stopPoll()
     this.pollStarted = Date.now()
     const generation = this.generation
+    const pollGeneration = this.pollGeneration
+    this.pollAbort = new AbortController()
+    const signal = this.pollAbort.signal
     const tick = async () => {
-      if (generation !== this.generation) return
+      if (generation !== this.generation || pollGeneration !== this.pollGeneration) return
       if (Date.now() - this.pollStarted >= POLL_LIMIT_MS) {
         this.replace({
           ...this.snapshot,
@@ -415,26 +491,30 @@ export class IntakeController {
       }
       try {
         if (this.credentials) {
-          const view = await this.api.get(this.credentials)
-          if (generation !== this.generation) return
+          const view = await this.api.get(this.credentials, signal)
+          if (generation !== this.generation || pollGeneration !== this.pollGeneration) return
           this.replace({ ...this.snapshot, session: view })
           if (view.turn_status !== "processing") return
         }
       } catch {
         /* Keep polling until the deadline. The saved messages stay put. */
       }
+      if (generation !== this.generation || pollGeneration !== this.pollGeneration) return
       this.pollTimer = setTimeout(() => void tick(), POLL_MS)
     }
     this.pollTimer = setTimeout(() => void tick(), POLL_MS)
   }
 
   private stopPoll() {
+    this.pollGeneration += 1
+    this.pollAbort?.abort()
+    this.pollAbort = null
     if (this.pollTimer !== null) clearTimeout(this.pollTimer)
     this.pollTimer = null
   }
 
   private requireSession() {
-    if (!this.credentials || !this.snapshot.session) return null
+    if (!this.credentials || !this.snapshot.session || this.snapshot.session.phase === "submitted") return null
     return this.snapshot.session
   }
 
@@ -447,8 +527,10 @@ export class IntakeController {
     }
   }
 
-  private enqueue<T>(work: () => Promise<T>): Promise<T> {
-    const run = this.tail.then(work, work)
+  private enqueue(work: () => Promise<void>): Promise<void> {
+    const generation = this.generation
+    const guarded = async () => { if (generation === this.generation) await work() }
+    const run = this.tail.then(guarded, guarded)
     this.tail = run.then(
       () => undefined,
       () => undefined,
@@ -470,6 +552,21 @@ export class IntakeController {
   private replace(next: ControllerState) {
     this.snapshot = next
     for (const listener of this.listeners) listener()
+  }
+
+  private unreconciled() {
+    if (!this.pending && !this.pendingUpload && !this.pendingRemoval) return false
+    this.replace({ ...this.snapshot, error: "Retry the previous operation before sending new information." })
+    return true
+  }
+
+  private async reconcileConflict(generation: number) {
+    try {
+      await this.reload(generation)
+      if (generation !== this.generation) return
+      this.pending = null
+      this.persist()
+    } catch { /* Keep the original payload until the server can be reconciled. */ }
   }
 }
 

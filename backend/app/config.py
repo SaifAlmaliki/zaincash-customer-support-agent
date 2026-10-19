@@ -74,6 +74,12 @@ class Settings(BaseSettings):
             raise ValueError("INTAKE_MODEL must be a non-empty model ID")
         return stripped
 
+    @field_validator("intake_upload_dir")
+    @classmethod
+    def resolve_intake_upload_dir(cls, value: str) -> str:
+        path = Path(value).expanduser()
+        return str(path if path.is_absolute() else REPO_ROOT / path)
+
     @field_validator("agent_max_tool_calls", mode="before")
     @classmethod
     def parse_tool_limit_env(cls, value):

@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.concurrency import run_in_threadpool
 
 from app.intake.contracts import Credentials, OperationClaim, SessionView
-from app.intake.errors import InvalidEvidence, ModelUnavailable
+from app.intake.errors import ImageRejected, InvalidEvidence, ModelUnavailable
 
 
 class IntakeService:
@@ -53,6 +54,11 @@ class IntakeService:
                 result = await self.graph.advance(claim.context)
         except ModelUnavailable as exc:
             return await run_in_threadpool(self.turns.fail, claim, "model_unavailable", list(exc.trace))
-        except InvalidEvidence:
-            return await run_in_threadpool(self.turns.fail, claim, "invalid_evidence", [])
-        return await run_in_threadpool(self.turns.finish, claim, result)
+        except (InvalidEvidence, ImageRejected) as exc:
+            return await run_in_threadpool(self.turns.fail, claim, exc.code, list(exc.trace))
+        try:
+            return await run_in_threadpool(self.turns.finish, claim, result)
+        except SQLAlchemyError:
+            # Publication rolled back: fence the completed model attempt so the
+            # accepted customer message can be retried without an API restart.
+            return await run_in_threadpool(self.turns.fail, claim, "persistence_failure", result.trace)

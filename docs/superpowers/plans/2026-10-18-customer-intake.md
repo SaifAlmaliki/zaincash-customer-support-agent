@@ -10,6 +10,22 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-18-customer-intake-design.md` (approved 2026-10-18).
 
+## Completion audit — 2026-10-18
+
+Audited and repaired on `feat/customer-intake`. Current verification: **781 backend tests, 40 customer tests, 31 employee tests**, Ruff, both frontend type/lint/build checks. See [the verification record](../../verification/2026-10-18-customer-intake.md) for findings, commands, browser evidence and measured live vision results.
+
+- [x] Task 1 — Durable session contracts, ownership, operation identities and configuration.
+- [x] Task 2 — Grounded evidence, corrections, role-specific phones, conservative dates and readiness.
+- [x] Task 3 — Validated attachments, bounded vision calls, structured-output repair and usage accounting.
+- [x] Task 4 — Graph turns, recovery fencing, current reviews and customer API.
+- [x] Task 5 — Exactly-once submission, frozen employee evidence and durable failure reconciliation.
+- [x] Task 6 — Resumable client, pending-operation recovery, initialization and polling guards.
+- [x] Task 7 — Bilingual chat, multiple screenshots, corrections, partial review and receipt.
+- [x] Task 8 — Employee evidence/status presentation and review availability.
+- [x] Task 9 — Automated handoff, browser handoff, reproducible live image probe and runbook.
+
+Browser handoff used real HTTP/Postgres with scripted models. Separate live image-and-review checks passed with `INTAKE_MODEL=google/gemini-2.5-flash` (now the example configuration). The former `google/gemini-3.8-flash` fallback was unreliable in this check. End-to-end live-provider linguistic quality is not established by the scripted browser run. One minor documentation enhancement remains deferred: explicit success-response declarations in OpenAPI.
+
 ## Global Constraints
 
 - A ticket becomes visible to employees only after the customer reviews its summary and submits it.
@@ -39,7 +55,7 @@
 
 ## Execution conventions and repository baseline
 
-- This document is a plan, not implementation evidence. Every unchecked step remains work to do.
+- The detailed step checkboxes below preserve the original execution recipe, including creation-time red checks. They are not a retroactive claim about the first implementation session. The completion audit above and linked measured verification record are the current delivery status.
 - Obtain plan approval and an execution-method choice before implementation. Use the appropriate execution and isolation skills then.
 - Commands below use Linux paths inside the repository's WSL checkout. Run them with the stated working directory; PowerShell callers can use `wsl -d Ubuntu-24.04 --cd <absolute-directory> <command>`. Run dependent commands separately and check their exit status.
 - Use `apply_patch` for file edits. Install dependencies only during the owning implementation task, updating the corresponding lockfile.
@@ -89,6 +105,8 @@ Use Pydantic models with `extra="forbid"`, UUID identifiers serialized as string
 | `Credentials` | `session_id: UUID`, `token: str` (returned only from create; never stored in plaintext in Postgres) |
 
 Python-only dataclasses: `ImageInput(id: UUID, mime_type: str, data: bytes)`; `TurnContext(session_id: UUID, revision: int, state: IntakeState, messages: list[Message], attachments: list[Attachment], current_message_id: UUID | None)`; `TurnResult(state: IntakeState, assistant_text: str | None, review: ReviewSnapshot | None, trace: list[dict])`; `ModelCall(value: Analysis | ReviewText, trace: list[dict])`; `OperationClaim(session_id: UUID, request_id: UUID, attempt_id: UUID, revision: int, context: TurnContext)`. Give all collection fields independent default factories. `ModelUnavailable` carries an optional `trace` list for failed-call accounting.
+
+Completion-audit amendment: `TurnContext` also carries `needs_analysis: bool = False`, derived from the latest customer message's durable operation status. Explicit review interprets an accepted-but-unprocessed message (and unbound uploads) before summarizing, within the same operation budget. This flag is internal and does not change the HTTP contract.
 
 Use these fact keys: `issue`, `expected`, `actual`, `date`, `exact_error`, `repeats`, `attempted_steps`, `desired_outcome`, `txn_ref`, `amount`, `currency`, `customer_phone`, `recipient_phone`, `debited`, `recipient_outcome`, `device`, `app_version`, `failed_step`, `agent_location`, `merchant`, `biller`, `card_symptom`, `kyc_step`. Additional distinct issues are evidence-backed `Fact` objects in `additional_issues`; they do not overwrite the primary issue's amount/reference.
 
@@ -738,7 +756,7 @@ Define `complete_conversation` in this test file: first text reports a failed tr
 
 ## Plan review and execution handoff
 
-Status: Implementation plan awaiting user review and execution-method selection.
+Status: Implemented, audited and repaired on `feat/customer-intake`; see the completion audit and verification record above. Changes from the completion audit are local and uncommitted.
 
 Recommended execution method: **Native**, because the graph, operation ledger, summary revision, and submission transaction share tightly coupled interfaces; maintaining one implementation context reduces handoff overhead. Follow the selected execution skill and its review process. Subagent-driven execution remains available if the user prefers a separate implementer/reviewer gate for every task.
 

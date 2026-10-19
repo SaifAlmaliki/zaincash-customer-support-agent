@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import { IntakeRequestError, type IntakeApi } from "./api"
 import { IntakeController } from "./controller"
-import { memoryStorage, type SessionStorage } from "./session"
+import { browserSessionStorage, memoryStorage, type SessionStorage } from "./session"
 import type { SessionView } from "./types"
 
 function emptySession(overrides: Partial<SessionView> = {}): SessionView {
@@ -66,6 +66,137 @@ const review = {
 }
 
 describe("intake controller", () => {
+  it("initializes when the browser denies access to localStorage itself", async () => {
+    const denied = vi.spyOn(window, "localStorage", "get").mockImplementation(() => { throw new DOMException("Denied", "SecurityError") })
+    try {
+      const controller = new IntakeController(fakeApi(), browserSessionStorage())
+      await controller.initialize("en")
+      expect(controller.getSnapshot().session?.id).toBe("session-1")
+      expect(controller.getSnapshot().resumeUnavailable).toBe(true)
+    } finally { denied.mockRestore() }
+  })
+
+  it("coalesces a double send into one logical message", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en")
+    await Promise.all([controller.send("same", "en", []), controller.send("same", "en", [])])
+    expect(api.message).toHaveBeenCalledTimes(1)
+  })
+  it("retains an in-memory session across remount when storage fails", async () => {
+    const api = fakeApi()
+    const storage: SessionStorage = { load: () => null, save: () => { throw new Error("quota") }, clear: () => undefined }
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("ar")
+    await controller.initialize("ar")
+    expect(api.create).toHaveBeenCalledTimes(1)
+  })
+
+  it("retry recovers failed initialization", async () => {
+    const api = fakeApi()
+    vi.mocked(api.create).mockRejectedValueOnce(new TypeError("offline"))
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("ar")
+    await controller.retry()
+    expect(controller.getSnapshot().session?.id).toBe("session-1")
+  })
+
+  it("reconciles a lost response then retries the accepted failed attempt", async () => {
+    const api = fakeApi()
+    const storage = memoryStorage()
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("en")
+    vi.mocked(api.message).mockImplementationOnce(async (_credentials, body) => {
+      vi.mocked(api.get).mockResolvedValue(emptySession({ revision: 2, turn_status: "retryable_failure", active_request_id: body.request_id }))
+      throw new TypeError("offline")
+    })
+    await controller.send("Transfer failed", "en", [])
+    await controller.retry()
+    expect(api.message).toHaveBeenCalledTimes(1)
+    expect(api.retry).toHaveBeenCalledTimes(1)
+    expect(storage.load()?.pending).toBeNull()
+  })
+
+  it("does not replace a new draft with an uncertain prior message", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en")
+    vi.mocked(api.message).mockRejectedValueOnce(new TypeError("offline"))
+    await controller.send("first", "en", [])
+    await controller.send("new correction", "en", [])
+    expect(api.message).toHaveBeenCalledTimes(1)
+    expect(controller.getSnapshot().error).toMatch(/retry/i)
+  })
+
+  it("a reconciled conflict allows a deliberate new action with a new identity", async () => {
+    const api = fakeApi()
+    const storage = memoryStorage()
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("en")
+    vi.mocked(api.message).mockRejectedValueOnce(new IntakeRequestError("Reload", 409, "revision_conflict"))
+    vi.mocked(api.get).mockResolvedValue(emptySession({ revision: 7 }))
+    await controller.send("old", "en", [])
+    const oldId = vi.mocked(api.message).mock.calls[0]![1].request_id
+    await controller.send("corrected", "en", [])
+    const body = vi.mocked(api.message).mock.calls[1]![1]
+    expect(body).toMatchObject({ text: "corrected", expected_revision: 7 })
+    expect(body.request_id).not.toBe(oldId)
+  })
+
+  it("reattaching a removed file starts a fresh upload operation", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en")
+    const file = new File(["image"], "error.png")
+    await controller.upload(file)
+    await controller.remove("att-1")
+    await controller.upload(file)
+    expect(vi.mocked(api.upload).mock.calls[1]![2]).not.toBe(vi.mocked(api.upload).mock.calls[0]![2])
+  })
+
+  it("retry reuses an uncertain upload identity and file", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en")
+    vi.mocked(api.upload).mockRejectedValueOnce(new TypeError("offline"))
+    const file = new File(["image"], "error.png")
+    await expect(controller.upload(file)).rejects.toThrow()
+    await controller.retry()
+    expect(api.upload).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(api.upload).mock.calls[1]![2]).toBe(vi.mocked(api.upload).mock.calls[0]![2])
+  })
+
+  it("a late poll cannot overwrite a manual refresh", async () => {
+    vi.useFakeTimers()
+    const api = fakeApi({ turn_status: "processing" })
+    let release!: (view: SessionView) => void
+    vi.mocked(api.get).mockImplementationOnce(() => new Promise((resolve) => { release = resolve }))
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en")
+    await vi.advanceTimersByTimeAsync(2000)
+    vi.mocked(api.get).mockResolvedValue(emptySession({ revision: 5 }))
+    await controller.refresh()
+    release(emptySession({ revision: 1, turn_status: "processing" }))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(controller.getSnapshot().session?.revision).toBe(5)
+    controller.dispose()
+    vi.useRealTimers()
+  })
+
+  it("does not mutate a submitted report", async () => {
+    const api = fakeApi({ phase: "submitted" })
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en")
+    await controller.send("late", "en", [])
+    await controller.requestReview(true, "en")
+    await controller.upload(new File(["x"], "x.png"))
+    await controller.remove("att-1")
+    expect(api.message).not.toHaveBeenCalled()
+    expect(api.review).not.toHaveBeenCalled()
+    expect(api.upload).not.toHaveBeenCalled()
+    expect(api.remove).not.toHaveBeenCalled()
+  })
+
   it("creates one session when initialized twice", async () => {
     const api = fakeApi()
     const storage = memoryStorage()

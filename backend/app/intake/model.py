@@ -1,6 +1,7 @@
 """Bounded multimodal intake adapter. It does not bind transaction or knowledge tools."""
 from __future__ import annotations
 
+import asyncio
 import base64
 import time
 from pathlib import Path
@@ -17,7 +18,10 @@ from app.intake.contracts import (
     ReviewText,
     TurnContext,
 )
-from app.intake.errors import ModelUnavailable
+from app.intake.errors import InvalidEvidence, ModelUnavailable
+from app.intake.evidence import merge_analysis
+from app.intake.policy import material_keys
+from app.intake.review import validate_review_numbers
 
 _PROMPTS = Path(__file__).with_name("prompts")
 _INTAKE_PROMPT = (_PROMPTS / "intake_v1.md").read_text(encoding="utf-8")
@@ -50,11 +54,16 @@ class OpenRouterIntakeModel:
 
     async def analyze(self, context: TurnContext, images: list[ImageInput], budget: ModelBudget) -> ModelCall:
         system, blocks = _analysis_prompt(context, images)
-        return await self._invoke(Analysis, system, blocks, budget)
+        return await self._invoke(Analysis, system, blocks, budget,
+            validate=lambda value: merge_analysis(context, value, visible_image_ids={item.id for item in images}))
 
     async def summarize(self, state: IntakeState, language: str, budget: ModelBudget) -> ModelCall:
         system, blocks = _review_prompt(state, language)
-        return await self._invoke(ReviewText, system, blocks, budget)
+        def validate(value):
+            validate_review_numbers(state, value)
+            if not set(material_keys(state.category)).issubset(value.fact_keys):
+                raise InvalidEvidence("Include all required_fact_keys, even when their values are unknown.")
+        return await self._invoke(ReviewText, system, blocks, budget, validate=validate)
 
     def _runnable(self, schema: type):
         if self._runnable_factory is not None:
@@ -72,33 +81,42 @@ class OpenRouterIntakeModel:
             self._cache[schema] = chat.with_structured_output(schema, method="json_schema", include_raw=True)
         return self._cache[schema]
 
-    async def _invoke(self, schema: type, system: str, blocks: list[dict], budget: ModelBudget) -> ModelCall:
+    async def _invoke(self, schema: type, system: str, blocks: list[dict], budget: ModelBudget, *, validate=None) -> ModelCall:
         repaired = False
+        trace_start = len(budget.trace)
         while True:
             budget.consume()
+            started = time.monotonic()
             try:
-                result = await self._runnable(schema).ainvoke([
-                    SystemMessage(content=system), HumanMessage(content=blocks),
-                ])
+                async with asyncio.timeout(budget.remaining_s()):
+                    result = await self._runnable(schema).ainvoke([
+                        SystemMessage(content=system), HumanMessage(content=blocks),
+                    ])
             except ModelUnavailable:
                 raise
             except Exception as exc:
-                _record(budget, self._model_name(), exc, None)
+                _record(budget, self._model_name(), exc, None, started)
                 if _transient(exc) and budget.used < budget.max_requests and budget.remaining_s() > 0:
                     continue
                 raise ModelUnavailable("The assistant is temporarily unavailable.", trace=budget.trace) from exc
-            _record(budget, self._model_name(), None, result)
+            _record(budget, self._model_name(), None, result, started)
             parsed = result.get("parsed") if isinstance(result, dict) else None
-            if parsed is None and not repaired and budget.used < budget.max_requests and budget.remaining_s() > 0:
-                repaired = True
-                blocks = [*blocks, {"type": "text", "text": "The previous output did not match the schema. Return one valid object."}]
-                continue
-            if parsed is None or not isinstance(parsed, schema):
-                try:
+            try:
+                if not isinstance(parsed, schema):
                     parsed = schema.model_validate(parsed)
-                except Exception as exc:
-                    raise ModelUnavailable("The assistant returned an unusable response.", trace=budget.trace) from exc
-            return ModelCall(parsed, list(budget.trace))
+                if validate is not None:
+                    validate(parsed)
+            except Exception as exc:
+                budget.trace[-1]["error"] = type(exc).__name__
+                if isinstance(exc, InvalidEvidence):
+                    budget.trace[-1]["validation_error"] = exc.message
+                if not repaired and budget.used < budget.max_requests and budget.remaining_s() > 0:
+                    repaired = True
+                    detail = exc.message if isinstance(exc, InvalidEvidence) else "Return one object matching the schema."
+                    blocks = [*blocks, {"type": "text", "text": f"The previous output was rejected: {detail} Use the exact source UUIDs and grounded values from the supplied input; include evidence on every known fact."}]
+                    continue
+                raise ModelUnavailable("The assistant returned an unusable response.", trace=budget.trace) from exc
+            return ModelCall(parsed, list(budget.trace[trace_start:]))
 
     def _model_name(self) -> str:
         return self.settings.intake_model or self.settings.gemini_model
@@ -109,7 +127,7 @@ def _transient(exc: Exception) -> bool:
     return isinstance(exc, httpx.TransportError) or (isinstance(status, int) and (status in {408, 429} or status >= 500))
 
 
-def _record(budget: ModelBudget, model: str, error: Exception | None, result) -> None:
+def _record(budget: ModelBudget, model: str, error: Exception | None, result, started: float) -> None:
     usage = {}
     cost = None
     if isinstance(result, dict):
@@ -120,6 +138,7 @@ def _record(budget: ModelBudget, model: str, error: Exception | None, result) ->
             cost = float(metadata["cost"])
     budget.trace.append({
         "model": model,
+        "latency_ms": round((time.monotonic() - started) * 1000),
         "usage": usage or None,
         "cost_usd": cost,
         "error": None if error is None else type(error).__name__,
@@ -139,7 +158,8 @@ def _analysis_prompt(context: TurnContext, images: list[ImageInput]) -> tuple[st
 
 def _review_prompt(state: IntakeState, language: str) -> tuple[str, list[dict]]:
     payload = state.model_dump_json()
-    blocks = [{"type": "text", "text": f"Requested language: {language}\n{payload}"}]
+    keys = list(dict.fromkeys([*material_keys(state.category), *state.facts]))
+    blocks = [{"type": "text", "text": f"Requested language: {language}\nrequired_fact_keys: {keys}\n{payload}"}]
     _guard_size(blocks)
     return _REVIEW_PROMPT, blocks
 
@@ -152,6 +172,9 @@ def _bounded_context(context: TurnContext) -> str:
         "category": context.state.category,
         "facts": context.state.model_dump(mode="json")["facts"],
         "additional_needed": context.state.additional_needed,
+        "additional_issues": [item.model_dump(mode="json") for item in context.state.additional_issues],
+        "questions": [item.model_dump(mode="json") for item in context.state.questions],
+        "attachments": [item.model_dump(mode="json") for item in context.attachments if not item.removed],
         "readiness": context.state.readiness.model_dump(mode="json"),
         "current_message": None if current is None else current.model_dump(mode="json"),
         "recent_messages": [item.model_dump(mode="json") for item in recent],

@@ -85,7 +85,7 @@ async def upload_attachment(
     session_id: UUID, request: Request, file: Annotated[UploadFile, File()],
     request_id: Annotated[UUID, Form()], expected_revision: Annotated[int, Form()],
 ):
-    content = await file.read()
+    content = await file.read(request.app.state.settings.intake_max_image_bytes + 1)
     attachment, view = await run_in_threadpool(
         request.app.state.intake_store.upload, _credentials(request, session_id),
         request_id, expected_revision, file.filename or "screenshot", content,

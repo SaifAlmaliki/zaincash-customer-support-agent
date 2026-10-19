@@ -3,11 +3,12 @@ import type { IntakeCopy } from "./copy"
 import type { Attachment, Credentials, CustomerReview } from "./types"
 import { OwnedImage } from "./OwnedImage"
 
-function factText(review: CustomerReview, key: string, unknown: string) {
+function factText(review: CustomerReview, key: string, copy: IntakeCopy) {
   const fact = review.facts[key]
-  if (!fact || fact.status === "unknown" || fact.status === "missing") return unknown
-  if (fact.status === "conflicting") return fact.normalized || fact.value || unknown
-  return fact.normalized || fact.value || unknown
+  if (!fact || fact.status === "unknown" || fact.status === "missing") return copy.unknown
+  if (fact.status === "not_applicable") return copy.notApplicable
+  if (fact.status === "conflicting") return `${copy.conflicting}: ${fact.value || copy.unknown}`
+  return fact.normalized || fact.value || copy.unknown
 }
 
 export function ReviewPanel({
@@ -40,9 +41,9 @@ export function ReviewPanel({
       <dl>
         {keys.map((key) => (
           <div key={key}>
-            <dt>{key}</dt>
+            <dt>{copy.fieldLabels[key] || key}</dt>
             <dd>
-              <bdi dir="ltr">{factText(review, key, copy.unknown)}</bdi>
+              <bdi dir="auto">{factText(review, key, copy)}</bdi>
             </dd>
           </div>
         ))}
@@ -51,7 +52,7 @@ export function ReviewPanel({
         <ul>
           {review.unknown_keys.map((key) => (
             <li key={key}>
-              {key}: {copy.unknown}
+              {copy.fieldLabels[key] || key}: {factText(review, key, copy)}
             </li>
           ))}
         </ul>

@@ -1,12 +1,13 @@
 """One customer turn: interpret, merge evidence, then ask or prepare a review."""
 from __future__ import annotations
 
+from dataclasses import replace
 from uuid import uuid4
 
 from langgraph.graph import END, StateGraph
 
 from app.intake.contracts import QuestionRecord, TurnContext, TurnResult
-from app.intake.errors import InvalidEvidence
+from app.intake.errors import IntakeError, InvalidEvidence
 from app.intake.evidence import merge_analysis
 from app.intake.model import ModelBudget
 from app.intake.policy import assess_readiness, choose_question
@@ -33,29 +34,49 @@ class IntakeGraph:
 
     async def advance(self, context: TurnContext) -> TurnResult:
         budget = self._budget()
-        outcome = await self._compiled.ainvoke({
-            "context": context,
-            "images": self._images(context, [item for item in context.messages if item.id == context.current_message_id]),
-            "budget": budget,
-            "trace": [],
-        })
+        try:
+            outcome = await self._compiled.ainvoke({
+                "context": context,
+                "images": self._images(context, [item for item in context.messages if item.id == context.current_message_id]),
+                "budget": budget,
+                "trace": [],
+            })
+        except IntakeError as exc:
+            exc.trace = list(budget.trace or exc.trace)
+            raise
         return TurnResult(outcome["state"], outcome.get("assistant_text"), outcome.get("review"), outcome.get("trace", []))
 
     async def review(self, context: TurnContext, *, allow_partial: bool, language: str) -> TurnResult:
+        budget = self._budget()
+        try:
+            return await self._review_current(context, allow_partial=allow_partial, language=language, budget=budget)
+        except IntakeError as exc:
+            exc.trace = list(budget.trace or exc.trace)
+            raise
+
+    async def _review_current(self, context: TurnContext, *, allow_partial: bool, language: str, budget: ModelBudget) -> TurnResult:
         if not context.messages and not any(not item.removed for item in context.attachments):
             raise InvalidEvidence("Add a message or screenshot before review.")
+        unbound = [item for item in context.attachments if not item.removed and item.message_id is None]
+        trace = []
+        if context.needs_analysis or unbound:
+            images = self._images(context, [item for item in context.messages if item.id == context.current_message_id])
+            images += [self.store.load_for_session(context.session_id, item.id) for item in unbound]
+            analyzed = await self._analyze({"context": context, "images": images, "budget": budget, "trace": []})
+            state = merge_analysis(analyzed["context"], analyzed["analysis"], visible_image_ids=analyzed["visible_image_ids"])
+            context = replace(context, state=state)
+            trace = analyzed["trace"]
         readiness = assess_readiness(context.state, self.taxonomy, allow_partial=allow_partial)
         if readiness.quality == "collecting" and not allow_partial:
             raise InvalidEvidence("More detail is needed before review.")
         if readiness.quality == "collecting":
             readiness = readiness.model_copy(update={"quality": "partial_context"})
         state = context.state.model_copy(update={"language": language, "readiness": readiness})
-        budget = self._budget()
         call = await self.model.summarize(state, language, budget)
         snapshot = build_review(
             context, state, call.value, publication=context.revision + 1, language=language, taxonomy=self.taxonomy
         )
-        return TurnResult(state, _invitation(language), snapshot, [*budget.trace, *call.trace])
+        return TurnResult(state, _invitation(language), snapshot, [*trace, *call.trace])
 
     def _budget(self) -> ModelBudget:
         return ModelBudget(self.settings.intake_timeout_s, self.settings.intake_max_model_requests)
@@ -79,13 +100,17 @@ class IntakeGraph:
             if image_id in owned and image_id not in already:
                 extra.append(self.store.load_for_session(state["context"].session_id, image_id))
         if extra:
-            again = await self.model.analyze(state["context"], extra, state["budget"])
+            # Ground the first pass before reinspection, and carry it into the
+            # second pass so newly extracted facts are not silently discarded.
+            merged = merge_analysis(state["context"], analysis, visible_image_ids=already)
+            state = {**state, "context": replace(state["context"], state=merged)}
+            again = await self.model.analyze(state["context"], [*state["images"], *extra], state["budget"])
             analysis = again.value
             trace = [*trace, *again.trace]
-        return {**state, "analysis": analysis, "trace": trace}
+        return {**state, "analysis": analysis, "trace": trace, "visible_image_ids": already | {image.id for image in extra}}
 
     def _merge(self, state: dict) -> dict:
-        merged = merge_analysis(state["context"], state["analysis"])
+        merged = merge_analysis(state["context"], state["analysis"], visible_image_ids=state["visible_image_ids"])
         readiness = assess_readiness(merged, self.taxonomy)
         merged = merged.model_copy(update={"readiness": readiness})
         question = choose_question(

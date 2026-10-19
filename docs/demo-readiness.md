@@ -2,7 +2,7 @@
 
 As of **2026-10-17**: Plan 1 and the workspace are implemented; **all eight Plan 3 RAG tasks are completed and reviewed** with real provider/API/browser smoke evidence. The final scoped re-review approved all five fixes (zero open findings), and the controller's fresh backend checks passed. This is a local synthetic demo, not a production-readiness or accuracy claim.
 
-Customer intake, added **2026-10-18**, is a separate conversation that submits one normal ticket into this pipeline. Automated intake tests passed with the scripted model. A live vision call to `google/gemini-3.8-flash` did not complete: the provider connection failed before any image result. See [the intake verification record](verification/2026-10-18-customer-intake.md). Intake screenshots in `data/demo/intake/` are fictional.
+Customer intake, audited and repaired **2026-10-18**, submits one customer-reviewed ticket into this pipeline. Final checks passed: **781 backend, 40 customer and 31 employee tests**, Ruff and both frontend type/lint/build checks. Real-API browser handoff was exercised with scripted models. Separate live image-and-paired-review checks passed with **`INTAKE_MODEL=google/gemini-2.5-flash`**, including an unreadable amount left missing. The former `google/gemini-3.8-flash` fallback was unreliable; set the tested override and restart the API. See [the intake verification record](verification/2026-10-18-customer-intake.md) for exact boundaries and costs. Intake screenshots in `data/demo/intake/` are fictional.
 
 ## Evidence by layer
 

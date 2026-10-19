@@ -97,3 +97,51 @@ def test_invalid_output_repairs_once_and_missing_cost_stays_unknown():
 
     import asyncio
     asyncio.run(run())
+
+
+async def test_deadline_cancels_an_inflight_provider_request_and_records_latency():
+    import asyncio
+
+    class SlowRunnable:
+        async def ainvoke(self, messages):
+            await asyncio.sleep(0.1)
+            return {"raw": AIMessage(content="ok"), "parsed": _analysis()}
+
+    model = OpenRouterIntakeModel(Settings(_env_file=None), runnable_factory=lambda schema: SlowRunnable())
+    budget = ModelBudget(0.01, 3)
+    with pytest.raises(ModelUnavailable) as caught:
+        await model.analyze(context([message("hello")]), [], budget)
+    assert len(caught.value.trace) == 1
+    assert caught.value.trace[0]["latency_ms"] >= 0
+    assert budget.used == 1
+
+
+async def test_call_trace_contains_only_its_own_requests():
+    model = OpenRouterIntakeModel(Settings(_env_file=None), runnable_factory=lambda schema: CapturingRunnable())
+    budget = ModelBudget(60, 3)
+    first = await model.analyze(context([message("one")]), [], budget)
+    second = await model.analyze(context([message("two")]), [], budget)
+    assert len(first.trace) == len(second.trace) == 1
+    assert len(budget.trace) == 2
+
+
+async def test_semantically_invalid_analysis_gets_one_bounded_repair():
+    from app.intake.contracts import Fact
+    from tests.intake.helpers import fact
+
+    source = message("What is the fee?", language="en")
+    class RepairsEvidence:
+        def __init__(self):
+            self.calls = 0
+
+        async def ainvoke(self, messages):
+            self.calls += 1
+            update = Fact(key="issue", status="known", value="made up") if self.calls == 1 else fact("issue", source.text, source)
+            return {"raw": AIMessage(content="ok"), "parsed": _analysis().model_copy(update={"updates": [update]})}
+
+    runnable = RepairsEvidence()
+    model = OpenRouterIntakeModel(Settings(_env_file=None), runnable_factory=lambda schema: runnable)
+    result = await model.analyze(context([source]), [], ModelBudget(60, 3))
+    assert result.value.updates[0].evidence[0].source_id == source.id
+    assert len(result.trace) == 2
+    assert result.trace[0]["error"] == "InvalidEvidence"

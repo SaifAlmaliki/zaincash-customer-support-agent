@@ -44,10 +44,8 @@ class AttachmentStore:
 
     def upload(self, credentials: Credentials, request_id: uuid.UUID, expected_revision: int,
                filename: str, content: bytes) -> tuple[Attachment, SessionView]:
-        decoded = self._decode(content)
         digest = hashlib.sha256(content).hexdigest()
-        safe_name = _display_name(filename, decoded["extension"])
-        fingerprint = operation_fingerprint("attachment", {"content_hash": digest, "filename": safe_name})
+        fingerprint = operation_fingerprint("attachment", {"content_hash": digest, "filename": filename})
         created_path: Path | None = None
         try:
             with self._sf() as session:
@@ -60,6 +58,8 @@ class AttachmentStore:
                     stored = session.scalar(select(IntakeAttachmentRow).where(IntakeAttachmentRow.operation_id == existing.id))
                     return self._public(stored), session_view(session, row)
                 self._ensure_mutable(row, expected_revision)
+                decoded = self._decode(content)
+                safe_name = _display_name(filename, decoded["extension"])
                 count = session.scalar(select(func.count()).select_from(IntakeAttachmentRow).where(
                     IntakeAttachmentRow.session_id == row.id, IntakeAttachmentRow.removed.is_(False)
                 ))
@@ -202,7 +202,7 @@ class AttachmentStore:
                 fmt = image.format
         except ImageRejected:
             raise
-        except (UnidentifiedImageError, OSError, ValueError) as exc:
+        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
             raise ImageRejected("Image could not be read.") from exc
         mime, extension = _FORMATS[fmt]
         return {"mime": mime, "extension": extension, "width": width, "height": height}

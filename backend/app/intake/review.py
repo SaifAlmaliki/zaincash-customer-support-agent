@@ -4,13 +4,13 @@ from __future__ import annotations
 import re
 from uuid import uuid4
 
-from app.intake.contracts import IntakeState, ReviewSnapshot, ReviewText, TurnContext
+from app.intake.contracts import Fact, IntakeState, ReviewSnapshot, ReviewText, TurnContext
 from app.intake.dates import canonical_digits
 from app.intake.errors import InvalidEvidence
 from app.intake.policy import material_keys
 
 _GROUPING = re.compile(r"(?<=\d)[,.\s\u066c\u060c](?=\d{3}(?!\d))")
-_TOKEN = re.compile(r"[\w]*\d[\w:/.,+\-]*")
+_TOKEN = re.compile(r"[\w+\-]*\d[\w:/.,+\-]*")
 _LABELS = {
     "issue": "المشكلة", "actual": "ما حدث", "expected": "المتوقع", "date": "التاريخ",
     "amount": "المبلغ", "currency": "العملة", "debited": "خصم من المحفظة",
@@ -28,7 +28,7 @@ def _compact(token: str) -> str:
 
 
 def _tokens(text: str) -> set[str]:
-    return {_compact(token) for token in _TOKEN.findall(canonical_digits(text or ""))}
+    return {token.rstrip(".,:،;") for token in _TOKEN.findall(_compact(text or ""))}
 
 
 def validate_review_numbers(state: IntakeState, text: ReviewText) -> None:
@@ -79,7 +79,7 @@ def build_review(context: TurnContext, state: IntakeState, text: ReviewText, *, 
     requested = language or state.language
     employee = text.employee_text_ar.strip()
     customer = text.customer_text.strip()
-    if requested == "ar" and not employee:
+    if requested == "ar":
         employee = customer
     if not customer or not employee:
         raise InvalidEvidence("The summary needs both customer and employee text.")
@@ -88,9 +88,11 @@ def build_review(context: TurnContext, state: IntakeState, text: ReviewText, *, 
     required = material_keys(state.category, taxonomy)
     if not set(required).issubset(set(text.fact_keys)):
         raise InvalidEvidence("The summary is missing a material detail.")
-    ordered = list(dict.fromkeys([*text.fact_keys, *required]))
+    ordered = list(dict.fromkeys([*required, *state.facts, *state.additional_needed]))
+    facts = {key: state.facts.get(key, Fact(key=key, status="missing")) for key in ordered}
+    state = state.model_copy(update={"facts": facts})
     quality = "sufficient_context" if state.readiness.quality == "sufficient_context" else "partial_context"
-    unknowns = [key for key, fact in state.facts.items() if fact.status == "unknown"]
+    unknowns = [key for key, fact in facts.items() if fact.status in {"unknown", "missing", "conflicting"}]
     attachments = [item.id for item in context.attachments if not item.removed]
     return ReviewSnapshot(
         id=uuid4(), revision=publication, language=requested, quality=quality,

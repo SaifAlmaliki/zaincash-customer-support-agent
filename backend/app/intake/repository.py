@@ -26,6 +26,7 @@ from app.intake.contracts import (
 from app.intake.db_models import (
     IntakeAttachmentRow,
     IntakeMessageRow,
+    IntakeOperationRow,
     IntakeSessionRow,
     IntakeSubmissionRow,
 )
@@ -173,6 +174,8 @@ def session_view(session: Session, row: IntakeSessionRow) -> SessionView:
 def turn_context(session: Session, row: IntakeSessionRow) -> TurnContext:
     messages = load_messages(session, row.id)
     current = next((item.id for item in reversed(messages) if item.role == "user"), None)
+    latest = session.get(IntakeMessageRow, current) if current else None
+    operation = session.get(IntakeOperationRow, latest.operation_id) if latest and latest.operation_id else None
     return TurnContext(
         session_id=row.id,
         revision=row.revision,
@@ -180,6 +183,7 @@ def turn_context(session: Session, row: IntakeSessionRow) -> TurnContext:
         messages=messages,
         attachments=load_attachments(session, row.id),
         current_message_id=current,
+        needs_analysis=bool(latest and (operation is None or operation.status != "completed")),
     )
 
 

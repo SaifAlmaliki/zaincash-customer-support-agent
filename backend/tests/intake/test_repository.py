@@ -112,3 +112,9 @@ def test_blank_intake_model_is_rejected():
 def test_non_positive_image_limit_is_rejected():
     with pytest.raises(ValidationError):
         Settings(_env_file=None, intake_max_image_bytes=0)
+def test_relative_upload_directory_is_rooted_in_the_repository():
+    from pathlib import Path
+
+    from app.config import REPO_ROOT, Settings
+    settings = Settings(_env_file=None, intake_upload_dir="data/intake-uploads")
+    assert Path(settings.intake_upload_dir) == REPO_ROOT / "data/intake-uploads"

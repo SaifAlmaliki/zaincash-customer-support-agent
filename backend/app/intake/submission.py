@@ -114,6 +114,8 @@ class SubmissionService:
             "attachments": attachments,
             "employee_text_ar": snapshot.employee_text_ar,
             "submitted_at": now.isoformat(),
+            "started_at": row.created_at.isoformat(),
+            "readiness": row.state["readiness"],
         })
         session.add(IntakeSubmissionRow(
             id=uuid.uuid4(), session_id=row.id, ticket_id=stored.id, run_id=run_id, result_id=placeholder.id,

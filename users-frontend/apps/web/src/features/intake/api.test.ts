@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { createIntakeApi, IntakeRequestError } from "./api"
+import { createIntakeApi, IntakeRequestError, parseReceipt, parseSession } from "./api"
 import type { SessionView } from "./types"
 
 const session: SessionView = {
@@ -22,6 +22,12 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 describe("intake api", () => {
+  it("rejects incomplete or invalid session projections before rendering", () => {
+    expect(() => parseSession({ id: "s", revision: 1, phase: "collecting" })).toThrow(IntakeRequestError)
+    expect(() => parseSession({ ...session, phase: "oops" })).toThrow(IntakeRequestError)
+    expect(() => parseSession({ ...session, attachments: [{}] })).toThrow(IntakeRequestError)
+    expect(() => parseReceipt({ ticket_reference: "INTAKE-x", processing_status: "resolved" })).toThrow(IntakeRequestError)
+  })
   it("sends the bearer token and rejects an incomplete session", async () => {
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       const headers = new Headers(init?.headers)

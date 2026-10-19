@@ -135,3 +135,19 @@ def test_concurrent_uploads_stop_at_the_session_cap(intake_db, tmp_path, repo):
         results = list(pool.map(attempt, range(14)))
     assert results.count("stored") == 10
     assert len(repo.get(credentials).attachments) == 10
+
+
+def test_changed_invalid_bytes_conflict_before_decoding_replay(store, repo):
+    owner, view = repo.create("en")
+    request_id = uuid4()
+    store.upload(owner, request_id, view.revision, "shot.png", png_bytes())
+    with pytest.raises(OperationConflict):
+        store.upload(owner, request_id, view.revision, "shot.png", b"invalid changed bytes")
+
+
+def test_decoder_decompression_limit_is_a_safe_image_rejection(store, repo, monkeypatch):
+    owner, view = repo.create("en")
+    content = png_bytes()
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 10)
+    with pytest.raises(ImageRejected):
+        store.upload(owner, uuid4(), view.revision, "shot.png", content)

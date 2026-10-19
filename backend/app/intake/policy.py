@@ -32,7 +32,7 @@ _SPECIFIC = {
     "fraud_report": [],
 }
 _SECRET = re.compile(
-    r"\b(pin|otp|password|passcode|cvv|cvc)\b|رمز\s*(السر|التحقق|التأكيد)|كلمة\s*(السر|المرور)|رقم\s*البطاقة",
+    r"\b(pin|otp|password|passcode|cvv|cvc)\b|card[\s-]*(number|details)|رمز\s*(السر|التحقق|التأكيد)|كلمة\s*(السر|المرور)|رقم\s*البطاقة",
     re.IGNORECASE,
 )
 _ASK = {

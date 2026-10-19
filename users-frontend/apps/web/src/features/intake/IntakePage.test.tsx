@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { fireEvent } from "@testing-library/react"
 import { beforeEach, expect, it, vi } from "vitest"
@@ -7,6 +7,7 @@ import { IntakeController } from "./controller"
 import { IntakePage } from "./IntakePage"
 import { memoryStorage } from "./session"
 import type { Attachment, CustomerReview, SessionView } from "./types"
+import { ThemeProvider } from "@/components/theme-provider"
 
 function emptySession(overrides: Partial<SessionView> = {}): SessionView {
   return {
@@ -236,4 +237,60 @@ it("drops a late reply after starting a new report", async () => {
   )
   await waitFor(() => expect(api.create).toHaveBeenCalledTimes(2))
   expect(screen.queryByText("late secret")).not.toBeInTheDocument()
+})
+
+it("starts with Iraqi Arabic before asynchronous initialization", async () => {
+  const api = fakeApi({ language: "ar" })
+  const controller = new IntakeController(api, memoryStorage())
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByLabelText("رسالتك")).toBeVisible()
+})
+
+it("retains text typed while the previous message is in flight", async () => {
+  const { controller, api } = await collectingController("en")
+  let release!: (view: SessionView) => void
+  vi.mocked(api.message).mockImplementation(() => new Promise((resolve) => { release = resolve }))
+  render(<IntakePage controller={controller} />)
+  const input = screen.getByRole("textbox", { name: "Your message" })
+  fireEvent.change(input, { target: { value: "first" } })
+  fireEvent.click(screen.getByRole("button", { name: "Send" }))
+  await waitFor(() => expect(api.message).toHaveBeenCalled())
+  fireEvent.change(input, { target: { value: "a new correction" } })
+  await act(async () => { release(emptySession({ revision: 4 })) })
+  expect(input).toHaveValue("a new correction")
+})
+
+it("copies selected files before the input file list is cleared", async () => {
+  const { controller, api } = await collectingController("en")
+  render(<IntakePage controller={controller} />)
+  const files = [new File(["a"], "one.png", { type: "image/png" }), new File(["b"], "two.png", { type: "image/png" })]
+  // Real FileList is live: clearing the native input mutates that same list.
+  const input = screen.getByLabelText("Attach screenshots") as HTMLInputElement
+  Object.defineProperty(input, "files", { configurable: true, get: () => files })
+  Object.defineProperty(input, "value", { configurable: true, set: () => { files.length = 0 } })
+  fireEvent.change(input)
+  await waitFor(() => expect(api.upload).toHaveBeenCalledTimes(2))
+})
+
+it("labels conflicting and inapplicable facts on the confirmation surface", async () => {
+  const api = fakeApi({ phase: "review_ready", review: { ...review, facts: {
+    amount: { key: "amount", status: "conflicting", value: "50000", normalized: null, evidence: [] },
+    date: { key: "date", status: "not_applicable", value: null, normalized: null, evidence: [] },
+  } } })
+  const controller = new IntakeController(api, memoryStorage())
+  await controller.initialize("en")
+  render(<IntakePage controller={controller} />)
+  expect(screen.getByText("Conflicting: 50000", { exact: true })).toBeVisible()
+  expect(screen.getByText("Not applicable")).toBeVisible()
+})
+
+it("renders the complete themed page when browser storage is denied", async () => {
+  const { controller } = await collectingController("en")
+  const denied = vi.spyOn(window, "localStorage", "get").mockImplementation(() => { throw new DOMException("Denied", "SecurityError") })
+  try {
+    render(<ThemeProvider defaultTheme="dark"><IntakePage controller={controller} /></ThemeProvider>)
+    expect(screen.getByRole("textbox", { name: "Your message" })).toBeVisible()
+    fireEvent.keyDown(window, { key: "d" })
+    expect(document.documentElement).toHaveClass("light")
+  } finally { denied.mockRestore() }
 })

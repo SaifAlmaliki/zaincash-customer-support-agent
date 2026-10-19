@@ -41,3 +41,14 @@ it("shows unknowns and original transcript alongside Arabic summary", () => {
 it("has no intake panel for historical tickets", () => {
   expect(renderToStaticMarkup(<IntakeEvidence intake={null} />)).toBe("")
 })
+
+it("distinguishes contradictions and applicability and links supporting evidence", () => {
+  const html = renderToStaticMarkup(<IntakeEvidence intake={{ ...intakeFixture, facts: {
+    amount: { key: "amount", status: "conflicting", value: "50000", evidence: [{ kind: "message", source_id: "m1", quote: "The transfer failed yesterday" }] },
+    date: { key: "date", status: "not_applicable", value: null },
+  } }} />)
+  expect(html).toContain("Conflicting")
+  expect(html).toContain("Not applicable")
+  expect(html).toContain('href="#intake-message-m1"')
+  expect(html).toContain('id="intake-message-m1"')
+})

@@ -191,6 +191,7 @@ class TurnContext:
     messages: list[Message]
     attachments: list[Attachment]
     current_message_id: UUID | None
+    needs_analysis: bool = False
 
 
 @dataclass
