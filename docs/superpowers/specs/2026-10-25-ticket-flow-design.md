@@ -2,7 +2,7 @@
 
 Date: 2026-10-25
 
-Status: Design approved in conversation on 2026-10-25. Awaiting review of this spec.
+Status: Approved by the user on 2026-10-25. Implementation plan: `docs/superpowers/plans/2026-10-25-ticket-flow.md`.
 
 ## 1. Outcome
 
