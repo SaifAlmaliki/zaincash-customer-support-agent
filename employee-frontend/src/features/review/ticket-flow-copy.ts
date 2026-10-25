@@ -21,6 +21,14 @@ const EN = {
   prepareReceived: "Read the {channel} message ({length} characters).",
   prepareEmpty: "No customer message was recorded for this step.",
   prepareProduced: "Arabic digits were converted to 0–9, and card numbers were hidden.",
+  messageBody: "Message: “{text}”",
+  customerPhone: "Customer phone: {phone}.",
+  probability: "{category}: {confidence}",
+  lookupDetail: "{label}: {value}.",
+  decideContext: "Classification {category}, {confidence} confidence, priority {priority}.",
+  noteLine: "Note: {text}",
+  draftBody: "Reply: “{text}”",
+  citationExcerpt: "{filename}: “{text}”",
   emptyReceived: "The customer message was empty.",
   emptyProduced: "Held for a person because the message was empty.",
   cleaned: "Received the cleaned message.",
@@ -84,6 +92,14 @@ const AR: Record<keyof typeof EN, string> = {
   prepareReceived: "قُرئت رسالة {channel} ({length} حرفًا).",
   prepareEmpty: "لم تُسجَّل رسالة للعميل في هذه الخطوة.",
   prepareProduced: "حُوّلت الأرقام العربية إلى 0–9، وأُخفيت أرقام البطاقات.",
+  messageBody: "الرسالة: «{text}»",
+  customerPhone: "هاتف الزبون: {phone}.",
+  probability: "{category}: {confidence}",
+  lookupDetail: "{label}: {value}.",
+  decideContext: "التصنيف {category}، ثقة {confidence}، أولوية {priority}.",
+  noteLine: "ملاحظة: {text}",
+  draftBody: "الرد: «{text}»",
+  citationExcerpt: "{filename}: «{text}»",
   emptyReceived: "كانت رسالة العميل فارغة.",
   emptyProduced: "أُبقيت لموظف لأن الرسالة كانت فارغة.",
   cleaned: "استلم الرسالة بعد تنظيفها.",
@@ -135,7 +151,11 @@ const AR: Record<keyof typeof EN, string> = {
 export type SentenceId = keyof typeof EN
 
 export function sentence(id: SentenceId, arabic: boolean, vars: Record<string, string | number> = {}): string {
-  return (arabic ? AR : EN)[id].replace(/\{(\w+)\}/g, (_, key: string) => String(vars[key] ?? ""))
+  return (arabic ? AR : EN)[id].replace(/\{(\w+)\}/g, (_, key: string) => {
+    const value = String(vars[key] ?? "")
+    if (!arabic || ARABIC.test(value)) return value
+    return `\u2066${value}\u2069`
+  })
 }
 
 const TEAMS_AR: Record<string, string> = {
@@ -192,6 +212,25 @@ const FIELDS: Record<string, [string, string]> = {
 
 export function fieldLabel(key: string, arabic: boolean): string {
   const pair = FIELDS[key]
+  if (!pair) return humanize(key)
+  return arabic ? pair[1] : pair[0]
+}
+
+const TXN_FIELDS: Record<string, [string, string]> = {
+  txn_ref: ["Transaction reference", "الرقم المرجعي"],
+  sender_phone: ["Sender phone", "هاتف المرسل"],
+  receiver_phone: ["Receiver phone", "هاتف المستلم"],
+  amount_iqd: ["Amount", "المبلغ"],
+  amount: ["Amount", "المبلغ"],
+  type: ["Type", "النوع"],
+  status: ["Status", "الحالة"],
+  created_at: ["Created", "تاريخ الإنشاء"],
+  biller: ["Biller", "الجهة"],
+  currency: ["Currency", "العملة"],
+}
+
+export function transactionLabel(key: string, arabic: boolean): string {
+  const pair = TXN_FIELDS[key]
   if (!pair) return humanize(key)
   return arabic ? pair[1] : pair[0]
 }

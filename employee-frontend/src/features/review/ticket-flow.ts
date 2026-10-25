@@ -1,6 +1,6 @@
 import type { ExtractedField, Result } from "../../lib/types"
 import { categoryLabel, percentage } from "../../lib/format"
-import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, reasonName, sentence, teamName, toolLine } from "./ticket-flow-copy"
+import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, reasonName, sentence, teamName, toolLine, transactionLabel } from "./ticket-flow-copy"
 import { reviewEvidence } from "./review-evidence"
 
 export const STEP_ORDER = [
@@ -119,35 +119,76 @@ function fieldValue(field: ExtractedField | undefined, arabic: boolean): string 
   return String(field.value)
 }
 
+function customerMessage(result: Result, arabic: boolean): string[] {
+  const text = result.ticket.text.trim()
+  if (!text) return []
+  return [sentence("messageBody", arabic, { text })]
+}
+
+function probabilityLines(result: Result, arabic: boolean): string[] {
+  return Object.entries(result.category_probs ?? {})
+    .filter((entry): entry is [string, number] => typeof entry[1] === "number" && Number.isFinite(entry[1]))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([id, value]) => sentence("probability", arabic, { category: categoryLabel(id), confidence: percentage(value) }))
+}
+
+function presentValue(value: string | number): string {
+  return typeof value === "number" && Number.isFinite(value) ? value.toLocaleString("en-US") : String(value)
+}
+
+function transactionLines(result: Result, arabic: boolean): string[] {
+  const rows = Object.entries(result.transaction ?? {}).filter((entry): entry is [string, string | number] => {
+    const value = entry[1]
+    return value != null && value !== ""
+  })
+  return rows.map(([key, value]) => sentence("lookupDetail", arabic, { label: transactionLabel(key, arabic), value: presentValue(value) }))
+}
+
+function excerpt(text: string): string {
+  const flat = text.replace(/\s+/g, " ").trim()
+  return flat.length > 180 ? `${flat.slice(0, 177)}…` : flat
+}
+
+function verdict(result: Result, arabic: boolean, category: string, confidence: string, priority: string): string[] {
+  return result.category ? [sentence("classified", arabic, { category, confidence, priority })] : []
+}
+
 function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): { received: string; produced: string; events: string[] } {
   const category = result.category ? categoryLabel(result.category) : sentence("noCategory", arabic)
   const confidence = percentage(result.category_confidence)
   const priority = result.priority || sentence("noPriority", arabic)
   const team = result.team ? teamName(result.team, arabic) : sentence("noTeam", arabic)
+  const message = customerMessage(result, arabic)
   if (id === "prepare") {
     const length = result.ticket.text.trim().length
     const received = length
       ? sentence("prepareReceived", arabic, { channel: channelName(result.ticket.channel, arabic), length: length.toLocaleString("en-US") })
       : sentence("prepareEmpty", arabic)
-    return { received, produced: sentence("prepareProduced", arabic), events: [] }
+    const phone = result.ticket.customer_phone?.trim()
+    return {
+      received,
+      produced: sentence("prepareProduced", arabic),
+      events: [...message, ...(phone ? [sentence("customerPhone", arabic, { phone })] : [])],
+    }
   }
   if (id === "escalate_empty") {
-    return { received: sentence("emptyReceived", arabic), produced: sentence("emptyProduced", arabic), events: [] }
+    return { received: sentence("emptyReceived", arabic), produced: sentence("emptyProduced", arabic), events: message }
   }
   if (id === "jev_classify") {
     const produced = route === "straight"
       ? sentence("jevSure", arabic, { category, confidence, priority })
       : sentence("jevUnsure", arabic)
-    return { received: sentence("cleaned", arabic), produced, events: [] }
+    return { received: sentence("cleaned", arabic), produced, events: [...message, ...probabilityLines(result, arabic)] }
   }
   if (id === "gemini_classify") {
     const received = route === "gemini_direct" || route === "gemini_unknown"
       ? sentence("cleaned", arabic)
       : sentence("geminiAfterJev", arabic)
-    return { received, produced: sentence("classified", arabic, { category, confidence, priority }), events: [] }
+    return { received, produced: sentence("classified", arabic, { category, confidence, priority }), events: [...message, ...probabilityLines(result, arabic)] }
   }
   if (id === "extract") {
-    const events = FIELD_KEYS.map((key) => {
+    const fields = FIELD_KEYS.map((key) => {
       const label = fieldLabel(key, arabic)
       const field = result.extracted[key]
       const value = fieldValue(field, arabic)
@@ -156,22 +197,47 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
         ? sentence("fieldFrom", arabic, { label, value, span: field.span })
         : sentence("fieldLine", arabic, { label, value })
     })
-    return { received: sentence("extractReceived", arabic, { category }), produced: events[events.length - 1], events: events.slice(0, -1) }
+    return { received: sentence("extractReceived", arabic, { category }), produced: fields[fields.length - 1], events: [...message, ...fields.slice(0, -1)] }
   }
   if (id === "lookup") {
-    return { received: sentence("lookupReceived", arabic), produced: lookupSentence(result.lookup_status, arabic), events: [] }
+    const available = FIELD_KEYS.flatMap((key) => {
+      const value = fieldValue(result.extracted[key], arabic)
+      if (value == null || value === sentence("notStated", arabic)) return []
+      return [sentence("lookupDetail", arabic, { label: fieldLabel(key, arabic), value })]
+    })
+    const reference = result.matched_txn_ref?.trim()
+    const alreadyListed = Boolean(result.transaction?.txn_ref)
+    const matched = reference && !alreadyListed ? [sentence("lookupDetail", arabic, { label: fieldLabel("txn_ref", arabic), value: reference })] : []
+    return { received: sentence("lookupReceived", arabic), produced: lookupSentence(result.lookup_status, arabic), events: [...available, ...transactionLines(result, arabic), ...matched] }
   }
   if (id === "decide") {
-    const reasons = result.escalation_reasons.map((id) => reasonName(id, arabic)).join(arabic ? "، " : ", ")
+    const reasons = result.escalation_reasons.map((reason) => reasonName(reason, arabic)).join(arabic ? "، " : ", ")
     const produced = result.escalated
       ? sentence("held", arabic, { reasons: reasons || sentence("notRecorded", arabic) })
       : `${sentence("assigned", arabic, { team })} ${sentence("noEscalation", arabic)}`
-    return { received: sentence("decideReceived", arabic), produced, events: [] }
+    const note = result.escalation_note?.trim()
+    return {
+      received: sentence("decideReceived", arabic),
+      produced,
+      events: [
+        sentence("decideContext", arabic, { category, confidence, priority }),
+        ...(note ? [sentence("noteLine", arabic, { text: note })] : []),
+      ],
+    }
   }
   const evidence = reviewEvidence(result)
+  const reply = result.draft_text?.trim()
+  const passages = evidence.sources.flatMap((source) => {
+    const text = excerpt(source.text)
+    if (!text) return []
+    return [sentence("citationExcerpt", arabic, { filename: source.filename, text })]
+  })
   const events = [
+    ...message,
     ...evidence.tools.map((event) => toolLine(event, arabic)),
     ...checkLines(evidence.otherEvents, arabic),
+    ...(reply ? [sentence("draftBody", arabic, { text: reply })] : []),
+    ...passages,
   ]
   const citations = result.citations?.length ?? 0
   const produced = [
@@ -179,6 +245,15 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
     citations === 1 ? sentence("citationOne", arabic) : sentence("citations", arabic, { count: citations }),
   ].join(" ")
   return { received: sentence("draftReceived", arabic, { category, team }), produced, events }
+}
+
+function skipEvents(id: FlowStepId, result: Result, arabic: boolean, route: Route, category: string, confidence: string, priority: string): string[] {
+  if (route === "empty") return []
+  if (id === "escalate_empty") return customerMessage(result, arabic)
+  if (id === "jev_classify" || id === "gemini_classify") {
+    return [...customerMessage(result, arabic), ...verdict(result, arabic, category, confidence, priority), ...probabilityLines(result, arabic)]
+  }
+  return []
 }
 
 export function buildTicketFlow(result: Result, arabic = isArabicMessage(result.ticket.text)): TicketFlow {
@@ -193,9 +268,12 @@ export function buildTicketFlow(result: Result, arabic = isArabicMessage(result.
         : used.has(id) ? "used" : "unused"
     const reason = state === "unused" ? unusedReason(id, route, arabic) : null
     const told = state === "used" ? story(id, result, arabic, route) : null
+    const category = result.category ? categoryLabel(result.category) : sentence("noCategory", arabic)
+    const confidence = percentage(result.category_confidence)
+    const priority = result.priority || sentence("noPriority", arabic)
     const received = told?.received ?? sentence(state === "unused" ? "notAsked" : "notRecordedStep", arabic)
     const produced = reason ?? told?.produced ?? sentence("notRecordedStep", arabic)
-    const events = told?.events ?? []
+    const events = told?.events ?? (state === "unused" ? skipEvents(id, result, arabic, route, category, confidence, priority) : [])
     return { id, name: stepName(id, arabic), state, reason, received, produced, events }
   })
   if (result.status === "failed") {

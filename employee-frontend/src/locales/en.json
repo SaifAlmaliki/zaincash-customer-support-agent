@@ -80,7 +80,11 @@
     "empty_ticket": "Empty message",
     "llm_unavailable": "Drafting model unavailable",
     "draft_failed_guardrail": "Draft failed a safety check",
-    "no_kb_support": "No supporting policy"
+    "no_kb_support": "No supporting policy",
+    "draft_timeout": "Draft timed out",
+    "draft_tool_limit": "Draft reached the tool limit",
+    "draft_not_submitted": "Draft was not submitted",
+    "kb_unavailable": "Knowledge search was unavailable"
   },
   "review": {
     "back": "Back to queue",
@@ -430,5 +434,20 @@
     "similarity": "Similarity {score}",
     "similarityHelp": "Similarity measures retrieval relevance, not confidence or correctness.",
     "refreshFailed": "Could not refresh document status."
+  },
+  "insights": {
+    "export": "Export report",
+    "heroTitle": "A wider view of the queue",
+    "heroBody": "Issue counts come from the latest result for each ticket. Weekly comparisons use complete Monday–Sunday periods in Baghdad time.",
+    "analyzed": "unique tickets analyzed",
+    "byCategory": "Issues by category",
+    "emptyCategoriesTitle": "No processed tickets yet",
+    "emptyCategoriesBody": "Run a batch to see which support issues occur most often.",
+    "weekly": "Weekly ticket volume",
+    "emptyWeeksTitle": "Waiting for a weekly baseline",
+    "emptyWeeksBody": "Tickets from completed weeks will appear here. We don't manufacture trends from an empty period.",
+    "reasonsTitle": "Why tickets need a person",
+    "noReasons": "No escalation reasons recorded yet.",
+    "reasonsHelp": "A repeated issue is a signal for investigation, not proof of a common root cause."
   }
 }

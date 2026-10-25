@@ -212,7 +212,7 @@ export function ThoughtChainItem({ children }: { children: React.ReactNode }) {
       className="flex items-start gap-2 py-1.25"
     >
       <span className="mt-1.75 size-1 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
-      <span className="text-[13px] leading-[1.55] text-gray-500 dark:text-gray-400">
+      <span dir="auto" className="text-[13px] leading-[1.55] break-words whitespace-pre-wrap text-gray-500 dark:text-gray-400">
         {children}
       </span>
     </motion.div>

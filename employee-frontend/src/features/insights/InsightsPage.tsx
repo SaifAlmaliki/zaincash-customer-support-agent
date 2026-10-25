@@ -15,11 +15,12 @@ import {
 import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
 import { useCopy } from "@/lib/locale"
-import { categoryLabel, dateLabel, downloadJson, humanize } from "@/lib/format"
+import { categoryLabel, dateLabel, downloadJson, reasonLabel } from "@/lib/format"
 import type { Insights } from "@/lib/types"
 
 export function InsightsPage() {
   const copy = useCopy()
+  const text = copy.insights
   const workspace = useWorkspace()
   const query = useResource<Insights>("/insights", workspace.revision)
   const counts = query.data?.categories || {}
@@ -39,7 +40,7 @@ export function InsightsPage() {
           onClick={() => downloadJson(query.data, "support-insights.json")}
         >
           <Download size={16} />
-          Export report
+          {text.export}
         </Button>
       </PageHeader>
       {query.error && (
@@ -48,17 +49,14 @@ export function InsightsPage() {
       <div className="insights-hero">
         <div>
           <TrendingUp size={23} />
-          <h2>A wider view of the queue</h2>
-          <p>
-            Issue counts come from the latest result for each ticket. Weekly
-            comparisons use complete Monday–Sunday periods in Baghdad time.
-          </p>
+          <h2>{text.heroTitle}</h2>
+          <p>{text.heroBody}</p>
         </div>
         <div>
           <strong>
             {query.data?.total || 0}
           </strong>
-          <span>unique tickets analyzed</span>
+          <span>{text.analyzed}</span>
         </div>
       </div>
       <div className="two-column">
@@ -66,7 +64,7 @@ export function InsightsPage() {
           <CardHeader>
             <CardTitle className="section-title">
               <BarChart3 size={17} />
-              Issues by category
+              {text.byCategory}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -84,8 +82,8 @@ export function InsightsPage() {
               </div>
             ) : (
               <EmptyState
-                title="No processed tickets yet"
-                description="Run a batch to see which support issues occur most often."
+                title={text.emptyCategoriesTitle}
+                description={text.emptyCategoriesBody}
               />
             )}
           </CardContent>
@@ -94,7 +92,7 @@ export function InsightsPage() {
           <CardHeader>
             <CardTitle className="section-title">
               <CalendarDays size={17} />
-              Weekly ticket volume
+              {text.weekly}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -116,8 +114,8 @@ export function InsightsPage() {
               </div>
             ) : (
               <EmptyState
-                title="Waiting for a weekly baseline"
-                description="Tickets from completed weeks will appear here. We don’t manufacture trends from an empty period."
+                title={text.emptyWeeksTitle}
+                description={text.emptyWeeksBody}
               />
             )}
           </CardContent>
@@ -127,7 +125,7 @@ export function InsightsPage() {
         <CardHeader>
           <CardTitle className="section-title">
             <CircleAlert size={17} />
-            Why tickets need a person
+            {text.reasonsTitle}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -135,17 +133,14 @@ export function InsightsPage() {
             {Object.entries(reasons).map(([reason, count]) => (
               <div key={reason}>
                 <strong>{count}</strong>
-                <span>{humanize(reason)}</span>
+                <span>{reasonLabel(reason)}</span>
               </div>
             ))}
           </div>
           {!Object.keys(reasons).length && (
-            <p className="muted">No escalation reasons recorded yet.</p>
+            <p className="muted">{text.noReasons}</p>
           )}
-          <p className="field-help">
-            A repeated issue is a signal for investigation, not proof of a
-            common root cause.
-          </p>
+          <p className="field-help">{text.reasonsHelp}</p>
         </CardContent>
       </Card>
     </>

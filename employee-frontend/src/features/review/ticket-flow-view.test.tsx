@@ -53,6 +53,7 @@ it("renders the pipeline as a thought chain with step names and findings", () =>
   expect(html).toContain("جيميناي")
   expect(html).toContain("مسودة")
   expect(html).toContain("قُرئت رسالة تطبيق زين كاش")
+  expect(html).toContain("التحويل لم يصل")
   expect(html).toContain("لم يُحفظ رد")
   expect(html).not.toContain("ما وجده كل خطوة")
 })

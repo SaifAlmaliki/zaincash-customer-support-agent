@@ -209,11 +209,30 @@ it("uses the run-stopped sentence on Draft when a failed Jev path has no stage e
   expect(JSON.stringify(flow)).not.toContain("PIN 1234")
 })
 
-it("describes Prepare without pasting the customer message", () => {
-  const flow = buildTicketFlow(result({}, { text: "The transfer failed", channel: "whatsapp" }))
+it("describes Prepare with the channel and the customer message", () => {
+  const flow = buildTicketFlow(result({}, { text: "The transfer failed", channel: "whatsapp", customer_phone: "07701234567" }))
   expect(step(flow, "prepare").received).toBe("Read the WhatsApp message (19 characters).")
   expect(step(flow, "prepare").produced).toBe("Arabic digits were converted to 0–9, and card numbers were hidden.")
-  expect(step(flow, "prepare").received).not.toContain("The transfer failed")
+  expect(step(flow, "prepare").events).toEqual([
+    "Message: “The transfer failed”",
+    "Customer phone: 07701234567.",
+  ])
+})
+
+it("adds the message, the ledger row, and the reply to the steps that used them", () => {
+  const flow = buildTicketFlow(result({
+    lookup_status: "matched",
+    matched_txn_ref: "ZC-1044",
+    transaction: { txn_ref: "ZC-1044", amount_iqd: 35000, status: "completed", biller: "electricity" },
+    draft_text: "سنراجع عملية الدفع.",
+    category_probs: { bill_payment: 1, other: 0 },
+  }))
+  expect(step(flow, "lookup").events.join("\n")).toContain("ZC-1044")
+  expect(step(flow, "lookup").events.join("\n")).toContain("35,000")
+  expect(step(flow, "lookup").events.join("\n")).toContain("electricity")
+  expect(step(flow, "draft").events.join("\n")).toContain("سنراجع عملية الدفع.")
+  expect(step(flow, "gemini_classify").events.join("\n")).toContain("The transfer failed")
+  expect(step(flow, "decide").events.join("\n")).toContain("priority high")
 })
 
 it("says a missing extracted field was not recorded", () => {
