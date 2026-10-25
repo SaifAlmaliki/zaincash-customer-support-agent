@@ -258,6 +258,13 @@ it("escapes text that could break a Mermaid node or inject a directive", () => {
   expect(directive).not.toContain("\n")
 })
 
+it("uses Arabic step names when the profile is Arabic", () => {
+  const flow = buildTicketFlow(result(), true)
+  expect(step(flow, "prepare").name).toBe("تجهيز")
+  expect(step(flow, "jev_classify").name).toBe("جيف")
+  expect(step(flow, "gemini_classify").reason).toBe("جيف كان متأكدًا.")
+})
+
 it("draws the full pipeline with the taken step, the skip reason, and the selection", () => {
   const flow = buildTicketFlow(result())
   const chart = pipelineChart(flow, flow.selectedId)

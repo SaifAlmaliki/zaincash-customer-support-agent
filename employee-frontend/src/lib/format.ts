@@ -34,6 +34,14 @@ export const teamLabel = (id: string | null | undefined) => {
 }
 export const humanize = (text: string) =>
   text.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase())
+export const channelLabel = (id: string) => {
+  const labels = getCopy().channels as Record<string, string>
+  return labels[id] || labels[id.toLowerCase()] || humanize(id)
+}
+export const reasonLabel = (id: string) => {
+  const labels = getCopy().reasons as Record<string, string>
+  return labels[id] || humanize(id)
+}
 export const percentage = (value: number | null | undefined) =>
   value == null ? "—" : `${Math.round(value * 100)}%`
 export const dateLabel = (value: string) =>

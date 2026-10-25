@@ -75,7 +75,7 @@ const AR: Record<keyof typeof EN, string> = {
   jevWasSure: "جيف كان متأكدًا.",
   emptyEnded: "الرسالة الفارغة أنهت المسار.",
   runStopped: "توقف التشغيل.",
-  chartFailed: "The chart could not be drawn.",
+  chartFailed: "تعذّر رسم المسار.",
   notUsed: "لم تُستخدم",
   notRecorded: "غير مسجّلة",
   notAsked: "لم يُطلب تنفيذ هذه الخطوة.",
@@ -138,6 +138,44 @@ export function sentence(id: SentenceId, arabic: boolean, vars: Record<string, s
   return (arabic ? AR : EN)[id].replace(/\{(\w+)\}/g, (_, key: string) => String(vars[key] ?? ""))
 }
 
+const TEAMS_AR: Record<string, string> = {
+  "Payments Ops": "عمليات المدفوعات",
+  Disputes: "النزاعات",
+  "Account & Security": "الحساب والأمان",
+  "Agent Network": "شبكة الوكلاء",
+  Cards: "البطاقات",
+  "Tech Support": "الدعم التقني",
+  "General Care": "الرعاية العامة",
+}
+
+const REASONS_AR: Record<string, string> = {
+  low_confidence: "ثقة منخفضة",
+  classifier_disagreement: "اختلاف في التصنيف",
+  fraud_suspected: "احتيال محتمل",
+  multi_issue: "أكثر من مشكلة",
+  asks_for_human: "طلب التحدث مع موظف",
+  missing_required_fields: "تفاصيل مطلوبة ناقصة",
+  txn_not_found: "لا توجد عملية مطابقة",
+  txn_ambiguous: "عدة عمليات مطابقة",
+  amount_mismatch: "المبلغ لا يطابق السجل",
+  date_mismatch: "التاريخ لا يطابق السجل",
+  empty_ticket: "الرسالة فارغة",
+  llm_unavailable: "نموذج الصياغة غير متاح",
+  draft_failed_guardrail: "المسودة لم تجتز فحص الأمان",
+  no_kb_support: "لا يوجد مستند سياسة يدعم الرد",
+}
+
+export function teamName(id: string, arabic: boolean): string {
+  if (!arabic) return id
+  return TEAMS_AR[id] || id
+}
+
+export function reasonName(id: string, arabic: boolean): string {
+  const key = id.trim().toLowerCase().replaceAll(" ", "_")
+  if (!arabic) return humanize(key)
+  return REASONS_AR[key] || REASONS_AR[id] || humanize(id)
+}
+
 export function channelName(channel: string, arabic: boolean): string {
   if (channel === "app") return arabic ? "تطبيق زين كاش" : "ZainCash app"
   if (channel === "whatsapp") return arabic ? "واتساب" : "WhatsApp"
@@ -192,7 +230,7 @@ export function toolLine(event: { tool?: string; status?: string; arguments?: un
   const record = args !== null && typeof args === "object" && !Array.isArray(args) ? (args as Record<string, unknown>) : {}
   const key = SAFE_ARGS.find((item) => typeof record[item] === "string" && String(record[item]).trim())
   const raw = key ? String(record[key]).trim() : ""
-  const detail = key === "reason" && raw ? humanize(raw) : raw
+  const detail = key === "reason" && raw ? reasonName(raw, arabic) : raw
   const pair = TOOLS[name]
   const base = pair ? (arabic ? pair[1] : pair[0]) : (arabic ? sentence("toolFallback", true, { name }) : humanize(name))
   const action = `${base}${detail ? `: ${detail}` : ""}`
@@ -225,8 +263,12 @@ export function checkLines(
       return [credential, safety]
     }
     if (event.kind === "draft") {
-      const reasons = texts(event.reasons).map(humanize).join(", ")
-      const status = event.status ? humanize(event.status).toLowerCase() : sentence("draftStatusUnknown", arabic)
+      const reasons = texts(event.reasons).map((item) => reasonName(item, arabic)).join(arabic ? "، " : ", ")
+      const status = event.status
+        ? arabic
+          ? { submitted: "أُرسلت", passed: "نجح", failed: "فشل" }[event.status] || humanize(event.status)
+          : humanize(event.status).toLowerCase()
+        : sentence("draftStatusUnknown", arabic)
       return [reasons ? sentence("draftCheckReasons", arabic, { status, reasons }) : sentence("draftCheckPlain", arabic, { status })]
     }
     return []

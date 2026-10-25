@@ -1,6 +1,6 @@
 import type { ExtractedField, Result } from "../../lib/types"
-import { categoryLabel, humanize, percentage } from "../../lib/format"
-import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, sentence, toolLine } from "./ticket-flow-copy"
+import { categoryLabel, percentage } from "../../lib/format"
+import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, reasonName, sentence, teamName, toolLine } from "./ticket-flow-copy"
 import { reviewEvidence } from "./review-evidence"
 
 export const STEP_ORDER = [
@@ -42,6 +42,21 @@ const NAMES: Record<FlowStepId, string> = {
   lookup: "Investigate",
   decide: "Route",
   draft: "Draft",
+}
+
+const NAMES_AR: Record<FlowStepId, string> = {
+  prepare: "تجهيز",
+  escalate_empty: "تذكرة فارغة",
+  jev_classify: "جيف",
+  gemini_classify: "جيميناي",
+  extract: "استخراج",
+  lookup: "تحقق",
+  decide: "توجيه",
+  draft: "مسودة",
+}
+
+function stepName(id: FlowStepId, arabic: boolean) {
+  return arabic ? NAMES_AR[id] : NAMES[id]
 }
 
 type Route = "empty" | "straight" | "cascade" | "gemini_direct" | "gemini_unknown" | "unknown"
@@ -108,7 +123,7 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
   const category = result.category ? categoryLabel(result.category) : sentence("noCategory", arabic)
   const confidence = percentage(result.category_confidence)
   const priority = result.priority || sentence("noPriority", arabic)
-  const team = result.team || sentence("noTeam", arabic)
+  const team = result.team ? teamName(result.team, arabic) : sentence("noTeam", arabic)
   if (id === "prepare") {
     const length = result.ticket.text.trim().length
     const received = length
@@ -147,7 +162,7 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
     return { received: sentence("lookupReceived", arabic), produced: lookupSentence(result.lookup_status, arabic), events: [] }
   }
   if (id === "decide") {
-    const reasons = result.escalation_reasons.map(humanize).join(", ")
+    const reasons = result.escalation_reasons.map((id) => reasonName(id, arabic)).join(arabic ? "، " : ", ")
     const produced = result.escalated
       ? sentence("held", arabic, { reasons: reasons || sentence("notRecorded", arabic) })
       : `${sentence("assigned", arabic, { team })} ${sentence("noEscalation", arabic)}`
@@ -166,8 +181,7 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
   return { received: sentence("draftReceived", arabic, { category, team }), produced, events }
 }
 
-export function buildTicketFlow(result: Result): TicketFlow {
-  const arabic = isArabicMessage(result.ticket.text)
+export function buildTicketFlow(result: Result, arabic = isArabicMessage(result.ticket.text)): TicketFlow {
   const route = routeOf(result)
   const used = new Set(usedIds(route, stageNodes(result)))
   let selectedId = defaultSelected(route)
@@ -182,7 +196,7 @@ export function buildTicketFlow(result: Result): TicketFlow {
     const received = told?.received ?? sentence(state === "unused" ? "notAsked" : "notRecordedStep", arabic)
     const produced = reason ?? told?.produced ?? sentence("notRecordedStep", arabic)
     const events = told?.events ?? []
-    return { id, name: NAMES[id], state, reason, received, produced, events }
+    return { id, name: stepName(id, arabic), state, reason, received, produced, events }
   })
   if (result.status === "failed") {
     const stages = stageNodes(result)

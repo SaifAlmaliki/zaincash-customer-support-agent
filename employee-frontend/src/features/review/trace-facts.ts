@@ -1,5 +1,7 @@
 import { categoryLabel, humanize, percentage } from "@/lib/format"
-import { getCopy } from "@/lib/locale"
+import { getCopy, getLocale } from "@/lib/locale"
+import { buildTicketFlow } from "./ticket-flow"
+import { checkLines, reasonName } from "./ticket-flow-copy"
 import type { ExtractedField, Result, TraceEvent } from "@/lib/types"
 
 const FIELD_LABELS: Record<string, string> = {
@@ -61,7 +63,25 @@ function classifySentence(result: Partial<Result>) {
   return result.category ? "A category was recorded." : "No classification was recorded."
 }
 
+const FLOW_STAGES: Record<string, string[]> = {
+  prepare: ["prepare"],
+  classify: ["jev_classify", "gemini_classify"],
+  extract: ["extract"],
+  lookup: ["lookup"],
+  decide: ["escalate_empty", "decide"],
+  draft: ["draft"],
+}
+
 export function stageFacts(stageId: string, result: Partial<Result>): string[] {
+  if (getLocale() === "ar" && result.ticket && typeof result.ticket.text === "string") {
+    const flow = buildTicketFlow(result as Result, true)
+    const lines = (FLOW_STAGES[stageId] ?? []).flatMap((id) => {
+      const step = flow.steps.find((item) => item.id === id && item.state === "used")
+      if (!step) return []
+      return [step.received, ...step.events, step.produced].filter(Boolean)
+    })
+    if (lines.length) return lines
+  }
   const extracted = result.extracted ?? {}
   const ticket = result.ticket
   if (stageId === "prepare") {
@@ -134,26 +154,7 @@ export function stageFacts(stageId: string, result: Partial<Result>): string[] {
 }
 
 export function checkFact(event: TraceEvent) {
-  if (event.kind === "guardrail") {
-    const findings = Array.isArray(event.findings)
-      ? event.findings.filter((item): item is string => typeof item === "string" && item.trim() !== "")
-      : []
-    if (event.credential_check_degraded === true)
-      return "The credential check was unavailable. Review the reply for requests for secrets."
-    if (event.status === "passed" && !findings.length) return "The safety check passed."
-    if (findings.length) return `The safety check flagged ${findings.map(humanize).join(", ")}.`
-    return "The safety check did not finish."
-  }
-  if (event.kind === "draft") {
-    const reasons = Array.isArray(event.reasons)
-      ? event.reasons.filter((item): item is string => typeof item === "string" && item.trim() !== "")
-      : []
-    const status = humanize(text(event.status) || "status unknown").toLowerCase()
-    return reasons.length
-      ? `Draft ${status}: ${reasons.map(humanize).join(", ")}.`
-      : `Draft ${status}.`
-  }
-  return null
+  return checkLines([event], getLocale() === "ar")[0] ?? null
 }
 
 export function toolFact(event: TraceEvent) {
@@ -165,7 +166,7 @@ export function toolFact(event: TraceEvent) {
     text(args?.txn_ref) ||
     text(args?.phone) ||
     text(args?.service) ||
-    (text(args?.reason) ? humanize(text(args?.reason)!) : null)
+    (text(args?.reason) ? reasonName(text(args?.reason)!, getLocale() === "ar") : null)
   const action = `${labels[name] || TOOLS[name] || humanize(name)}${detail ? `: ${detail}` : ""}`
   if (event.status === "ok") return `${action}. ${getCopy().trace.completed}.`
   if (event.status === "cancelled") return `${action}. ${labels.cancelled}.`

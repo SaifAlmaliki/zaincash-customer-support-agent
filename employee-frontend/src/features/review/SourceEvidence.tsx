@@ -9,12 +9,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Confidence } from "@/components/shared/workspace-ui"
-import { categoryLabel, humanize, percentage } from "@/lib/format"
-import { useCopy } from "@/lib/locale"
+import { categoryLabel, channelLabel, humanize, percentage, reasonLabel } from "@/lib/format"
+import { fill, useCopy } from "@/lib/locale"
 import type { Result } from "@/lib/types"
 import { CitationEvidence } from "./CitationEvidence"
 
-function highlightedText(result: Result): ReactNode[] {
+function highlightedText(result: Result, extractedMark: string): ReactNode[] {
   const characters = Array.from(result.ticket.text) // Python source spans count code points, not UTF-16 units.
   const spans = Object.values(result.extracted)
     .filter(
@@ -32,7 +32,7 @@ function highlightedText(result: Result): ReactNode[] {
     if (field.start! < cursor) continue
     parts.push(characters.slice(cursor, field.start!).join(""))
     parts.push(
-      <mark key={index} title={`Extracted: ${field.value}`}>
+      <mark key={index} title={fill(extractedMark, { value: String(field.value ?? "") })}>
         {characters.slice(field.start!, field.end!).join("")}
       </mark>
     )
@@ -51,12 +51,12 @@ export function SourceEvidence({ result }: { result: Result }) {
         <div className="escalation-callout">
           <ShieldAlert size={20} />
           <div>
-            <strong>Needs a closer look</strong>
-            <p>Held for a person. The written analysis is in Internal note.</p>
+            <strong>{copy.review.needsCloser}</strong>
+            <p>{copy.review.held}</p>
             <div>
               {result.escalation_reasons.map((reason) => (
                 <Badge key={reason} variant="outline">
-                  {humanize(reason)}
+                  {reasonLabel(reason)}
                 </Badge>
               ))}
             </div>
@@ -73,12 +73,12 @@ export function SourceEvidence({ result }: { result: Result }) {
           <CardTitle className="section-title">
             <ReceiptText size={17} />
             {text.message}
-            <Badge variant="outline">{humanize(result.ticket.channel)}</Badge>
+            <Badge variant="outline">{channelLabel(result.ticket.channel)}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="source-message" dir="auto" lang="ar">
-            {highlightedText(result)}
+            {highlightedText(result, text.extractedMark)}
           </div>
           <p className="field-help">
             <span className="highlight-dot" />
@@ -86,10 +86,10 @@ export function SourceEvidence({ result }: { result: Result }) {
           </p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="extracted-card">
         <CardHeader>
           <CardTitle className="section-title">
-            <TextSearch size={17} />
+            <TextSearch size={15} />
             {text.extracted}
           </CardTitle>
         </CardHeader>
@@ -113,7 +113,7 @@ export function SourceEvidence({ result }: { result: Result }) {
                     )}
                   </strong>
                   {field?.span && (
-                    <span dir="auto" lang="ar">
+                    <span dir="auto" lang="ar" title={field.span}>
                       “{field.span}”
                     </span>
                   )}

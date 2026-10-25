@@ -29,9 +29,9 @@ import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
 import { api } from "@/lib/api"
 import { dateLabel, teamLabel, teams, timeLabel, humanize } from "@/lib/format"
+import { fill, useCopy } from "@/lib/locale"
 import type { Result, ReviewInput } from "@/lib/types"
 import { SourceEvidence } from "./SourceEvidence"
-import { PipelineTrace } from "./PipelineTrace"
 import { TicketFlow } from "./TicketFlow"
 import { IntakeEvidence } from "./IntakeEvidence"
 import { canReview } from "./review-availability"
@@ -56,8 +56,9 @@ function ReviewEditor({
   onSaved: () => void
 }) {
   const workspace = useWorkspace()
+  const textCopy = useCopy().review
   const [text, setText] = useState(result.final_text || result.draft_text || "")
-  const [reviewer, setReviewer] = useState("Support agent"),
+  const [reviewer, setReviewer] = useState(textCopy.reviewerDefault),
     [team, setTeam] = useState(result.team || "General Care")
   const [saving, setSaving] = useState(false),
     [reject, setReject] = useState(false)
@@ -78,13 +79,17 @@ function ReviewEditor({
     try {
       await api.review(result.id, review)
       workspace.notify(
-        `${action === "reject" ? "Response rejected" : action === "reassign" ? "Team reassigned" : "Response approved"} and recorded.`
+        action === "reject"
+          ? textCopy.noticeRejected
+          : action === "reassign"
+            ? textCopy.noticeReassigned
+            : textCopy.noticeApproved
       )
       setReject(false)
       onSaved()
     } catch (error) {
       workspace.notify(
-        error instanceof Error ? error.message : "Could not save review.",
+        error instanceof Error ? error.message : textCopy.saveFailed,
         true
       )
     } finally {
@@ -94,35 +99,30 @@ function ReviewEditor({
   async function copy() {
     try {
       await navigator.clipboard.writeText(result.final_text || "")
-      workspace.notify("Approved reply copied.")
+      workspace.notify(textCopy.copied)
     } catch {
-      workspace.notify(
-        "Clipboard is unavailable. Select and copy the approved text manually.",
-        true
-      )
+      workspace.notify(textCopy.copyFailed, true)
     }
   }
   return (
     <div className="review-editor-stack">
       {!reviewable && (
         <p className="processing-hold" role="status">
-          {result.status === "failed"
-            ? "Processing needs attention. The submitted report is still here."
-            : "This ticket is still processing. Review opens after a saved outcome."}
+          {result.status === "failed" ? textCopy.failedHold : textCopy.processingHold}
         </p>
       )}
       {reviewable && (
       <Card>
-        <CardHeader><CardTitle className="section-title"><ShieldAlert size={17} />Draft checks & internal note</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="section-title"><ShieldAlert size={17} />{textCopy.checksTitle}</CardTitle></CardHeader>
         <CardContent>
-          <p className="muted small">Checks apply to the original generated draft. Review any edits separately.</p>
-          {findings.length ? <ul className="guardrail-findings">{findings.map((finding) => <li key={finding}><strong>{humanize(finding)}</strong><code>{finding}</code></li>)}</ul> : <p className="field-help">{result.guardrail_findings ? "No guardrail findings recorded. Human review is still required." : "Guardrail findings are unavailable for this historical result."}</p>}
+          <p className="muted small">{textCopy.checksApply}</p>
+          {findings.length ? <ul className="guardrail-findings">{findings.map((finding) => <li key={finding}><strong>{humanize(finding)}</strong><code>{finding}</code></li>)}</ul> : <p className="field-help">{result.guardrail_findings ? textCopy.noFindings : textCopy.findingsUnavailable}</p>}
           <div className={result.credential_check_degraded ? "knowledge-message" : "field-help checker-summary"}>
-            <strong>{result.credential_check_degraded === true ? "Credential check degraded" : result.credential_check_degraded === false ? "Credential check available" : "Credential check status unknown"}</strong>
-            <p>{result.credential_check_degraded === true ? "The credential checker was unavailable or returned an invalid result. Review the reply for requests for sensitive credentials." : result.credential_check_degraded == null ? "No valid checker outcome was saved; do not assume this check passed." : "The checker returned a usable result; findings above show any flagged request."}</p>
-            {result.requests_credentials != null && <p>Credential-request score: {result.requests_credentials.toFixed(3)} (must be below 0.200).</p>}
+            <strong>{result.credential_check_degraded === true ? textCopy.credentialDegraded : result.credential_check_degraded === false ? textCopy.credentialAvailable : textCopy.credentialUnknown}</strong>
+            <p>{result.credential_check_degraded === true ? textCopy.credentialDegradedBody : result.credential_check_degraded == null ? textCopy.credentialUnknownBody : textCopy.credentialOkBody}</p>
+            {result.requests_credentials != null && <p>{fill(textCopy.credentialScore, { score: result.requests_credentials.toFixed(3) })}</p>}
           </div>
-          <div className="internal-note"><strong>Internal note</strong>{note ? <p className="passage-text" dir="auto">{note}</p> : <p className="field-help">No internal note was saved.</p>}</div>
+          <div className="internal-note"><strong>{textCopy.internalNote}</strong>{note ? <p className="passage-text" dir="auto">{note}</p> : <p className="field-help">{textCopy.noNote}</p>}</div>
         </CardContent>
       </Card>
       )}
@@ -130,7 +130,7 @@ function ReviewEditor({
         <CardHeader>
           <CardTitle className="section-title">
             <SquarePen size={18} />
-            Response workspace<Badge variant="outline">Human review</Badge>
+            {textCopy.workspace}<Badge variant="outline">{textCopy.humanReview}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -138,14 +138,14 @@ function ReviewEditor({
             <div className="draft-unavailable">
               <FileText size={17} />
               <span>
-                <strong>No generated draft</strong>No draft was saved for this result. Check the trace and findings, or write a response below.
+                <strong>{textCopy.noDraft}</strong>{textCopy.noDraftBody}
               </span>
             </div>
           )}
-          {result.draft_text && <div className="saved-reply"><strong>Original generated draft</strong><p className="passage-text" dir="auto" lang="ar">{result.draft_text}</p></div>}
-          {result.final_text && <div className="saved-reply"><strong>Final reviewed reply</strong><p className="passage-text" dir="auto" lang="ar">{result.final_text}</p></div>}
+          {result.draft_text && <div className="saved-reply"><strong>{textCopy.original}</strong><p className="passage-text" dir="auto" lang="ar">{result.draft_text}</p></div>}
+          {result.final_text && <div className="saved-reply"><strong>{textCopy.final}</strong><p className="passage-text" dir="auto" lang="ar">{result.final_text}</p></div>}
           <label className="field-label" htmlFor="reply">
-            {result.final_text ? "Edit reviewed reply in Iraqi Arabic" : "Reply for review in Iraqi Arabic"}
+            {result.final_text ? textCopy.editReply : textCopy.writeReply}
           </label>
           <Textarea
             id="reply"
@@ -158,14 +158,14 @@ function ReviewEditor({
             maxLength={8000}
           />
           <div className="editor-meta">
-            <span>Iraqi Arabic</span>
+            <span>{textCopy.language}</span>
             <span>
-              {text.trim() ? text.trim().split(/\s+/).length : 0} words
+              {fill(textCopy.words, { count: text.trim() ? text.trim().split(/\s+/).length : 0 })}
             </span>
           </div>
           <div className="reviewer-fields">
             <label className="field-label" htmlFor="reviewer">
-              Reviewed by
+              {textCopy.reviewer}
               <Input
                 id="reviewer"
                 value={reviewer}
@@ -174,9 +174,9 @@ function ReviewEditor({
               />
             </label>
             <div>
-              <span className="field-label">Assigned team</span>
+              <span className="field-label">{textCopy.team}</span>
               <FilterSelect
-                label="Assigned team"
+                label={textCopy.team}
                 value={team}
                 options={teams.map((value) => ({ value, label: teamLabel(value) }))}
                 onChange={setTeam}
@@ -189,7 +189,7 @@ function ReviewEditor({
               disabled={saving || !reviewable || !reviewer.trim()}
               onClick={() => void save("reassign")}
             >
-              Save team assignment
+              {textCopy.saveTeam}
             </Button>
           )}
           <div className="review-actions">
@@ -199,7 +199,7 @@ function ReviewEditor({
               onClick={() => setReject(true)}
             >
               <X size={16} />
-              Reject
+              {textCopy.reject}
             </Button>
             <Button
               disabled={
@@ -216,10 +216,10 @@ function ReviewEditor({
             >
               <Check size={16} />
               {saving
-                ? "Saving…"
+                ? textCopy.saving
                 : text !== result.draft_text
-                  ? "Save & approve"
-                  : "Approve reply"}
+                  ? textCopy.saveApprove
+                  : textCopy.approve}
             </Button>
           </div>
           {approved && result.final_text && (
@@ -229,19 +229,19 @@ function ReviewEditor({
               onClick={() => void copy()}
             >
               <Copy size={15} />
-              Copy approved reply
+              {textCopy.copy}
             </Button>
           )}
           <p className="approval-footnote">
             <ShieldCheck size={14} />
-            Approval saves your decision. Nothing is sent automatically.
+            {textCopy.footnote}
           </p>
           <ConfirmDialog
             open={reject}
             onClose={() => setReject(false)}
-            title="Reject this response?"
-            description="The result and original draft remain available for audit. No reply will be approved."
-            action="Reject response"
+            title={textCopy.rejectTitle}
+            description={textCopy.rejectBody}
+            action={textCopy.rejectAction}
             onConfirm={() => void save("reject")}
           />
         </CardContent>
@@ -250,22 +250,25 @@ function ReviewEditor({
         <CardHeader>
           <CardTitle className="section-title">
             <FileText size={16} />
-            Review history
+            {textCopy.history}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!result.reviews?.length && <p className="muted small">No human review has been saved yet.</p>}
+          {!result.reviews?.length && <p className="muted small">{textCopy.noHistory}</p>}
           <div className="audit-list">
             {result.reviews?.map((review) => (
               <div key={review.id}>
                 <span className="audit-dot" />
                 <div>
                   <strong>
-                    {humanize(review.action)} <span>by {review.reviewer}</span>
+                    {(textCopy.actions as Record<string, string>)[review.action] || humanize(review.action)}{" "}
+                    <span>{fill(textCopy.historyBy, { name: review.reviewer })}</span>
                   </strong>
                   <small>
-                    {dateLabel(review.created_at)} at{" "}
-                    {timeLabel(review.created_at)} Baghdad
+                    {fill(textCopy.historyWhen, {
+                      date: dateLabel(review.created_at),
+                      time: timeLabel(review.created_at),
+                    })}
                   </small>
                 </div>
               </div>
@@ -274,7 +277,6 @@ function ReviewEditor({
         </CardContent>
       </Card>
       <TicketFlow result={result} />
-      <PipelineTrace result={result} />
     </div>
   )
 }
@@ -282,6 +284,7 @@ function ReviewEditor({
 export function TicketReviewPage() {
   const { id } = useParams(),
     workspace = useWorkspace()
+  const textCopy = useCopy().review
   const query = useResource<Result>(`/results/${id}`, workspace.revision)
   const result = query.data
   const reload = useRef(query.reload)
@@ -299,11 +302,11 @@ export function TicketReviewPage() {
   if (!result)
     return (
       <EmptyState
-        title="Ticket not found"
-        description="Return to the queue and select a ticket in this workspace."
+        title={textCopy.notFound}
+        description={textCopy.notFoundDetail}
       >
         <Button nativeButton={false} render={<Link to="/" />}>
-          Back to queue
+          {textCopy.back}
         </Button>
       </EmptyState>
     )
@@ -311,11 +314,11 @@ export function TicketReviewPage() {
     <>
       <Link to="/" className="back-link">
         <ArrowLeft size={15} />
-        Back to queue
+        {textCopy.back}
       </Link>
       <PageHeader
         title={result.ticket.external_id}
-        description={`${result.ticket.display_name || "Customer support ticket"} · ${dateLabel(result.ticket.received_at)}, ${timeLabel(result.ticket.received_at)} Baghdad`}
+        description={`${result.ticket.display_name || textCopy.customerTicket} · ${dateLabel(result.ticket.received_at)}, ${timeLabel(result.ticket.received_at)} ${textCopy.baghdad}`}
       >
         <PriorityBadge priority={result.priority} />
         <StatusBadge status={result.status} />

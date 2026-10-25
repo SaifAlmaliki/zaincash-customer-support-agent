@@ -1044,9 +1044,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/components/shared/workspace-ui.tsx": {
-    "mtime": 1792926306.506549,
-    "seen": 1792926631.724383,
-    "ast_hash": "c8d9f7b2226c07db1f8e2dda189cb52b",
+    "mtime": 1792949835.5722978,
+    "seen": 1792949893.817244,
+    "ast_hash": "adf3a0e177a04c74f00bbc85657b187b",
     "semantic_hash": ""
   },
   "employee-frontend/src/components/theme-provider.tsx": {
@@ -1182,21 +1182,21 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/PipelineTrace.tsx": {
-    "mtime": 1792926433.25456,
-    "seen": 1792926631.7251563,
-    "ast_hash": "ebf2cc056cac88a1e78241f24ef18bea",
+    "mtime": 1792949080.3690534,
+    "seen": 1792949228.9461372,
+    "ast_hash": "b2eeaf587813bbb5d9ea23b13aa7e733",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/SourceEvidence.tsx": {
-    "mtime": 1792926460.786555,
-    "seen": 1792926631.7251582,
-    "ast_hash": "52774e26d9e1c7606f7ff6bc1135096a",
+    "mtime": 1792950291.0951586,
+    "seen": 1792950352.9924784,
+    "ast_hash": "bfcb33aaf8a703258359dabe95372e60",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/TicketReviewPage.tsx": {
-    "mtime": 1792928919.2746263,
-    "seen": 1792928963.3963523,
-    "ast_hash": "bf8bb1c71f8e7a991ded027434eb1e80",
+    "mtime": 1792949160.7341504,
+    "seen": 1792949228.9461434,
+    "ast_hash": "f1b5e3f0fffdd3a885818483db03bd15",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/malformed-trace.test.tsx": {
@@ -1248,9 +1248,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/lib/format.ts": {
-    "mtime": 1792926296.1945446,
-    "seen": 1792926631.7256486,
-    "ast_hash": "72704daa0466899889bcab099f96004c",
+    "mtime": 1792949077.4518633,
+    "seen": 1792949228.9468353,
+    "ast_hash": "d52396a2de3a55770dec2fa62f36b26d",
     "semantic_hash": ""
   },
   "employee-frontend/src/lib/imports.test.ts": {
@@ -1698,9 +1698,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/trace-facts.ts": {
-    "mtime": 1792926416.3785608,
-    "seen": 1792926631.7255101,
-    "ast_hash": "180815398cc7e9bbe85d34eac3e6881b",
+    "mtime": 1792949809.6011636,
+    "seen": 1792949893.818663,
+    "ast_hash": "d38e32e82582f63a2c7242bf121dfe16",
     "semantic_hash": ""
   },
   "backend/app/intake/prompts/intake_v1.md": {
@@ -2028,15 +2028,15 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/locales/ar.json": {
-    "mtime": 1792926273.0385425,
-    "seen": 1792926631.7259,
-    "ast_hash": "cbe8f32bb5bec7c4b302a24c9d497903",
+    "mtime": 1792949160.3956523,
+    "seen": 1792949228.9471304,
+    "ast_hash": "e522082cbdab464eed0b620cd88251cd",
     "semantic_hash": ""
   },
   "employee-frontend/src/locales/en.json": {
-    "mtime": 1792926254.8705418,
-    "seen": 1792926631.7259018,
-    "ast_hash": "b089d22e65dfbf1de0ae184e3ee38502",
+    "mtime": 1792949159.9711325,
+    "seen": 1792949228.9471323,
+    "ast_hash": "1f7872dc0a409c687ed385a67b34ed68",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-10-25-ticket-flow.md": {
@@ -2046,27 +2046,27 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/ticket-flow-copy.ts": {
-    "mtime": 1792929553.6226065,
-    "seen": 1792929687.8112972,
-    "ast_hash": "93a55b0c0fa19ae15ca3ffa568bc013c",
+    "mtime": 1792949623.078344,
+    "seen": 1792949674.8071432,
+    "ast_hash": "525300d79f194da9351f00d889c2c5ae",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/ticket-flow.test.ts": {
-    "mtime": 1792929611.419768,
-    "seen": 1792929687.8112996,
-    "ast_hash": "1d47d100bc5a1321d627b6e9a5afd742",
+    "mtime": 1792949813.1779616,
+    "seen": 1792949893.8186584,
+    "ast_hash": "11c2eceea521140bf5dcda42c2b34aa8",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/ticket-flow.ts": {
-    "mtime": 1792929570.2601118,
-    "seen": 1792929687.8113017,
-    "ast_hash": "5d3950f0a224999244be70dd5ab27ac7",
+    "mtime": 1792949811.579149,
+    "seen": 1792949893.8186605,
+    "ast_hash": "65f8b0e42f852197a612a4f97a47fde5",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/TicketFlow.tsx": {
-    "mtime": 1792929579.6531084,
-    "seen": 1792929687.8110178,
-    "ast_hash": "5ef0f1130cb3b1da359bccceac1b3f90",
+    "mtime": 1792949813.299149,
+    "seen": 1792949893.818233,
+    "ast_hash": "253cd2fe22a4d1d10a703d926e99c176",
     "semantic_hash": ""
   }
 }

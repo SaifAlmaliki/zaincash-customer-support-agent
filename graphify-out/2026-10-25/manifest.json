@@ -1182,21 +1182,21 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/PipelineTrace.tsx": {
-    "mtime": 1792926433.25456,
-    "seen": 1792926631.7251563,
-    "ast_hash": "ebf2cc056cac88a1e78241f24ef18bea",
+    "mtime": 1792949080.3690534,
+    "seen": 1792949228.9461372,
+    "ast_hash": "b2eeaf587813bbb5d9ea23b13aa7e733",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/SourceEvidence.tsx": {
-    "mtime": 1792926460.786555,
-    "seen": 1792926631.7251582,
-    "ast_hash": "52774e26d9e1c7606f7ff6bc1135096a",
+    "mtime": 1792949129.1050234,
+    "seen": 1792949228.9461398,
+    "ast_hash": "d3924f89d61d7d81cfda6b4abdbe642f",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/TicketReviewPage.tsx": {
-    "mtime": 1792928919.2746263,
-    "seen": 1792928963.3963523,
-    "ast_hash": "bf8bb1c71f8e7a991ded027434eb1e80",
+    "mtime": 1792949160.7341504,
+    "seen": 1792949228.9461434,
+    "ast_hash": "f1b5e3f0fffdd3a885818483db03bd15",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/malformed-trace.test.tsx": {
@@ -1248,9 +1248,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/lib/format.ts": {
-    "mtime": 1792926296.1945446,
-    "seen": 1792926631.7256486,
-    "ast_hash": "72704daa0466899889bcab099f96004c",
+    "mtime": 1792949077.4518633,
+    "seen": 1792949228.9468353,
+    "ast_hash": "d52396a2de3a55770dec2fa62f36b26d",
     "semantic_hash": ""
   },
   "employee-frontend/src/lib/imports.test.ts": {
@@ -1698,9 +1698,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/trace-facts.ts": {
-    "mtime": 1792926416.3785608,
-    "seen": 1792926631.7255101,
-    "ast_hash": "180815398cc7e9bbe85d34eac3e6881b",
+    "mtime": 1792949511.015144,
+    "seen": 1792949674.807185,
+    "ast_hash": "2217ebaafc565c471102c8cfb95b1913",
     "semantic_hash": ""
   },
   "backend/app/intake/prompts/intake_v1.md": {
@@ -2028,15 +2028,15 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/locales/ar.json": {
-    "mtime": 1792926273.0385425,
-    "seen": 1792926631.7259,
-    "ast_hash": "cbe8f32bb5bec7c4b302a24c9d497903",
+    "mtime": 1792949160.3956523,
+    "seen": 1792949228.9471304,
+    "ast_hash": "e522082cbdab464eed0b620cd88251cd",
     "semantic_hash": ""
   },
   "employee-frontend/src/locales/en.json": {
-    "mtime": 1792926254.8705418,
-    "seen": 1792926631.7259018,
-    "ast_hash": "b089d22e65dfbf1de0ae184e3ee38502",
+    "mtime": 1792949159.9711325,
+    "seen": 1792949228.9471323,
+    "ast_hash": "1f7872dc0a409c687ed385a67b34ed68",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-10-25-ticket-flow.md": {
@@ -2046,27 +2046,27 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/ticket-flow-copy.ts": {
-    "mtime": 1792927229.9825597,
-    "seen": 1792927468.7995784,
-    "ast_hash": "244fd3cc8810e4b693753c6cb8ecb0ad",
+    "mtime": 1792949623.078344,
+    "seen": 1792949674.8071432,
+    "ast_hash": "525300d79f194da9351f00d889c2c5ae",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/ticket-flow.test.ts": {
-    "mtime": 1792928667.1676214,
-    "seen": 1792928752.648865,
-    "ast_hash": "7d1c7408dc012dfbf21d6839a7bc35ea",
+    "mtime": 1792929611.419768,
+    "seen": 1792929687.8112996,
+    "ast_hash": "1d47d100bc5a1321d627b6e9a5afd742",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/ticket-flow.ts": {
-    "mtime": 1792928687.5588882,
-    "seen": 1792928752.6488693,
-    "ast_hash": "7882f5edf72491cc8c3e6b621990b80f",
+    "mtime": 1792949493.2208633,
+    "seen": 1792949674.8071835,
+    "ast_hash": "d4f4e9cc1be2970c033b381a57b5b7ee",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/TicketFlow.tsx": {
-    "mtime": 1792928916.6145926,
-    "seen": 1792928963.3963494,
-    "ast_hash": "b03787bcf84ed55d96d38096bdab5b57",
+    "mtime": 1792949599.3052168,
+    "seen": 1792949674.8068702,
+    "ast_hash": "c142c655f286fc7bf348151bcdd85012",
     "semantic_hash": ""
   }
 }

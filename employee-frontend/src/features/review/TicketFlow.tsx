@@ -1,91 +1,108 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import "@fontsource/tajawal/arabic-400.css"
 import "@fontsource/tajawal/arabic-500.css"
-import { Workflow } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { useLocale } from "@/lib/locale"
 import type { Result } from "@/lib/types"
-import { buildTicketFlow, detailChart, pipelineChart, type FlowStepId } from "./ticket-flow"
+import { PipelineTrace } from "./PipelineTrace"
+import { buildTicketFlow, STEP_ORDER, type FlowStep, type FlowStepId } from "./ticket-flow"
 import { sentence } from "./ticket-flow-copy"
 
+const SPINE_ANCHOR: Partial<Record<FlowStepId, FlowStepId>> = {
+  escalate_empty: "prepare",
+  jev_classify: "prepare",
+}
+
+function anchorOf(id: FlowStepId, used: Set<FlowStepId>): FlowStepId {
+  if (id === "gemini_classify") return used.has("jev_classify") ? "jev_classify" : "prepare"
+  const fixed = SPINE_ANCHOR[id]
+  if (fixed) return fixed
+  const index = STEP_ORDER.indexOf(id)
+  for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+    if (used.has(STEP_ORDER[cursor])) return STEP_ORDER[cursor]
+  }
+  return "prepare"
+}
+
+function notesFor(anchor: FlowStepId, steps: FlowStep[], used: Set<FlowStepId>): FlowStep[][] {
+  const groups: FlowStep[][] = []
+  for (const step of steps) {
+    if (step.state === "used" || anchorOf(step.id, used) !== anchor) continue
+    const last = groups[groups.length - 1]
+    if (last && last[0].reason === step.reason && last[0].state === step.state) last.push(step)
+    else groups.push([step])
+  }
+  return groups
+}
+
+function Story({ step, arabic }: { step: FlowStep; arabic: boolean }) {
+  const lines = [step.received, ...step.events, step.produced].filter(Boolean)
+  return (
+    <div className="path-story" lang={arabic ? "ar" : "en"}>
+      {lines.map((line, index) => (
+        <p key={`${index}-${line}`}>{line}</p>
+      ))}
+    </div>
+  )
+}
+
 export function TicketFlow({ result }: { result: Result }) {
-  const flow = buildTicketFlow(result)
+  const { locale } = useLocale()
+  const flow = buildTicketFlow(result, locale === "ar")
   const [selectedId, setSelectedId] = useState<FlowStepId>(flow.selectedId)
   const [seenId, setSeenId] = useState(result.id)
-  const [pipelineSvg, setPipelineSvg] = useState("")
-  const [detailSvg, setDetailSvg] = useState("")
-  const [chartError, setChartError] = useState(false)
-  const renderCount = useRef(0)
   if (result.id !== seenId) {
     setSeenId(result.id)
     setSelectedId(flow.selectedId)
   }
-  useEffect(() => {
-    let cancelled = false
-    const current = buildTicketFlow(result)
-    renderCount.current += 1
-    const suffix = `${result.id}-${renderCount.current}`
-    ;(async () => {
-      try {
-        const mermaid = (await import("mermaid")).default
-        const fontFamily = current.arabic
-          ? 'Tajawal, "Plus Jakarta Sans Variable", sans-serif'
-          : '"Plus Jakarta Sans Variable", sans-serif'
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: "strict",
-          htmlLabels: false,
-          fontFamily,
-        })
-        const pipeline = await mermaid.render(`ticket-flow-pipeline-${suffix}`, pipelineChart(current, selectedId))
-        const detail = await mermaid.render(`ticket-flow-detail-${suffix}`, detailChart(current, selectedId))
-        if (!cancelled) {
-          setPipelineSvg(pipeline.svg)
-          setDetailSvg(detail.svg)
-          setChartError(false)
-        }
-      } catch {
-        if (!cancelled) setChartError(true)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [result, selectedId])
-  const font = flow.arabic
-    ? 'Tajawal, "Plus Jakarta Sans Variable", sans-serif'
-    : '"Plus Jakarta Sans Variable", sans-serif'
+  const used = new Set(flow.steps.filter((step) => step.state === "used").map((step) => step.id))
+  const spine = used.size ? flow.steps.filter((step) => step.state === "used") : flow.steps
+  const side = flow.steps.filter((step) => !spine.some((item) => item.id === step.id))
+  const font = flow.arabic ? 'Tajawal, "Plus Jakarta Sans Variable", sans-serif' : undefined
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="section-title">
-          <Workflow size={17} />
-          Pipeline flow
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-2">
-          {flow.steps.map((step) => (
-            <Button
-              key={step.id}
-              type="button"
-              size="sm"
-              variant={step.id === selectedId ? "default" : "outline"}
-              aria-pressed={step.id === selectedId}
-              onClick={() => setSelectedId(step.id)}
-            >
-              {step.name}
-            </Button>
-          ))}
-        </div>
-        {chartError ? (
-          <p className="muted small">{sentence("chartFailed", false)}</p>
-        ) : (
-          <div style={{ fontFamily: font }}>
-            <div dangerouslySetInnerHTML={{ __html: pipelineSvg }} />
-            <div dangerouslySetInnerHTML={{ __html: detailSvg }} />
-          </div>
-        )}
+      <CardContent className="path-card">
+        <ol className="path-spine" style={{ fontFamily: font }}>
+          {spine.map((step) => {
+            const notes = notesFor(step.id, side, used)
+            return (
+              <li key={step.id} data-state={step.state} className={step.id === selectedId ? "is-open" : undefined}>
+                <button
+                  type="button"
+                  className="path-step"
+                  aria-pressed={step.id === selectedId}
+                  onClick={() => setSelectedId(step.id)}
+                >
+                  <span className="path-mark" aria-hidden="true" />
+                  <span className="path-name">{step.name}</span>
+                </button>
+                {notes.map((group) => {
+                  const open = group.some((item) => item.id === selectedId)
+                  const shown = group.find((item) => item.id === selectedId) ?? group[0]
+                  return (
+                    <div key={group.map((item) => item.id).join("-")} className={open ? "path-note is-open" : "path-note"}>
+                      <button
+                        type="button"
+                        className="path-note-button"
+                        aria-pressed={open}
+                        onClick={() => setSelectedId(shown.id)}
+                      >
+                        <strong>{group.map((item) => item.name).join(" · ")}</strong>
+                        <span>
+                          {sentence(group[0].state === "unrecorded" ? "notRecorded" : "notUsed", flow.arabic)}
+                          {group[0].reason ? ` — ${group[0].reason}` : ""}
+                        </span>
+                      </button>
+                      {open && <Story step={shown} arabic={flow.arabic} />}
+                    </div>
+                  )
+                })}
+                {step.id === selectedId && <Story step={step} arabic={flow.arabic} />}
+              </li>
+            )
+          })}
+        </ol>
+        <PipelineTrace result={result} embedded />
       </CardContent>
     </Card>
   )

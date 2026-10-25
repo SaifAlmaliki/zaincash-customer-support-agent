@@ -65,7 +65,7 @@ export function PageHeader({
 }) {
   return (
     <div className="page-heading">
-      <div>
+      <div className="page-heading-copy">
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -141,12 +141,12 @@ export function Metric({
   return (
     <Card className={`metric-card ${tone}`}>
       <CardContent>
-        <div className="metric-top">
+        <span className="metric-icon">{icon}</span>
+        <div className="metric-copy">
           <span>{label}</span>
-          {icon}
+          <p>{detail}</p>
         </div>
         <div className="metric-value">{value}</div>
-        <p>{detail}</p>
       </CardContent>
     </Card>
   )

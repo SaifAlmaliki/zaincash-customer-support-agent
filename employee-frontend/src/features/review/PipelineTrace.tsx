@@ -22,7 +22,7 @@ function timing(events: TraceEvent[]) {
   return duration(Math.max(...elapsed))
 }
 
-export function PipelineTrace({ result }: { result: Result }) {
+export function PipelineTrace({ result, embedded = false }: { result: Result; embedded?: boolean }) {
   const copy = useCopy()
   const text = copy.trace
   const { stages: events, tools, otherEvents } = reviewEvidence(result)
@@ -30,15 +30,8 @@ export function PipelineTrace({ result }: { result: Result }) {
     const line = checkFact(event)
     return line ? [line] : []
   })
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="section-title">
-          <Workflow size={17} />
-          {text.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+  const body = (
+    <>
         <p className="muted small">
           {text.intro}
         </p>
@@ -98,7 +91,18 @@ export function PipelineTrace({ result }: { result: Result }) {
             </ul>
           </details>
         )}
-      </CardContent>
+    </>
+  )
+  if (embedded) return <div className="flow-trace">{body}</div>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="section-title">
+          <Workflow size={17} />
+          {text.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{body}</CardContent>
     </Card>
   )
 }
