@@ -1,7 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/figtree";
+@import "@fontsource/tajawal/400.css";
+@import "@fontsource/tajawal/500.css";
+@import "@fontsource/tajawal/700.css";
+@import "@fontsource-variable/plus-jakarta-sans";
 
 @custom-variant dark (&:is(.dark *));
 @source "../../../apps/**/*.{ts,tsx}";
@@ -48,10 +51,13 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
-    --font-sans: 'Figtree Variable', sans-serif;
+    --font-sans: "Tajawal", sans-serif;
 }
 
 :root {
+    --font-arabic: "Tajawal", sans-serif;
+    --font-latin: "Plus Jakarta Sans Variable", sans-serif;
+    --font-sans: var(--font-arabic);
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -124,7 +130,14 @@
   * {
     @apply border-border outline-ring/50;
     }
+  html {
+    font-family: var(--font-arabic);
+    }
+  html[lang="en"] {
+    font-family: var(--font-latin);
+    }
   body {
     @apply bg-background text-foreground;
+    font-family: inherit;
     }
 }

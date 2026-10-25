@@ -1,0 +1,98 @@
+<h2>How should one ticket’s flow be drawn?</h2>
+<p class="subtitle">Same ticket in all three. A WhatsApp message about a failed transfer. Jev was unsure, so Gemini ran. The empty-message path was not used. Drafting looked up the transfer, searched policy, and ran a check. Click the layout that is easiest to follow.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup-body" style="padding:12px;font-size:12px;line-height:1.35">
+        <div class="label">One chart</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div style="border:2px solid #3d7a4a;border-radius:8px;padding:6px 8px;background:#eef7f0"><b>Prepare</b> · used<br>In: WhatsApp, 180 characters<br>Out: digits normalized, card hidden</div>
+          <div style="text-align:center;color:#666">↓ message is not empty</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div style="border:2px solid #3d7a4a;border-radius:8px;padding:6px 8px;background:#eef7f0"><b>Jev</b> · used<br>Out: unsure, 41%</div>
+            <div style="border:2px dashed #999;border-radius:8px;padding:6px 8px;color:#777"><b>Empty ticket</b><br>Not used. The message had text.</div>
+          </div>
+          <div style="text-align:center;color:#666">↓ Jev unsure, ask Gemini</div>
+          <div style="border:2px solid #3d7a4a;border-radius:8px;padding:6px 8px;background:#eef7f0"><b>Gemini</b> · used<br>Out: Failed transfer, 82%, priority high</div>
+          <div style="border:2px solid #3d7a4a;border-radius:8px;padding:6px 8px;background:#eef7f0"><b>Extract</b> · used<br>Out: ref ZC-1044, 50,000 IQD, 12 Oct, phone found</div>
+          <div style="border:2px solid #3d7a4a;border-radius:8px;padding:6px 8px;background:#eef7f0"><b>Investigate</b> · used<br>Out: one transfer matched, amount agrees</div>
+          <div style="border:2px solid #3d7a4a;border-radius:8px;padding:6px 8px;background:#eef7f0"><b>Route</b> · used<br>Out: Payments team. Not escalated.</div>
+          <div style="border:2px solid #3d7a4a;border-radius:8px;padding:6px 8px;background:#eef7f0"><b>Draft lookups</b><br>1. Looked up ZC-1044<br>2. Searched “failed transfer refund”<br>3. Credential check passed<br>Out: Arabic draft, ready for review</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Everything on one graph</h3>
+      <p>The whole path, every branch, and every drafting lookup sit on a single chart. Nothing is hidden. The chart gets tall.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup-body" style="padding:12px;font-size:12px;line-height:1.35">
+        <div class="label">Pipeline, then the step you open</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:8px 0">
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Prepare</span>
+          <span>→</span>
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Jev</span>
+          <span>→</span>
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Gemini</span>
+          <span>→</span>
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Extract</span>
+          <span>→</span>
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Investigate</span>
+          <span>→</span>
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Route</span>
+          <span>→</span>
+          <span style="border:2px solid #1d4e89;background:#e7f0fa;border-radius:6px;padding:3px 6px"><b>Draft</b></span>
+        </div>
+        <div style="border:2px dashed #999;border-radius:6px;padding:4px 6px;color:#777;margin-bottom:8px">Empty ticket · not used · the message had text</div>
+        <div style="border:1px solid #ccc;border-radius:8px;padding:8px;background:#fafafa">
+          <div class="label">Opened: Draft</div>
+          <div style="margin-top:6px;border-radius:8px;padding:6px 8px;background:#fff;border:1px solid #ddd"><b>Received</b><br>Failed transfer, matched ZC-1044, Payments team</div>
+          <div style="text-align:center;color:#666">↓</div>
+          <div style="border-radius:8px;padding:6px 8px;background:#fff;border:1px solid #ddd">Looked up ZC-1044 → 50,000 IQD, failed</div>
+          <div style="text-align:center;color:#666">↓</div>
+          <div style="border-radius:8px;padding:6px 8px;background:#fff;border:1px solid #ddd">Searched policy → refund steps</div>
+          <div style="text-align:center;color:#666">↓</div>
+          <div style="border-radius:8px;padding:6px 8px;background:#fff;border:1px solid #ddd">Credential check → passed</div>
+          <div style="text-align:center;color:#666">↓</div>
+          <div style="border-radius:8px;padding:6px 8px;background:#eef7f0;border:2px solid #3d7a4a"><b>Produced</b><br>Arabic draft, ready for a person to review</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Map on top, story when you open a step</h3>
+      <p>The full pipeline stays visible, with the path highlighted and skipped steps marked. Opening a step draws a second graph of what it received, each decision or lookup, and what it produced.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup-body" style="padding:12px;font-size:12px;line-height:1.35">
+        <div class="label">Map, then every step already open</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:8px 0 10px">
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Prepare</span>
+          <span>→</span>
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">Jev</span>
+          <span>→</span>
+          <span style="border:2px dashed #999;color:#777;border-radius:6px;padding:3px 6px">Empty</span>
+          <span>→</span>
+          <span style="border:2px solid #3d7a4a;background:#eef7f0;border-radius:6px;padding:3px 6px">… Draft</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="border:1px solid #ddd;border-radius:8px;padding:6px 8px"><b>Prepare</b> · received the WhatsApp message → produced a cleaned message</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:6px 8px"><b>Jev</b> · received the cleaned message → unsure, so Gemini was asked</div>
+          <div style="border:1px dashed #bbb;border-radius:8px;padding:6px 8px;color:#777"><b>Empty ticket</b> · not used · the message had text</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:6px 8px"><b>Draft</b> · received the decision → lookup, policy search, check → Arabic draft</div>
+          <div style="color:#888">…every other step is already expanded below</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Map, then a graph for every step</h3>
+      <p>The pipeline stays at the top. Under it, every step is already drawn as its own small graph, including skipped ones. You scroll the full story. Nothing waits for a click.</p>
+    </div>
+  </div>
+</div>

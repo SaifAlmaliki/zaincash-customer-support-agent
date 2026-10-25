@@ -15,6 +15,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const session = snapshot.session
   const [selectedLocale, setLocale] = useState<Language | null>(null)
   const locale = selectedLocale ?? session?.language ?? "ar"
+  const direction = locale === "ar" ? "rtl" : "ltr"
   const [draft, setDraft] = useState("")
   const [previews, setPreviews] = useState<{ name: string; url: string }[]>([])
   const [confirmNew, setConfirmNew] = useState(false)
@@ -28,6 +29,12 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   useEffect(() => {
     if (!controller.getSnapshot().session) void controller.initialize("ar")
   }, [controller])
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+    document.documentElement.dir = direction
+    document.title = text.title
+  }, [direction, locale, text.title])
 
   useEffect(() => {
     if (reviewRequest.current && session?.review) {
@@ -94,7 +101,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   }
 
   return (
-    <div className="intake-shell" dir={locale === "ar" ? "rtl" : "ltr"} lang={locale}>
+    <div className="intake-shell" dir={direction} lang={locale}>
       <header className="intake-header">
         <div className="intake-brand">
           <span className="intake-mark" aria-hidden="true" />
@@ -103,12 +110,12 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
             <p className="intake-subtitle">{text.subtitle}</p>
           </div>
         </div>
-        <div className="intake-languages" role="group" aria-label={text.english}>
-          <Button type="button" variant={locale === "en" ? "default" : "outline"} onClick={() => void chooseLanguage("en")}>
-            {text.english}
-          </Button>
+        <div className="intake-languages" role="group" aria-label={text.language}>
           <Button type="button" variant={locale === "ar" ? "default" : "outline"} onClick={() => void chooseLanguage("ar")}>
             {text.arabic}
+          </Button>
+          <Button type="button" variant={locale === "en" ? "default" : "outline"} onClick={() => void chooseLanguage("en")}>
+            {text.english}
           </Button>
         </div>
       </header>

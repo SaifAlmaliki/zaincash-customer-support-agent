@@ -141,6 +141,8 @@ it("requests a fresh review when the language changes", async () => {
   render(<IntakePage controller={controller} />)
   await user.click(await screen.findByRole("button", { name: "العربية" }))
   expect(await screen.findByRole("heading", { name: "راجع تفاصيل المشكلة" })).toBeVisible()
+  expect(document.documentElement).toHaveAttribute("lang", "ar")
+  expect(document.documentElement).toHaveAttribute("dir", "rtl")
   expect(vi.mocked(api.review).mock.calls[0]?.[1].language).toBe("ar")
 })
 
@@ -244,6 +246,9 @@ it("starts with Iraqi Arabic before asynchronous initialization", async () => {
   const controller = new IntakeController(api, memoryStorage())
   render(<IntakePage controller={controller} />)
   expect(await screen.findByLabelText("رسالتك")).toBeVisible()
+  expect(document.documentElement).toHaveAttribute("lang", "ar")
+  expect(document.documentElement).toHaveAttribute("dir", "rtl")
+  expect(screen.getByRole("button", { name: "English" })).toBeVisible()
 })
 
 it("retains text typed while the previous message is in flight", async () => {
