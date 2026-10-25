@@ -32,6 +32,7 @@ import { dateLabel, teamLabel, teams, timeLabel, humanize } from "@/lib/format"
 import type { Result, ReviewInput } from "@/lib/types"
 import { SourceEvidence } from "./SourceEvidence"
 import { PipelineTrace } from "./PipelineTrace"
+import { TicketFlow } from "./TicketFlow"
 import { IntakeEvidence } from "./IntakeEvidence"
 import { canReview } from "./review-availability"
 
@@ -272,6 +273,7 @@ function ReviewEditor({
           </div>
         </CardContent>
       </Card>
+      <TicketFlow result={result} />
       <PipelineTrace result={result} />
     </div>
   )
