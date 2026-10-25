@@ -1,3 +1,4 @@
+import { getCopy } from "../../lib/locale"
 import type { IndexResponse, KnowledgeDocument } from "../../lib/types"
 
 export type PendingIndexes = Map<
@@ -112,7 +113,7 @@ export function pollKnowledge({
       if (controller.signal.aborted) return
       stop()
       onError(
-        error instanceof Error ? error.message : "Could not refresh document status."
+        error instanceof Error ? error.message : getCopy().knowledge.refreshFailed
       )
     }
   }

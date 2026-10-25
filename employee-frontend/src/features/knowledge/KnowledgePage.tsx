@@ -23,7 +23,7 @@ import {
   StatusBadge,
 } from "@/components/shared/workspace-ui"
 import { useWorkspace } from "@/lib/workspace"
-import { useCopy } from "@/lib/locale"
+import { fill, getLocale, useCopy } from "@/lib/locale"
 import { api } from "@/lib/api"
 import { dateLabel, sizeLabel } from "@/lib/format"
 import type { KnowledgeDocument } from "@/lib/types"
@@ -32,6 +32,16 @@ import { KnowledgeSearch } from "./KnowledgeSearch"
 
 export function KnowledgePage() {
   const copy = useCopy()
+  const text = copy.knowledge
+  const statusLabels = copy.status as Record<string, string>
+  const readinessStatus: Record<string, string> = {
+    disabled: text.statusDisabled,
+    unconfigured: text.statusUnconfigured,
+    ready: text.statusReady,
+    indexing: text.statusIndexing,
+    failed: text.statusFailed,
+    empty: text.statusEmpty,
+  }
   const workspace = useWorkspace(),
     input = useRef<HTMLInputElement>(null)
   const query = useKnowledgeLibrary(workspace.revision)
@@ -67,21 +77,28 @@ export function KnowledgePage() {
     const controller = beginMutation()
     if (!controller) return
     try {
-      if (!file.size) throw new Error("Choose a document that contains text.")
-      if (file.size > 10 * 1024 * 1024)
-        throw new Error("Choose a document smaller than 10 MB.")
+      if (!file.size) throw new Error(text.emptyFile)
+      if (file.size > 10 * 1024 * 1024) throw new Error(text.tooLarge)
       const document = await api.uploadDocument(file, controller.signal)
       if (controller.signal.aborted) return
       query.accepted(document)
-      setNotice(document.index_requested
-        ? `${document.filename}: indexing request accepted. Follow its status below.`
-        : document.status === "indexed" ? `${document.filename} is already indexed; no new indexing was requested.`
-        : document.status === "failed" ? `${document.filename} is stored with a failed index. Review the error and choose Retry index.`
-        : document.status === "indexing" ? `${document.filename} is already indexing.`
-        : configured ? `${document.filename} is stored, but indexing was not queued. Capacity may be full; choose Index document to try again.`
-        : `${document.filename} is stored. Enable and configure knowledge indexing, then choose Index document.`)
+      const name = document.filename
+      setNotice(
+        document.index_requested
+          ? fill(text.noticeAccepted, { name })
+          : document.status === "indexed"
+            ? fill(text.noticeAlreadyIndexed, { name })
+            : document.status === "failed"
+              ? fill(text.noticeFailedStored, { name })
+              : document.status === "indexing"
+                ? fill(text.noticeAlreadyIndexing, { name })
+                : configured
+                  ? fill(text.noticeNotQueued, { name })
+                  : fill(text.noticeStoredOnly, { name })
+      )
     } catch (e) {
-      if (!controller.signal.aborted) setActionError(e instanceof Error ? e.message : "Upload failed.")
+      if (!controller.signal.aborted)
+        setActionError(e instanceof Error ? e.message : text.uploadFailed)
     } finally {
       finishMutation(controller)
       if (input.current) input.current.value = ""
@@ -96,12 +113,19 @@ export function KnowledgePage() {
       const response = await api.indexDocument(doc.id, null, controller.signal)
       if (!controller.signal.aborted) {
         query.accepted(response)
-        setNotice(response.status === "indexing"
-          ? `${doc.filename}: indexing is running. Status checks resumed.`
-          : `${doc.filename}: indexing request accepted${rerequest ? " again" : ""}. Status checks resumed; waiting for a worker result.`)
+        setNotice(
+          response.status === "indexing"
+            ? fill(text.indexRunning, { name: doc.filename })
+            : fill(rerequest ? text.indexAcceptedAgain : text.indexAccepted, {
+                name: doc.filename,
+              })
+        )
       }
     } catch (e) {
-      if (!controller.signal.aborted) setActionError(`${doc.filename}: ${e instanceof Error ? e.message : "Index request failed."} ${rerequest ? "The previous acceptance remains pending. Use Request indexing again when indexing is available." : "The stored source is retained. Retry when indexing is available."}`)
+      if (!controller.signal.aborted)
+        setActionError(
+          `${doc.filename}: ${e instanceof Error ? e.message : text.indexFailed} ${rerequest ? text.indexFailedPending : text.indexFailedKept}`
+        )
     } finally { finishMutation(controller) }
   }
   async function deleteDocument() {
@@ -114,9 +138,10 @@ export function KnowledgePage() {
       query.deleted(remove.id)
       if (selectedId === remove.id) setSelectedId(null)
       setRemove(null)
-      setNotice("Document deleted. Saved citation evidence remains available in historical reviews.")
+      setNotice(text.deleted)
     } catch (e) {
-      if (!controller.signal.aborted) setActionError(e instanceof Error ? e.message : "Could not delete document.")
+      if (!controller.signal.aborted)
+        setActionError(e instanceof Error ? e.message : text.deleteFailed)
     } finally { finishMutation(controller) }
   }
   return (
@@ -131,7 +156,7 @@ export function KnowledgePage() {
           onClick={() => input.current?.click()}
         >
           <FileUp size={17} />
-          {busy ? "Working…" : "Upload document"}
+          {busy ? text.working : text.upload}
         </Button>
       </PageHeader>
       {notice && <p className="knowledge-message" role="status">{notice}</p>}
@@ -149,26 +174,24 @@ export function KnowledgePage() {
                 }}
               >
                 <div className="upload-symbol">
-                  <BookOpen size={27} strokeWidth={1.5} />
+                  <BookOpen size={16} strokeWidth={1.75} />
                 </div>
-                <h3>Give your team a shared source of truth</h3>
-                <p>
-                  Upload policies, FAQs and support procedures.
-                  <br />
-                  PDF, Markdown or text · up to 10 MB
-                </p>
+                <div className="upload-copy">
+                  <h3>{text.dropTitle}</h3>
+                  <p>{text.dropBody}</p>
+                </div>
                 <Button
                   variant="outline"
                   disabled={busy}
                   onClick={() => input.current?.click()}
                 >
-                  Browse files
+                  {text.browse}
                 </Button>
                 <input
                   ref={input}
                   type="file"
                   className="sr-only"
-                  aria-label="Upload knowledge document"
+                  aria-label={text.uploadLabel}
                   disabled={busy}
                   accept=".pdf,.md,.txt"
                   onChange={(e) => void upload(e.target.files?.[0])}
@@ -179,22 +202,34 @@ export function KnowledgePage() {
           {query.error && (
             <ErrorState message={query.error} retry={query.refresh} />
           )}
-          {query.paused && <p className="knowledge-message" role="status">Automatic status checks paused after 3 minutes. Accepted requests remain pending. Refresh status checks for a result; if no worker claim was recorded, use Request indexing again to request recovery.</p>}
+          {query.paused && (
+            <p className="knowledge-message" role="status">
+              {text.paused}
+            </p>
+          )}
           <Card>
             <CardHeader>
               <CardTitle className="section-title">
-                <FileText size={17} />
-                Documents
-                <span className="muted small">{documents.length} shown / {query.documents.length} stored</span>
+                <FileText size={15} />
+                {text.documents}
+                <span className="muted small">
+                  {fill(text.shown, {
+                    shown: documents.length,
+                    stored: query.documents.length,
+                  })}
+                </span>
               </CardTitle>
-              <Button variant="ghost" size="sm" disabled={busy} onClick={query.refresh}><RefreshCw size={14} />Refresh status</Button>
+              <Button variant="ghost" size="sm" disabled={busy} onClick={query.refresh}>
+                <RefreshCw size={14} />
+                {text.refresh}
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="input-with-icon">
                 <Search size={16} />
                 <Input
-                  aria-label="Search documents"
-                  placeholder="Find a document by name…"
+                  aria-label={text.searchDocuments}
+                  placeholder={text.findByName}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -207,65 +242,127 @@ export function KnowledgePage() {
                     const pending = query.pendingIds.includes(doc.id)
                     const active = pending || doc.status === "indexing"
                     const requestable = query.canRequestIndex(doc)
-                    const indexAction = pending && requestable ? "Request indexing again" : active ? "Index pending" : doc.status === "failed" ? "Retry index" : doc.status === "indexed" ? "Reindex" : "Index document"
+                    const indexAction =
+                      pending && requestable
+                        ? text.requestAgain
+                        : active
+                          ? text.indexPending
+                          : doc.status === "failed"
+                            ? text.retryIndex
+                            : doc.status === "indexed"
+                              ? text.reindex
+                              : text.indexDocument
                     return (
                     <div className="document-item" key={doc.id}>
                       <span className="document-icon">
-                        <FileText size={23} />
+                        <FileText size={16} />
                       </span>
                       <div className="document-body">
-                        <strong>{doc.filename}</strong>
+                        <div className="document-heading">
+                          <strong>{doc.filename}</strong>
+                          <StatusBadge
+                            status={
+                              pending && doc.status !== "indexing"
+                                ? "index_requested"
+                                : doc.status
+                            }
+                          />
+                          <span className="muted small">
+                            {fill(text.passagesCount, { count: doc.chunk_count })}
+                          </span>
+                        </div>
                         <small>
-                          {sizeLabel(doc.size)} · Uploaded{" "}
-                          {dateLabel(doc.created_at)}
+                          {sizeLabel(doc.size)} ·{" "}
+                          {fill(text.uploaded, { date: dateLabel(doc.created_at) })}
                         </small>
-                        <div className="document-status" aria-live="polite">
-                          <StatusBadge status={pending && doc.status !== "indexing" ? "index_requested" : doc.status} />
-                          <span className="muted small">{doc.chunk_count} passages</span>
-                        </div>
-                        {pending && doc.status !== "indexing" && <p className="field-help">Request accepted; waiting for the indexing worker. Last stored state: {doc.status.replaceAll("_", " ")}. {requestable && "If indexing stalls, use Request indexing again. Active requests are deduplicated; this does not cancel existing work."}</p>}
-                        {doc.error && <p className="document-error">{pending ? "Previous attempt: " : "Indexing failed: "}{doc.error} {!active && "Check the document and indexing configuration, then retry."}</p>}
-                        {doc.status === "awaiting_indexing" && !pending && <p className="field-help">Stored; indexing has not started. {configured ? "Choose Index document to request indexing." : "Indexing needs to be enabled and configured."}</p>}
-                        {doc.embedding_model && <small>{doc.embedding_model} · {doc.embedding_dimensions} dimensions{doc.indexed_at ? ` · Indexed ${dateLabel(doc.indexed_at)}` : ""}</small>}
-                        {!!doc.category_tags.length && <small>Categories: {doc.category_tags.join(", ")}</small>}
-                        <div className="document-actions">
-                          <Button variant="outline" size="sm" disabled={busy || !requestable || !configured} onClick={() => void indexDocument(doc)} aria-label={`${indexAction}: ${doc.filename}`}>
-                            {indexAction}
-                          </Button>
-                          <Button variant="ghost" size="sm" aria-pressed={selectedId === doc.id} onClick={() => setSelectedId(doc.id)}>Inspect passages<span className="sr-only">: {doc.filename}</span></Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        nativeButton={false}
-                        render={
-                          <a href={`/api/knowledge/${doc.id}/download`} />
-                        }
-                        aria-label={`Download ${doc.filename}`}
-                      >
-                        <Download size={17} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete ${doc.filename}`}
-                        disabled={busy || active}
-                        onClick={() => setRemove(doc)}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                        </div>
+                        {pending && doc.status !== "indexing" && (
+                          <p className="field-help">
+                            {fill(text.pendingHelp, {
+                              status: statusLabels[doc.status] || doc.status,
+                            })}{" "}
+                            {requestable && text.pendingRetry}
+                          </p>
+                        )}
+                        {doc.error && (
+                          <p className="document-error">
+                            {pending ? text.previousAttempt : text.indexingFailed}
+                            {doc.error} {!active && text.checkAndRetry}
+                          </p>
+                        )}
+                        {doc.status === "awaiting_indexing" && !pending && (
+                          <p className="field-help">
+                            {text.awaitingHelp}{" "}
+                            {configured
+                              ? text.awaitingConfigured
+                              : text.awaitingUnconfigured}
+                          </p>
+                        )}
+                        {doc.embedding_model && (
+                          <small>
+                            {fill(text.dimensions, {
+                              model: doc.embedding_model,
+                              count: doc.embedding_dimensions ?? "",
+                            })}
+                            {doc.indexed_at
+                              ? ` · ${fill(text.indexedOn, { date: dateLabel(doc.indexed_at) })}`
+                              : ""}
+                          </small>
+                        )}
+                        {!!doc.category_tags.length && (
+                          <small>
+                            {fill(text.categories, {
+                              list: doc.category_tags.join(
+                                getLocale() === "ar" ? "، " : ", "
+                              ),
+                            })}
+                          </small>
+                        )}
+                      </div>
+                      <div className="document-actions">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={busy || !requestable || !configured}
+                          onClick={() => void indexDocument(doc)}
+                          aria-label={`${indexAction}: ${doc.filename}`}
+                        >
+                          {indexAction}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-pressed={selectedId === doc.id}
+                          onClick={() => setSelectedId(doc.id)}
+                        >
+                          {text.inspect}
+                          <span className="sr-only">: {doc.filename}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          nativeButton={false}
+                          render={<a href={`/api/knowledge/${doc.id}/download`} />}
+                          aria-label={fill(text.download, { name: doc.filename })}
+                        >
+                          <Download size={16} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={fill(text.deleteNamed, { name: doc.filename })}
+                          disabled={busy || active}
+                          onClick={() => setRemove(doc)}
+                        >
+                          <Trash2 size={15} />
+                        </Button>
                       </div>
                     </div>
                   )})}
                 </div>
               ) : (
                 <EmptyState
-                  title={
-                    search
-                      ? "No matching documents"
-                      : "Your document library is empty"
-                  }
-                  description="Add your first synthetic support policy to get started."
+                  title={search ? text.noMatch : text.emptyLibrary}
+                  description={text.emptyHint}
                 />
               )}
             </CardContent>
@@ -276,8 +373,8 @@ export function KnowledgePage() {
           <Card>
             <CardHeader>
               <CardTitle className="section-title">
-                <Database size={17} />
-                Document lifecycle
+                <Database size={15} />
+                {text.lifecycle}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -285,53 +382,87 @@ export function KnowledgePage() {
                 <li>
                   <span>1</span>
                   <div>
-                    <strong>Upload & store</strong>
-                    <p>Your files are saved in PostgreSQL with a checksum.</p>
+                    <strong>{text.stepStore}</strong>
+                    <p>{text.stepStoreBody}</p>
                   </div>
-                  <BadgeLabel text="Available" />
+                  <BadgeLabel text={text.available} />
                 </li>
                 <li>
                   <span>2</span>
                   <div>
-                    <strong>Chunk & embed</strong>
-                    <p>Prepare searchable passages with pgvector.</p>
+                    <strong>{text.stepEmbed}</strong>
+                    <p>{text.stepEmbedBody}</p>
                   </div>
-                  <BadgeLabel text={configured ? "Configured" : "Needs setup"} />
+                  <BadgeLabel text={configured ? text.configured : text.needsSetup} />
                 </li>
                 <li>
                   <span>3</span>
                   <div>
-                    <strong>Retrieve & cite</strong>
-                    <p>Ground the agent’s draft in relevant policy passages.</p>
+                    <strong>{text.stepCite}</strong>
+                    <p>{text.stepCiteBody}</p>
                   </div>
-                  <BadgeLabel text={workspace.health?.knowledge?.ready ? "Ready" : "Needs index"} />
+                  <BadgeLabel
+                    text={
+                      workspace.health?.knowledge?.ready
+                        ? text.ready
+                        : text.needsIndex
+                    }
+                  />
                 </li>
               </ol>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle className="section-title">Knowledge readiness</CardTitle></CardHeader>
+          <Card className="knowledge-readiness">
+            <CardHeader>
+              <CardTitle className="section-title">{text.readiness}</CardTitle>
+            </CardHeader>
             <CardContent>
-              <p className="muted small">{workspace.health?.knowledge ? `${workspace.health.knowledge.indexed_document_count} searchable documents · ${workspace.health.knowledge.status}` : "Readiness is unavailable. Check the API connection."}</p>
-              {workspace.health?.knowledge && <>
-                <p className="field-help">{workspace.health.knowledge.embedding_model} · {workspace.health.knowledge.embedding_dimensions} dimensions</p>
-                <p className="field-help">{!workspace.health.knowledge.enabled ? "Knowledge retrieval is disabled. Enable RAG to index and search." : !configured ? "Configure the embedding provider to index and search policies." : workspace.health.knowledge.ready ? "Indexed policy passages are available for grounded drafts." : "Index a policy successfully before expecting a grounded draft."}</p>
-                <p className="field-help">{workspace.health.drafting?.credential_check_configured ? "Credential checking is configured." : "Credential checking is not configured; affected drafts are marked for review."} Readiness reflects configuration and stored indexes, not a live provider check.</p>
-              </>}
+              <p className="muted small">
+                {workspace.health?.knowledge
+                  ? fill(text.searchable, {
+                      count: workspace.health.knowledge.indexed_document_count,
+                      status:
+                        readinessStatus[workspace.health.knowledge.status] ||
+                        workspace.health.knowledge.status,
+                    })
+                  : text.readinessUnavailable}
+              </p>
+              {workspace.health?.knowledge && (
+                <>
+                  <p className="field-help">
+                    {fill(text.dimensions, {
+                      model: workspace.health.knowledge.embedding_model,
+                      count: workspace.health.knowledge.embedding_dimensions,
+                    })}
+                  </p>
+                  <p className="field-help">
+                    {!workspace.health.knowledge.enabled
+                      ? text.retrievalDisabled
+                      : !configured
+                        ? text.configureProvider
+                        : workspace.health.knowledge.ready
+                          ? text.passagesReady
+                          : text.indexFirst}
+                  </p>
+                  <p className="field-help">
+                    {workspace.health.drafting?.credential_check_configured
+                      ? text.credentialOn
+                      : text.credentialOff}{" "}
+                    {text.readinessScope}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
           <div className="knowledge-note">
-            <Info size={20} />
+            <Info size={16} />
             <div>
-              <strong>Stored does not mean indexed</strong>
-              <p>
-                Only successfully indexed documents can ground new drafts.
-                Saved reviews retain their cited passages after a source is reindexed or deleted.
-              </p>
+              <strong>{text.noteTitle}</strong>
+              <p>{text.noteBody}</p>
               <span>
-                Upload <ArrowRight size={13} />
-                Index <ArrowRight size={13} />
-                Ground
+                {text.flowUpload} <ArrowRight size={13} />
+                {text.flowIndex} <ArrowRight size={13} />
+                {text.flowGround}
               </span>
             </div>
           </div>
@@ -340,9 +471,11 @@ export function KnowledgePage() {
       <ConfirmDialog
         open={remove !== null}
         onClose={() => setRemove(null)}
-        title="Delete this document?"
-        description={`${remove?.filename || "This document"} and its searchable passages will be removed. Evidence already saved with a draft remains in that review.`}
-        action="Delete document"
+        title={text.deleteTitle}
+        description={fill(text.deleteBody, {
+          name: remove?.filename || text.deleteFallback,
+        })}
+        action={text.deleteAction}
         onConfirm={() => void deleteDocument()}
       />
     </>
