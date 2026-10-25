@@ -1,5 +1,7 @@
 import { expect, it } from "vitest"
+import type { Result } from "../../lib/types"
 import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, sentence, toolLine } from "./ticket-flow-copy"
+import { buildTicketFlow } from "./ticket-flow"
 
 it("treats Arabic letters as an Arabic message and a blank message as English", () => {
   expect(isArabicMessage("التحويل لم يصل")).toBe(true)
@@ -46,4 +48,117 @@ it("keeps only safe tool details and states credential checks without secrets", 
     "The credential check passed.",
     "No safety-check findings were recorded.",
   ])
+})
+
+function result(patch: Partial<Result> = {}, ticket: Partial<Result["ticket"]> = {}): Result {
+  return {
+    id: 10,
+    ticket_id: 1,
+    run_id: 3,
+    ticket: {
+      id: 1,
+      external_id: "T-1",
+      text: "The transfer failed",
+      received_at: "2026-10-12T10:00:00Z",
+      channel: "whatsapp",
+      customer_phone: null,
+      ...ticket,
+    },
+    category: "failed_transfer",
+    category_confidence: 0.82,
+    category_probs: {},
+    priority: "high",
+    priority_confidence: null,
+    flags: {},
+    classifier_path: "jev",
+    extracted: {},
+    lookup_status: "matched",
+    matched_txn_ref: "ZC-1044",
+    team: "Payments Ops",
+    escalated: false,
+    escalation_reasons: [],
+    escalation_note: null,
+    draft_text: "reply",
+    final_text: null,
+    citations: [],
+    agent_trace: [],
+    status: "pending_review",
+    error: "PIN 1234 should stay hidden",
+    latency_ms: 1,
+    cost_usd: 0,
+    updated_at: "2026-10-12T10:00:00Z",
+    ...patch,
+  }
+}
+
+function step(flow: ReturnType<typeof buildTicketFlow>, id: string) {
+  const found = flow.steps.find((item) => item.id === id)
+  if (!found) throw new Error(`missing ${id}`)
+  return found
+}
+
+it("opens Draft on a straight Jev path and explains the skipped steps", () => {
+  const flow = buildTicketFlow(result())
+  expect(flow.selectedId).toBe("draft")
+  expect(step(flow, "gemini_classify")).toMatchObject({ state: "unused", reason: "Jev was already sure." })
+  expect(step(flow, "escalate_empty")).toMatchObject({ state: "unused", reason: "The message had text." })
+  expect(step(flow, "jev_classify").state).toBe("used")
+})
+
+it("opens Jev when Gemini gave the second opinion", () => {
+  expect(buildTicketFlow(result({ classifier_path: "gemini_fallback" })).selectedId).toBe("jev_classify")
+  expect(buildTicketFlow(result({ classifier_path: "disagreement" })).selectedId).toBe("jev_classify")
+})
+
+it("opens Prepare for an empty message and stops the later steps", () => {
+  const flow = buildTicketFlow(result({ classifier_path: "jev", escalation_reasons: [] }, { text: "  " }))
+  expect(flow.selectedId).toBe("prepare")
+  expect(flow.arabic).toBe(false)
+  for (const id of ["jev_classify", "gemini_classify", "extract", "lookup", "decide", "draft"]) {
+    expect(step(flow, id)).toMatchObject({ state: "unused", reason: "The empty message ended the path." })
+  }
+})
+
+it("opens Prepare when Gemini was asked directly", () => {
+  const flow = buildTicketFlow(result({
+    classifier_path: "gemini",
+    agent_trace: [{ kind: "stage", node: "gemini_classify" }],
+  }))
+  expect(flow.selectedId).toBe("prepare")
+  expect(step(flow, "jev_classify")).toMatchObject({ state: "unused", reason: "This run asked Gemini directly." })
+})
+
+it("does not invent a Jev skip reason when a Gemini path has no trace", () => {
+  const flow = buildTicketFlow(result({ classifier_path: "gemini", agent_trace: [] }))
+  expect(flow.selectedId).toBe("draft")
+  expect(step(flow, "jev_classify")).toMatchObject({ state: "unrecorded", reason: null })
+})
+
+it("lets a Jev path ignore a stray Gemini stage event", () => {
+  const flow = buildTicketFlow(result({
+    classifier_path: "jev",
+    agent_trace: [{ kind: "stage", node: "gemini_classify" }],
+  }))
+  expect(flow.selectedId).toBe("draft")
+  expect(step(flow, "gemini_classify").reason).toBe("Jev was already sure.")
+})
+
+it("stops a failed run at its last stage event and hides the raw error", () => {
+  const flow = buildTicketFlow(result({
+    status: "failed",
+    classifier_path: "jev",
+    agent_trace: [{ kind: "stage", node: "extract" }],
+  }))
+  expect(flow.selectedId).toBe("extract")
+  expect(step(flow, "extract").produced).toBe("The run stopped.")
+  expect(step(flow, "lookup")).toMatchObject({ state: "unused", reason: "The run stopped." })
+  expect(step(flow, "draft").state).toBe("unused")
+  expect(JSON.stringify(flow)).not.toContain("PIN 1234")
+})
+
+it("uses the run-stopped sentence on Draft when a failed Jev path has no stage events", () => {
+  const flow = buildTicketFlow(result({ status: "failed", classifier_path: "jev", agent_trace: [] }))
+  expect(flow.selectedId).toBe("draft")
+  expect(step(flow, "draft").produced).toBe("The run stopped.")
+  expect(JSON.stringify(flow)).not.toContain("PIN 1234")
 })
