@@ -46,7 +46,7 @@ def make_gemini_llm(settings: Settings) -> GeminiStructuredLLM:
 
 def model_ids(settings: Settings, mode: str) -> dict[str, str]:
     ids = {"jev": settings.jev_model} if mode != "gemini" else {}
-    return ids | {"gemini": settings.gemini_model, "drafting": settings.gemini_model,
+    return ids | {"gemini": settings.gemini_model, "drafting": settings.draft_model,
                   "embedding": settings.embedding_model}
 
 
@@ -55,7 +55,7 @@ def make_draft_model(settings: Settings) -> BaseChatModel:
 
     # Same provider conventions as llm.py. The agent retries individual transient
     # requests, inside its overall deadline; the SDK must never retry on its own.
-    return DraftChatOpenRouter(model=settings.gemini_model, temperature=0.1,
+    return DraftChatOpenRouter(model=settings.draft_model, temperature=0.1,
                                api_key=settings.openrouter_api_key,
                                timeout=int(settings.agent_timeout_s * 1000), max_retries=0,
                                model_kwargs={"retries": None})

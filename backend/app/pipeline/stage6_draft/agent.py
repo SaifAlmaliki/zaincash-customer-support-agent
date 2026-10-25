@@ -86,7 +86,7 @@ class _ModelUsage(AsyncCallbackHandler):
             cost, source = float(reported), "provider"
         self.cost_usd += cost
         entry = {"kind": "model", "status": "error" if error_type else "ok", "response_id": response_id,
-                 "model": metadata.get("model_name") or self.settings.gemini_model,
+                 "model": metadata.get("model_name") or self.settings.draft_model,
                  "usage": _bounded(usage), "cost_usd": cost, "cost_source": source}
         if error_type:
             entry["error_type"] = error_type
@@ -107,7 +107,7 @@ class _ModelUsage(AsyncCallbackHandler):
         # error cost are alternative outcomes of the SAME model invocation.
         cost = 0.0 if has_response else _error_cost(error)
         self.cost_usd += cost
-        self.context.trace.append({"kind": "model", "status": "error", "model": self.settings.gemini_model,
+        self.context.trace.append({"kind": "model", "status": "error", "model": self.settings.draft_model,
                                    "error_type": type(error).__name__, "cost_usd": cost})
 
 
@@ -244,7 +244,7 @@ class RagDrafter:
         rejected = failure or findings or submission is None or not context.retrieved
         status = "cancelled" if cancelled is not None else "error" if unexpected else "rejected" if rejected else "submitted"
         context.trace.append({"kind": "draft", "status": status,
-                              "prompt_version": PROMPT_VERSION, "model": self.settings.gemini_model,
+                              "prompt_version": PROMPT_VERSION, "model": self.settings.draft_model,
                               "embedding_model": self.settings.embedding_model,
                               "reply_ar": submission.reply_ar if submission else None,
                               "citations": list(submission.citations) if submission else [],

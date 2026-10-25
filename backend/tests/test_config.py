@@ -36,6 +36,14 @@ def test_legacy_gemini_model_names_are_qualified_for_openrouter(model, expected)
     assert Settings(_env_file=None, gemini_model=model).gemini_model == expected
 
 
+def test_anthropic_model_selects_the_draft_model_only(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_MODEL", " anthropic/claude-sonnet-5.5 ")
+    settings = Settings(_env_file=None)
+    assert settings.anthropic_model == "anthropic/claude-sonnet-5.5"
+    assert settings.draft_model == "anthropic/claude-sonnet-5.5"
+    assert settings.gemini_model == "google/gemini-3.8-flash"
+
+
 def test_drafting_limits_load_from_environment(monkeypatch):
     monkeypatch.setenv("AGENT_MAX_TOOL_CALLS", "6")
     monkeypatch.setenv("AGENT_TIMEOUT_S", "30")

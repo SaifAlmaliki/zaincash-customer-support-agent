@@ -31,6 +31,9 @@ def test_model_ids():
     rag = {"drafting": "google/gemini-3.8-flash", "embedding": "openai/text-embedding-3-small"}
     assert model_ids(s, "jev") == {"jev": "jev-1.13.0", "gemini": "google/gemini-3.8-flash", **rag}
     assert model_ids(s, "gemini") == {"gemini": "google/gemini-3.8-flash", **rag}
+    claude = _settings(anthropic_model="anthropic/claude-sonnet-5.5")
+    assert model_ids(claude, "cascade")["drafting"] == "anthropic/claude-sonnet-5.5"
+    assert model_ids(claude, "cascade")["gemini"] == "google/gemini-3.8-flash"
 
 
 def test_openrouter_key_enables_gemini_pipeline():

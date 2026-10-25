@@ -216,28 +216,6 @@ html[lang="ar"] .brand > div {
   color: var(--accent-ink);
   font-weight: 600;
 }
-.sidebar-note {
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 16px 13px;
-  margin: 30px 2px 20px;
-  background: linear-gradient(155deg, var(--card) 40%, var(--accent-soft));
-}
-.sidebar-note > svg {
-  color: #da3345;
-  margin-bottom: 10px;
-}
-.sidebar-note strong {
-  font-size: 11px;
-  display: block;
-  font-weight: 600;
-}
-.sidebar-note p {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  line-height: 1.8;
-  margin-top: 5px;
-}
 .sidebar-bottom {
   margin-top: auto;
 }
@@ -1563,6 +1541,17 @@ html[lang="ar"] .brand > div {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22px;
+}
+.run-flows {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+.run-flow-ticket {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
 }
 .simple-breakdown > div {
   display: flex;

@@ -29,6 +29,7 @@ import {
 } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
+import { request } from "@/lib/api"
 import { useCopy } from "@/lib/locale"
 import {
   categoryLabel,
@@ -38,7 +39,8 @@ import {
   humanize,
   timeLabel,
 } from "@/lib/format"
-import type { Run } from "@/lib/types"
+import type { Result, Run } from "@/lib/types"
+import { TicketFlow } from "@/features/review/TicketFlow"
 
 export function RunsPage() {
   const copy = useCopy()
@@ -137,11 +139,22 @@ export function RunsPage() {
   )
 }
 
+async function loadRunResults(path: string, options: RequestInit) {
+  const page = await request<{ items: Result[] }>(path, options)
+  return Promise.all(page.items.map((item) => request<Result>(`/results/${item.id}`, options)))
+}
+
 export function RunDetailPage() {
   const { id } = useParams(),
     workspace = useWorkspace()
   const query = useResource<Run>(`/runs/${id}`, workspace.revision, 2500)
   const run = query.data
+  const results = useResource<Result[]>(
+    run ? `/results?run_id=${run.id}&limit=500` : null,
+    workspace.revision,
+    run?.status === "running" ? 2500 : 0,
+    loadRunResults,
+  )
   if (query.error)
     return <ErrorState message={query.error} retry={query.reload} />
   if (!run)
@@ -261,6 +274,24 @@ export function RunDetailPage() {
           </CardContent>
         </Card>
       </div>
+      <section className="run-flows">
+        {results.error && <p className="error-text">{results.error}</p>}
+        {results.data?.map((result) => (
+          <div key={result.id}>
+            <Link to={`/tickets/${result.id}`} className="run-flow-ticket">
+              {result.ticket.external_id}
+            </Link>
+            <TicketFlow result={result} />
+          </div>
+        ))}
+        {!results.data?.length && !results.loading && (
+          <p className="muted small">
+            {run.status === "running"
+              ? "Steps appear here when a ticket finishes."
+              : "No processed ticket to show yet."}
+          </p>
+        )}
+      </section>
     </>
   )
 }

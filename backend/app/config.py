@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     gemini_model: str = "google/gemini-3.8-flash"
     gemini_strong_model: str = "google/gemini-2.5-pro"
     gemini_embed_model: str = "gemini-embedding-001"
+    # When set, drafting uses this model. Classification stays on gemini_model.
+    anthropic_model: str = ""
     rag_enabled: bool = True
     embedding_model: str = "openai/text-embedding-3-small"
     embed_dim: int = 768
@@ -108,6 +110,18 @@ class Settings(BaseSettings):
     def qualify_gemini_model(cls, value: str) -> str:
         """Accept legacy .env model names while recording the OpenRouter model ID."""
         return f"google/{value}" if value.startswith("gemini-") else value
+
+    @field_validator("anthropic_model")
+    @classmethod
+    def validate_anthropic_model(cls, value: str) -> str:
+        stripped = value.strip()
+        if value and not stripped:
+            raise ValueError("ANTHROPIC_MODEL must be a non-empty model ID")
+        return stripped
+
+    @property
+    def draft_model(self) -> str:
+        return self.anthropic_model or self.gemini_model
 
 
 @lru_cache

@@ -103,11 +103,6 @@ export function WorkspaceLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <ShieldCheck size={19} />
-          <strong>{copy.layout.promiseTitle}</strong>
-          <p>{copy.layout.promiseBody}</p>
-        </div>
         <div className="sidebar-bottom">
           <a
             href="/api/docs"
