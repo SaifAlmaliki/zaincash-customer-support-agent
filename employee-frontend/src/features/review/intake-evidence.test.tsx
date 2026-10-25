@@ -29,7 +29,7 @@ const intakeFixture: IntakeEvidenceData = {
 it("shows unknowns and original transcript alongside Arabic summary", () => {
   const html = renderToStaticMarkup(<IntakeEvidence intake={intakeFixture} />)
   expect(html).toContain("ملخص المشكلة")
-  expect(html).toContain("Unknown")
+  expect(html).toContain("amount: غير معروف")
   expect(html).toContain("The transfer failed yesterday")
   expect(html).toContain("/api/results/1/intake/attachments/")
   expect(html).not.toContain("Bearer")
@@ -47,8 +47,8 @@ it("distinguishes contradictions and applicability and links supporting evidence
     amount: { key: "amount", status: "conflicting", value: "50000", evidence: [{ kind: "message", source_id: "m1", quote: "The transfer failed yesterday" }] },
     date: { key: "date", status: "not_applicable", value: null },
   } }} />)
-  expect(html).toContain("Conflicting")
-  expect(html).toContain("Not applicable")
+  expect(html).toContain("متعارض")
+  expect(html).toContain("لا ينطبق")
   expect(html).toContain('href="#intake-message-m1"')
   expect(html).toContain('id="intake-message-m1"')
 })

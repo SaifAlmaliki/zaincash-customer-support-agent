@@ -16,10 +16,10 @@ it.each([null, {}, [null], [null, 42, "bad", [], { kind: "tool", tool: "search_k
     expect(evidence.tools.length).toBe(Array.isArray(raw) && raw.length > 1 ? 1 : 0)
     expect(renderToStaticMarkup(<CitationEvidence result={result} />)).toContain("دليل محفوظ")
     const trace = renderToStaticMarkup(<PipelineTrace result={result} />)
-    expect(trace).toContain("Pipeline &amp; tool trace")
+    expect(trace).toContain("أثر المعالجة والأدوات")
     if (Array.isArray(raw) && raw.length > 1) {
-      expect(trace).toContain("Searched the knowledge base")
-      expect(trace).toContain("Completed")
+      expect(trace).toContain("بحث في قاعدة المعرفة")
+      expect(trace).toContain("اكتمل")
       expect(trace).not.toContain(".py")
     }
     expect(result.agent_trace).toBe(raw)

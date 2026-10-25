@@ -37,7 +37,16 @@ summary:focus-visible {
   --amber: #a46316;
   --blue: #4a71b9;
   font-size: 13px;
+  line-height: 1.7;
+  font-family: Tajawal, sans-serif;
+}
+html[lang="en"] .workspace-app {
+  font-family: "Plus Jakarta Sans Variable", sans-serif;
   line-height: 1.5;
+}
+html[lang="ar"] .workspace-app h1,
+html[lang="ar"] .brand > div {
+  letter-spacing: 0;
 }
 .workspace-app h1,
 .workspace-app h2,
@@ -275,7 +284,7 @@ summary:focus-visible {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
-  padding: 0 32px;
+  padding: 0 108px 0 32px;
   gap: 15px;
 }
 .breadcrumbs,
@@ -1705,7 +1714,7 @@ summary:focus-visible {
 .passage { border-block-start: 1px solid var(--border); padding-top: 16px; min-width: 0; }
 .passage-filename { display: block; font-size: 13px; font-weight: 550; overflow-wrap: anywhere; }
 .passage-meta { justify-content: space-between; font-size: 11px; color: var(--muted-foreground); margin-block: 8px; }
-.passage-text { white-space: pre-wrap; overflow-wrap: anywhere; font-family: "Geist Variable", Tahoma, Arial, sans-serif; font-size: 14px; line-height: 1.9; margin-block: 12px; max-width: 80ch; }
+.passage-text { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 14px; line-height: 1.9; margin-block: 12px; max-width: 80ch; }
 .passage-id { display: block; overflow-wrap: anywhere; font-size: 10px; color: var(--muted-foreground); margin-top: 8px; }
 .passage-pagination { justify-content: space-between; margin-top: 20px; }
 .guardrail-findings { list-style: disc; padding-left: 18px; margin-block: 14px; font-size: 12px; line-height: 1.8; }
@@ -2159,7 +2168,7 @@ summary:focus-visible {
   }
   .workspace-topbar {
     height: 61px;
-    padding: 0 16px;
+    padding: 0 96px 0 16px;
     gap: 8px;
   }
   .breadcrumbs {
@@ -2351,6 +2360,73 @@ summary:focus-visible {
   padding: 12px 14px;
   border-radius: 12px;
   background: color-mix(in oklch, var(--muted) 80%, transparent);
+}
+.lang-toggle {
+  position: fixed;
+  z-index: 70;
+  top: 20px;
+  right: 16px;
+  direction: ltr;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+}
+.lang-toggle button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  min-width: 28px;
+  height: 22px;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.lang-toggle button[data-locale="ar"] {
+  font-family: Tajawal, sans-serif;
+}
+.lang-toggle button[data-locale="en"] {
+  font-family: "Plus Jakarta Sans Variable", sans-serif;
+}
+.lang-toggle button[aria-pressed="true"] {
+  background: #da3345;
+  color: #fff;
+}
+html[dir="rtl"] .workspace-sidebar {
+  inset: 0 0 0 auto;
+  border-right: 0;
+  border-left: 1px solid var(--border);
+}
+html[dir="rtl"] .workspace-main {
+  margin-left: 0;
+  margin-right: 232px;
+}
+html[dir="rtl"] .breadcrumbs > svg {
+  transform: scaleX(-1);
+}
+@media (max-width: 1000px) {
+  html[dir="rtl"] .workspace-main {
+    margin-right: 205px;
+    margin-left: 0;
+  }
+}
+@media (max-width: 760px) {
+  html[dir="rtl"] .workspace-sidebar {
+    transform: translateX(100%);
+  }
+  html[dir="rtl"] .workspace-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+  html[dir="rtl"] .workspace-main {
+    margin-right: 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   *,

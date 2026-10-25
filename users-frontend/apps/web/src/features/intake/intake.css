@@ -9,11 +9,45 @@
   font-family: var(--font-latin);
   line-height: 1.55;
 }
-.intake-languages {
+.lang-toggle {
+  position: fixed;
+  z-index: 40;
+  top: 14px;
+  right: 14px;
   direction: ltr;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+}
+.lang-toggle button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  min-width: 28px;
+  height: 22px;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.lang-toggle button[data-locale="ar"] {
+  font-family: Tajawal, sans-serif;
+}
+.lang-toggle button[data-locale="en"] {
+  font-family: "Plus Jakarta Sans Variable", sans-serif;
+}
+.lang-toggle button[aria-pressed="true"] {
+  background: #da3345;
+  color: #fff;
 }
 .intake-header,
-.intake-languages,
 .intake-brand,
 .intake-actions,
 .intake-shot-list {
@@ -23,7 +57,7 @@
 }
 .intake-header {
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 16px 88px 16px 20px;
   border-bottom: 3px solid #da3345;
 }
 .intake-brand {
@@ -181,9 +215,7 @@
   }
 }
 @media (max-width: 720px) {
-  .intake-header,
-  .intake-actions,
-  .intake-languages {
+  .intake-actions {
     align-items: stretch;
     flex-direction: column;
   }

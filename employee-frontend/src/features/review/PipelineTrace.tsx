@@ -2,6 +2,7 @@ import { Workflow } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { stages } from "@/lib/stages"
 import { duration } from "@/lib/format"
+import { fill, useCopy } from "@/lib/locale"
 import type { Result, TraceEvent } from "@/lib/types"
 import { reviewEvidence } from "./review-evidence"
 import { checkFact, stageFacts, toolFact } from "./trace-facts"
@@ -18,10 +19,12 @@ const STAGE_NODES: Record<string, string[]> = {
 function timing(events: TraceEvent[]) {
   const elapsed = events.map((event) => event.elapsed_ms).filter((value): value is number => typeof value === "number")
   if (!elapsed.length) return null
-  return `Finished after ${duration(Math.max(...elapsed))}`
+  return duration(Math.max(...elapsed))
 }
 
 export function PipelineTrace({ result }: { result: Result }) {
+  const copy = useCopy()
+  const text = copy.trace
   const { stages: events, tools, otherEvents } = reviewEvidence(result)
   const checks = otherEvents.flatMap((event) => {
     const line = checkFact(event)
@@ -32,12 +35,12 @@ export function PipelineTrace({ result }: { result: Result }) {
       <CardHeader>
         <CardTitle className="section-title">
           <Workflow size={17} />
-          Pipeline & tool trace
+          {text.title}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="muted small">
-          What each step found, in the order it ran.
+          {text.intro}
         </p>
         <div className="stage-trace">
           {stages.map((stage, index) => {
@@ -50,8 +53,8 @@ export function PipelineTrace({ result }: { result: Result }) {
               <details key={stage.id}>
                 <summary>
                   <span className="trace-number">{index + 1}</span>
-                  <strong>{stage.label}</strong>
-                  <small>{matching.length ? "Completed" : "Not recorded"}</small>
+                  <strong>{copy.stages[stage.id as keyof typeof copy.stages] || stage.label}</strong>
+                  <small>{matching.length ? text.completed : text.notRecorded}</small>
                 </summary>
                 <div>
                   <ul className="trace-facts">
@@ -59,7 +62,7 @@ export function PipelineTrace({ result }: { result: Result }) {
                       <li key={factIndex}>{fact}</li>
                     ))}
                   </ul>
-                  {when && <p>{when}</p>}
+                  {when && <p>{fill(text.finished, { time: when })}</p>}
                 </div>
               </details>
             )
@@ -68,8 +71,8 @@ export function PipelineTrace({ result }: { result: Result }) {
         <details className="tool-reference">
           <summary>
             <Workflow size={15} />
-            Lookups during drafting
-            <span>{tools.length} recorded</span>
+            {text.lookups}
+            <span>{fill(text.recorded, { count: tools.length })}</span>
           </summary>
           {tools.length ? (
             <ul className="trace-facts">
@@ -78,15 +81,15 @@ export function PipelineTrace({ result }: { result: Result }) {
               ))}
             </ul>
           ) : (
-            <p>The drafter did not record a transaction lookup or a policy search.</p>
+            <p>{text.noLookup}</p>
           )}
         </details>
         {checks.length > 0 && (
           <details className="tool-reference">
             <summary>
               <Workflow size={15} />
-              Draft checks
-              <span>{checks.length} recorded</span>
+              {text.checks}
+              <span>{fill(text.recorded, { count: checks.length })}</span>
             </summary>
             <ul className="trace-facts">
               {checks.map((line, index) => (

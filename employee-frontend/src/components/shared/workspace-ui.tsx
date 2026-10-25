@@ -19,28 +19,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { humanize, percentage } from "@/lib/format"
+import { useCopy } from "@/lib/locale"
 
-const statusLabels: Record<string, string> = {
-  pending_review: "Needs review",
-  escalated: "Escalated",
-  approved: "Approved",
-  edited: "Edited & approved",
-  rejected: "Rejected",
-  running: "Processing",
-  processing: "Processing",
-  completed: "Completed",
-  completed_with_errors: "Partial failure",
-  failed: "Failed",
-  awaiting_indexing: "Awaiting indexing",
-  index_requested: "Index requested",
-  indexing: "Indexing",
-  indexed: "Indexed",
-}
 export function StatusBadge({ status }: { status: string }) {
+  const labels = useCopy().status as Record<string, string>
   return (
     <Badge variant="outline" className={`status-badge status-${status}`}>
       <span className="status-dot" />
-      {statusLabels[status] || humanize(status)}
+      {labels[status] || humanize(status)}
     </Badge>
   )
 }
@@ -114,26 +100,28 @@ export function ErrorState({
   message: string
   retry?: () => void
 }) {
+  const copy = useCopy()
   return (
     <div className="error-state" role="alert">
       <CircleAlert size={18} />
       <div>
-        <strong>Couldn’t load the workspace</strong>
+        <strong>{copy.common.loadError}</strong>
         <p>{message}</p>
       </div>
       {retry && (
         <Button variant="outline" onClick={retry}>
-          Retry
+          {copy.common.retry}
         </Button>
       )}
     </div>
   )
 }
 export function LoadingState() {
+  const copy = useCopy()
   return (
     <div className="loading-state" role="status">
       <LoaderCircle className="animate-spin" size={20} />
-      Loading workspace…
+      {copy.common.loading}
     </div>
   )
 }
@@ -210,6 +198,7 @@ export function ConfirmDialog({
   action: string
   onConfirm: () => void
 }) {
+  const copy = useCopy()
   return (
     <Dialog
       open={open}
@@ -224,7 +213,7 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {copy.common.cancel}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
             {action}

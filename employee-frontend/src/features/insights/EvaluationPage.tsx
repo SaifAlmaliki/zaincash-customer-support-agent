@@ -14,9 +14,11 @@ import { Metric, PageHeader } from "@/components/shared/workspace-ui"
 import { validateEvaluation } from "@/lib/imports"
 import { percentage } from "@/lib/format"
 import { useWorkspace } from "@/lib/workspace"
+import { useCopy } from "@/lib/locale"
 import type { EvaluationReport } from "@/lib/types"
 
 export function EvaluationPage() {
+  const copy = useCopy()
   const input = useRef<HTMLInputElement>(null),
     workspace = useWorkspace()
   const [report, setReport] = useState<EvaluationReport | null>(null),
@@ -44,8 +46,8 @@ export function EvaluationPage() {
   return (
     <>
       <PageHeader
-        title="Evaluation"
-        description="Real evidence. A held-out dataset. Honest results."
+        title={copy.pages.evaluationTitle}
+        description={copy.pages.evaluationDescription}
       >
         <Button variant="outline" onClick={() => input.current?.click()}>
           <FileUp size={16} />

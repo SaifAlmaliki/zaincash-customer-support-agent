@@ -29,6 +29,7 @@ import {
 } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
+import { useCopy } from "@/lib/locale"
 import {
   categoryLabel,
   dateLabel,
@@ -40,6 +41,7 @@ import {
 import type { Run } from "@/lib/types"
 
 export function RunsPage() {
+  const copy = useCopy()
   const workspace = useWorkspace(),
     navigate = useNavigate()
   const query = useResource<Run[]>("/runs", workspace.revision, 5000)
@@ -47,8 +49,8 @@ export function RunsPage() {
   return (
     <>
       <PageHeader
-        title="Pipeline runs"
-        description="From a batch of messages to an organized support queue."
+        title={copy.pages.runsTitle}
+        description={copy.pages.runsDescription}
       >
         <Button size="lg" onClick={() => navigate("/runs/new")}>
           <Plus size={17} />

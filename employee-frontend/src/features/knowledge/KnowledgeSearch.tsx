@@ -80,7 +80,7 @@ export function KnowledgeSearch({ configured, selected, onClose }: {
           <label className="field-label" htmlFor="policy-query">Policy question</label>
           <Input id="policy-query" dir="auto" placeholder="Ask about a support policy…" value={query} onChange={(event) => setQuery(event.target.value)} maxLength={2000} required disabled={busy || !configured} />
           <div className="knowledge-search-controls">
-            <div><span className="field-label">Category</span><FilterSelect label="Search category" value={category} onChange={setCategory} options={[{ value: "", label: "All categories" }, ...Object.entries(categories).map(([value, label]) => ({ value, label }))]} /></div>
+            <div><span className="field-label">Category</span><FilterSelect label="Search category" value={category} onChange={setCategory} options={[{ value: "", label: "All categories" }, ...Object.keys(categories).map((value) => ({ value, label: categoryLabel(value) }))]} /></div>
             <label className="field-label" htmlFor="policy-k">Maximum passages<Input id="policy-k" type="number" min={1} max={10} step={1} required value={k} onChange={(event) => setK(event.target.value)} disabled={busy || !configured} /></label>
             <Button type="submit" disabled={!configured || busy || !query.trim()}><Search size={15} />{busy ? "Searching…" : "Search policies"}</Button>
           </div>

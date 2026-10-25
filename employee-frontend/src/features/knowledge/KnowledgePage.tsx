@@ -23,6 +23,7 @@ import {
   StatusBadge,
 } from "@/components/shared/workspace-ui"
 import { useWorkspace } from "@/lib/workspace"
+import { useCopy } from "@/lib/locale"
 import { api } from "@/lib/api"
 import { dateLabel, sizeLabel } from "@/lib/format"
 import type { KnowledgeDocument } from "@/lib/types"
@@ -30,6 +31,7 @@ import { useKnowledgeLibrary } from "./use-knowledge-library"
 import { KnowledgeSearch } from "./KnowledgeSearch"
 
 export function KnowledgePage() {
+  const copy = useCopy()
   const workspace = useWorkspace(),
     input = useRef<HTMLInputElement>(null)
   const query = useKnowledgeLibrary(workspace.revision)
@@ -120,8 +122,8 @@ export function KnowledgePage() {
   return (
     <>
       <PageHeader
-        title="Knowledge base"
-        description="The source material behind a well-grounded response."
+        title={copy.pages.knowledgeTitle}
+        description={copy.pages.knowledgeDescription}
       >
         <Button
           size="lg"

@@ -28,7 +28,7 @@ import {
 import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
 import { api } from "@/lib/api"
-import { dateLabel, teams, timeLabel, humanize } from "@/lib/format"
+import { dateLabel, teamLabel, teams, timeLabel, humanize } from "@/lib/format"
 import type { Result, ReviewInput } from "@/lib/types"
 import { SourceEvidence } from "./SourceEvidence"
 import { PipelineTrace } from "./PipelineTrace"
@@ -177,7 +177,7 @@ function ReviewEditor({
               <FilterSelect
                 label="Assigned team"
                 value={team}
-                options={teams.map((value) => ({ value, label: value }))}
+                options={teams.map((value) => ({ value, label: teamLabel(value) }))}
                 onChange={setTeam}
               />
             </div>

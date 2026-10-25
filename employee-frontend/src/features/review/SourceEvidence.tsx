@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Confidence } from "@/components/shared/workspace-ui"
 import { categoryLabel, humanize, percentage } from "@/lib/format"
+import { useCopy } from "@/lib/locale"
 import type { Result } from "@/lib/types"
 import { CitationEvidence } from "./CitationEvidence"
 
@@ -42,6 +43,8 @@ function highlightedText(result: Result): ReactNode[] {
 }
 
 export function SourceEvidence({ result }: { result: Result }) {
+  const copy = useCopy()
+  const text = copy.evidence
   return (
     <div className="evidence-stack">
       {result.escalated && (
@@ -69,7 +72,7 @@ export function SourceEvidence({ result }: { result: Result }) {
         <CardHeader>
           <CardTitle className="section-title">
             <ReceiptText size={17} />
-            Original customer message
+            {text.message}
             <Badge variant="outline">{humanize(result.ticket.channel)}</Badge>
           </CardTitle>
         </CardHeader>
@@ -79,7 +82,7 @@ export function SourceEvidence({ result }: { result: Result }) {
           </div>
           <p className="field-help">
             <span className="highlight-dot" />
-            Highlighted details are linked to the original text.
+            {text.highlight}
           </p>
         </CardContent>
       </Card>
@@ -87,16 +90,16 @@ export function SourceEvidence({ result }: { result: Result }) {
         <CardHeader>
           <CardTitle className="section-title">
             <TextSearch size={17} />
-            Extracted details
+            {text.extracted}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="extracted-grid">
             {[
-              ["txn_ref", "Transaction reference"],
-              ["amount", "Amount"],
-              ["date", "Date"],
-              ["phone", "Phone number"],
+              ["txn_ref", text.reference],
+              ["amount", text.amount],
+              ["date", text.date],
+              ["phone", text.phone],
             ].map(([key, label]) => {
               const field = result.extracted[key]
               return (
@@ -106,7 +109,7 @@ export function SourceEvidence({ result }: { result: Result }) {
                     {field?.value != null ? (
                       `${key === "amount" ? Number(field.value).toLocaleString("en-US") : field.value}${key === "amount" ? ` ${field.currency || "IQD"}` : ""}`
                     ) : (
-                      <span className="not-stated">Not stated</span>
+                      <span className="not-stated">{copy.common.notStated}</span>
                     )}
                   </strong>
                   {field?.span && (
@@ -124,7 +127,7 @@ export function SourceEvidence({ result }: { result: Result }) {
         <CardHeader>
           <CardTitle className="section-title">
             <Hash size={17} />
-            Classification
+            {text.classification}
             <Confidence value={result.category_confidence} />
           </CardTitle>
         </CardHeader>
@@ -133,8 +136,8 @@ export function SourceEvidence({ result }: { result: Result }) {
             <strong>{categoryLabel(result.category)}</strong>
             <Badge variant="secondary">
               {result.classifier_path === "gemini_fallback"
-                ? "Gemini fallback"
-                : humanize(result.classifier_path || "Unavailable")}
+                ? text.geminiFallback
+                : humanize(result.classifier_path || text.unavailable)}
             </Badge>
           </div>
           <div className="probability-list">
@@ -152,7 +155,7 @@ export function SourceEvidence({ result }: { result: Result }) {
               ))}
           </div>
           <p className="field-help">
-            Confidence is a model signal, not a guarantee of correctness.
+            {text.confidenceHelp}
           </p>
         </CardContent>
       </Card>
@@ -160,7 +163,7 @@ export function SourceEvidence({ result }: { result: Result }) {
         <CardHeader>
           <CardTitle className="section-title">
             <FileSearch size={17} />
-            Transaction evidence
+            {text.transaction}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -178,8 +181,8 @@ export function SourceEvidence({ result }: { result: Result }) {
           ) : (
             <p className="muted">
               {result.lookup_status === "not_applicable"
-                ? "This issue does not require a transaction lookup."
-                : "No matched transaction is available. Investigate before confirming transaction details."}
+                ? text.lookupSkipped
+                : text.lookupMissing}
             </p>
           )}
         </CardContent>

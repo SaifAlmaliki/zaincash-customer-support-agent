@@ -1,3 +1,5 @@
+import { getCopy, getLocale } from "@/lib/locale"
+
 export const categories: Record<string, string> = {
   failed_transfer: "Failed transfer",
   wrong_recipient: "Wrong recipient",
@@ -21,20 +23,27 @@ export const teams = [
   "Tech Support",
   "General Care",
 ]
-export const categoryLabel = (id: string | null) =>
-  id ? categories[id] || id.replaceAll("_", " ") : "Unclassified"
+export const categoryLabel = (id: string | null) => {
+  const labels = getCopy().categories as Record<string, string>
+  return id ? labels[id] || categories[id] || id.replaceAll("_", " ") : getCopy().common.unclassified
+}
+export const teamLabel = (id: string | null | undefined) => {
+  if (!id) return getCopy().common.unassigned
+  const labels = getCopy().teams as Record<string, string>
+  return labels[id] || id
+}
 export const humanize = (text: string) =>
   text.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase())
 export const percentage = (value: number | null | undefined) =>
   value == null ? "—" : `${Math.round(value * 100)}%`
 export const dateLabel = (value: string) =>
-  new Intl.DateTimeFormat("en-GB", {
+  new Intl.DateTimeFormat(getLocale() === "ar" ? "ar-IQ-u-nu-latn" : "en-GB", {
     day: "numeric",
     month: "short",
     timeZone: "Asia/Baghdad",
   }).format(new Date(value))
 export const timeLabel = (value: string) =>
-  new Intl.DateTimeFormat("en-GB", {
+  new Intl.DateTimeFormat(getLocale() === "ar" ? "ar-IQ-u-nu-latn" : "en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Asia/Baghdad",

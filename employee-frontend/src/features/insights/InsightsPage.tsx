@@ -14,10 +14,12 @@ import {
 } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
+import { useCopy } from "@/lib/locale"
 import { categoryLabel, dateLabel, downloadJson, humanize } from "@/lib/format"
 import type { Insights } from "@/lib/types"
 
 export function InsightsPage() {
+  const copy = useCopy()
   const workspace = useWorkspace()
   const query = useResource<Insights>("/insights", workspace.revision)
   const counts = query.data?.categories || {}
@@ -28,8 +30,8 @@ export function InsightsPage() {
   return (
     <>
       <PageHeader
-        title="Weekly insights"
-        description="Spot recurring issues and understand where your team’s time goes."
+        title={copy.pages.insightsTitle}
+        description={copy.pages.insightsDescription}
       >
         <Button
           variant="outline"

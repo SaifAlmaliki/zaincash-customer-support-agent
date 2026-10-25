@@ -1,4 +1,5 @@
 import { categoryLabel, humanize, percentage } from "@/lib/format"
+import { getCopy } from "@/lib/locale"
 import type { ExtractedField, Result, TraceEvent } from "@/lib/types"
 
 const FIELD_LABELS: Record<string, string> = {
@@ -156,6 +157,7 @@ export function checkFact(event: TraceEvent) {
 }
 
 export function toolFact(event: TraceEvent) {
+  const labels = getCopy().tools as Record<string, string>
   const name = text(event.tool) || "a lookup"
   const args = record(event.arguments)
   const detail =
@@ -164,9 +166,9 @@ export function toolFact(event: TraceEvent) {
     text(args?.phone) ||
     text(args?.service) ||
     (text(args?.reason) ? humanize(text(args?.reason)!) : null)
-  const action = `${TOOLS[name] || humanize(name)}${detail ? `: ${detail}` : ""}`
-  if (event.status === "ok") return `${action}. Completed.`
-  if (event.status === "cancelled") return `${action}. Cancelled.`
-  if (event.status) return `${action}. Did not complete.`
+  const action = `${labels[name] || TOOLS[name] || humanize(name)}${detail ? `: ${detail}` : ""}`
+  if (event.status === "ok") return `${action}. ${getCopy().trace.completed}.`
+  if (event.status === "cancelled") return `${action}. ${labels.cancelled}.`
+  if (event.status) return `${action}. ${labels.incomplete}.`
   return `${action}.`
 }

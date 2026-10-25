@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FilterSelect, PageHeader } from "@/components/shared/workspace-ui"
 import { useWorkspace } from "@/lib/workspace"
+import { useCopy } from "@/lib/locale"
 import { parseTicketFile } from "@/lib/imports"
 import { api } from "@/lib/api"
 import type { Mode, TicketInput } from "@/lib/types"
@@ -36,6 +37,7 @@ const exampleTickets: TicketInput[] = [
 ]
 
 export function NewBatchPage() {
+  const copy = useCopy()
   const workspace = useWorkspace(),
     navigate = useNavigate(),
     input = useRef<HTMLInputElement>(null)
@@ -96,8 +98,8 @@ export function NewBatchPage() {
         Pipeline runs
       </Link>
       <PageHeader
-        title="Prepare a new batch"
-        description="Bring the messages. Let the pipeline do the sorting."
+        title={copy.pages.newBatchTitle}
+        description={copy.pages.newBatchDescription}
       />
       <div className="new-batch-layout">
         <Card className="batch-input-card">

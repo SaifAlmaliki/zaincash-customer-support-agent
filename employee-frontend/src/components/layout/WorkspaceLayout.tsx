@@ -23,34 +23,37 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useWorkspace } from "@/lib/workspace"
+import { useCopy } from "@/lib/locale"
 import { LoadingState } from "@/components/shared/workspace-ui"
+import { LanguageToggle } from "@/components/layout/LanguageToggle"
 
 const navigation = [
-  { to: "/", label: "Support queue", icon: Inbox },
-  { to: "/runs", label: "Pipeline runs", icon: Layers3 },
-  { to: "/knowledge", label: "Knowledge base", icon: BookOpen },
-  { to: "/insights", label: "Weekly insights", icon: ChartNoAxesCombined },
-  { to: "/evaluation", label: "Evaluation", icon: FlaskConical },
-]
+  { to: "/", key: "queue", icon: Inbox },
+  { to: "/runs", key: "runs", icon: Layers3 },
+  { to: "/knowledge", key: "knowledge", icon: BookOpen },
+  { to: "/insights", key: "insights", icon: ChartNoAxesCombined },
+  { to: "/evaluation", key: "evaluation", icon: FlaskConical },
+] as const
 
 export function WorkspaceLayout() {
   const workspace = useWorkspace()
+  const copy = useCopy()
   const [menu, setMenu] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const section =
-    navigation.find(
-      (item) => item.to !== "/" && location.pathname.startsWith(item.to)
-    )?.label || "Support queue"
+  const current = navigation.find(
+    (item) => item.to !== "/" && location.pathname.startsWith(item.to)
+  )
+  const section = current ? copy.nav[current.key] : copy.nav.queue
   return (
     <div className="workspace-app">
       <a className="skip-link" href="#main-content">
-        Skip to content
+        {copy.layout.skip}
       </a>
       {menu && (
         <button
           className="sidebar-backdrop"
-          aria-label="Close navigation"
+          aria-label={copy.layout.closeNav}
           onClick={() => setMenu(false)}
         />
       )}
@@ -63,13 +66,13 @@ export function WorkspaceLayout() {
           </span>
           <div>
             zain<span>cash</span>
-            <small>Support workspace</small>
+            <small>{copy.layout.workspaceName}</small>
           </div>
           <Button
             className="mobile-only"
             variant="ghost"
             size="icon"
-            aria-label="Close navigation"
+            aria-label={copy.layout.closeNav}
             onClick={() => setMenu(false)}
           >
             <PanelLeftClose size={18} />
@@ -78,13 +81,13 @@ export function WorkspaceLayout() {
         <div className="workspace-switch">
           <span className="workspace-initials">ZC</span>
           <span>
-            <strong>Customer support</strong>
-            <small>Iraq workspace</small>
+            <strong>{copy.layout.customerSupport}</strong>
+            <small>{copy.layout.iraq}</small>
           </span>
           <ChevronDown size={15} />
         </div>
-        <div className="nav-section-label">Workspace</div>
-        <nav aria-label="Main navigation">
+        <div className="nav-section-label">{copy.layout.section}</div>
+        <nav aria-label={copy.layout.section}>
           {navigation.map((item) => (
             <NavLink
               end={item.to === "/"}
@@ -96,14 +99,14 @@ export function WorkspaceLayout() {
               }
             >
               <item.icon size={18} strokeWidth={1.7} />
-              <span>{item.label}</span>
+              <span>{copy.nav[item.key]}</span>
             </NavLink>
           ))}
         </nav>
         <div className="sidebar-note">
           <ShieldCheck size={19} />
-          <strong>AI prepares. You decide.</strong>
-          <p>Every response stays in review until a person approves it.</p>
+          <strong>{copy.layout.promiseTitle}</strong>
+          <p>{copy.layout.promiseBody}</p>
         </div>
         <div className="sidebar-bottom">
           <a
@@ -113,14 +116,14 @@ export function WorkspaceLayout() {
             className="nav-item"
           >
             <CircleHelp size={18} />
-            API documentation
+            {copy.layout.apiDocs}
             <ArrowUpRight size={14} />
           </a>
           <div className="hackathon-label">
             <span>06</span>
             <div>
-              <strong>Support pipeline automation</strong>
-              <small>Agentic AI Challenge Iraq</small>
+              <strong>{copy.layout.challengeTitle}</strong>
+              <small>{copy.layout.challengeMeta}</small>
             </div>
           </div>
         </div>
@@ -132,13 +135,13 @@ export function WorkspaceLayout() {
               className="mobile-only"
               variant="ghost"
               size="icon"
-              aria-label="Open navigation"
+              aria-label={copy.layout.openNav}
               aria-expanded={menu}
               onClick={() => setMenu(true)}
             >
               <Menu size={20} />
             </Button>
-            <span>Workspace</span>
+            <span>{copy.layout.section}</span>
             <ChevronRight size={14} />
             <strong>{section}</strong>
           </div>
@@ -148,10 +151,10 @@ export function WorkspaceLayout() {
             >
               <Radio size={13} />
               {workspace.connectionError
-                ? "API offline"
+                ? copy.layout.offline
                 : workspace.health
-                  ? "API connected"
-                  : "Connecting…"}
+                  ? copy.layout.connected
+                  : copy.layout.connecting}
             </span>
             <Tooltip>
               <TooltipTrigger
@@ -159,8 +162,9 @@ export function WorkspaceLayout() {
               >
                 SA
               </TooltipTrigger>
-              <TooltipContent>Local support reviewer</TooltipContent>
+              <TooltipContent>{copy.layout.reviewer}</TooltipContent>
             </Tooltip>
+            <LanguageToggle />
           </div>
         </header>
         <main id="main-content" className="workspace-content">
@@ -171,13 +175,13 @@ export function WorkspaceLayout() {
         <footer className="workspace-footer">
           <span>
             <ShieldCheck size={13} />
-            Human approval required for every response
+            {copy.layout.footerApproval}
           </span>
-          <span>Topic 06 · Built for Iraq</span>
+          <span>{copy.layout.footerTopic}</span>
         </footer>
         <Button
           className="mobile-new-batch"
-          aria-label="New batch"
+          aria-label={copy.layout.newBatch}
           onClick={() => navigate("/runs/new")}
         >
           <Plus size={20} />

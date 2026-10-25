@@ -46,14 +46,18 @@ import {
   categoryLabel,
   dateLabel,
   downloadJson,
+  teamLabel,
   teams,
   timeLabel,
 } from "@/lib/format"
+import { fill, useCopy } from "@/lib/locale"
 import type { Result } from "@/lib/types"
 
 const EMPTY_RESULTS: Result[] = []
 
 export function QueuePage() {
+  const copy = useCopy()
+  const text = copy.queue
   const workspace = useWorkspace(),
     navigate = useNavigate()
   const [params] = useSearchParams()
@@ -112,8 +116,8 @@ export function QueuePage() {
   return (
     <>
       <PageHeader
-        title={runId ? `Batch #${runId} · Support queue` : "Support queue"}
-        description="Less time sorting. More time helping people."
+        title={runId ? fill(text.batchTitle, { id: runId }) : text.title}
+        description={text.description}
       >
         <Button
           variant="outline"
@@ -127,38 +131,38 @@ export function QueuePage() {
           }
         >
           <Download size={16} />
-          Export results
+          {text.export}
         </Button>
         <Button size="lg" onClick={() => navigate("/runs/new")}>
           <Plus size={17} />
-          New batch
+          {text.newBatch}
         </Button>
       </PageHeader>
       <div className="metrics-grid">
         <Metric
-          label="Tickets in queue"
+          label={text.inQueue}
           value={counts.all}
-          detail="Latest result for each ticket"
+          detail={text.inQueueDetail}
           icon={<Inbox size={19} />}
         />
         <Metric
-          label="Ready for your review"
+          label={text.ready}
           value={counts.pending_review}
-          detail="Prepared for a support agent"
+          detail={text.readyDetail}
           icon={<CheckCheck size={19} />}
           tone="metric-blue"
         />
         <Metric
-          label="Need a closer look"
+          label={text.closer}
           value={counts.escalated}
-          detail="Escalated with a reason"
+          detail={text.closerDetail}
           icon={<CircleAlert size={19} />}
           tone="metric-amber"
         />
         <Metric
-          label="Human-approved"
+          label={text.approved}
           value={counts.approved}
-          detail="Reviewed, never auto-sent"
+          detail={text.approvedDetail}
           icon={<ShieldCheck size={19} />}
           tone="metric-green"
         />
@@ -168,14 +172,14 @@ export function QueuePage() {
       )}
       <div className="queue-layout">
         <Card className="queue-card">
-          <div className="queue-tabs" role="tablist" aria-label="Queue status">
+          <div className="queue-tabs" role="tablist" aria-label={text.tabs}>
             {(
               [
-                ["all", "All tickets"],
-                ["pending_review", "Needs review"],
-                ["escalated", "Escalated"],
-                ["processing", "Processing"],
-                ["approved", "Approved"],
+                ["all", text.all],
+                ["pending_review", copy.status.pending_review],
+                ["escalated", copy.status.escalated],
+                ["processing", copy.status.processing],
+                ["approved", copy.status.approved],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -197,8 +201,8 @@ export function QueuePage() {
             <div className="input-with-icon">
               <Search size={16} />
               <Input
-                aria-label="Search tickets"
-                placeholder="Search ticket ID or message…"
+                aria-label={text.search}
+                placeholder={text.searchPlaceholder}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value)
@@ -207,11 +211,11 @@ export function QueuePage() {
               />
             </div>
             <FilterSelect
-              label="Filter by team"
+              label={text.filterTeam}
               value={team}
               options={[
-                { value: "all", label: "All teams" },
-                ...teams.map((value) => ({ value, label: value })),
+                { value: "all", label: text.allTeams },
+                ...teams.map((value) => ({ value, label: teamLabel(value) })),
               ]}
               onChange={(value) => {
                 setTeam(value)
@@ -219,13 +223,13 @@ export function QueuePage() {
               }}
             />
             <FilterSelect
-              label="Filter by category"
+              label={text.filterCategory}
               value={category}
               options={[
-                { value: "all", label: "All categories" },
-                ...Object.entries(categories).map(([value, label]) => ({
+                { value: "all", label: text.allCategories },
+                ...Object.keys(categories).map((value) => ({
                   value,
-                  label,
+                  label: categoryLabel(value),
                 })),
               ]}
               onChange={(value) => {
@@ -237,7 +241,7 @@ export function QueuePage() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Clear filters"
+                aria-label={text.clear}
                 onClick={() => {
                   setSearch("")
                   setTeam("all")
@@ -254,11 +258,11 @@ export function QueuePage() {
             <Table className="ticket-table">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ticket / Customer</TableHead>
-                  <TableHead>Issue & message</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Confidence</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{text.colTicket}</TableHead>
+                  <TableHead>{text.colIssue}</TableHead>
+                  <TableHead>{text.colPriority}</TableHead>
+                  <TableHead>{text.colConfidence}</TableHead>
+                  <TableHead>{text.colStatus}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -304,7 +308,7 @@ export function QueuePage() {
                           ) : (
                             <Smartphone size={11} />
                           )}
-                          {row.team || "Unassigned"}
+                          {teamLabel(row.team)}
                         </small>
                       </div>
                     </TableCell>
@@ -323,21 +327,13 @@ export function QueuePage() {
             </Table>
           ) : (
             <EmptyState
-              title={
-                rows.length
-                  ? "No tickets match these filters"
-                  : "Your next batch starts here"
-              }
-              description={
-                rows.length
-                  ? "Try a different category, team or search term."
-                  : "Upload support tickets to classify and route them."
-              }
+              title={rows.length ? text.noMatch : text.emptyTitle}
+              description={rows.length ? text.noMatchDetail : text.emptyDetail}
             >
               {!rows.length && (
                 <Button onClick={() => navigate("/runs/new")}>
                   <Plus size={16} />
-                  Add tickets
+                  {text.add}
                 </Button>
               )}
             </EmptyState>
@@ -345,18 +341,22 @@ export function QueuePage() {
           <div className="table-footer">
             <span>
               {filtered.length
-                ? `${currentPage * 8 + 1}–${Math.min((currentPage + 1) * 8, filtered.length)} of ${filtered.length} tickets`
-                : "0 tickets"}
+                ? fill(text.range, {
+                    from: currentPage * 8 + 1,
+                    to: Math.min((currentPage + 1) * 8, filtered.length),
+                    total: filtered.length,
+                  })
+                : text.none}
             </span>
             <div>
               <span>
-                Page {currentPage + 1} of {lastPage + 1}
+                {fill(text.page, { page: currentPage + 1, pages: lastPage + 1 })}
               </span>
               <Button
                 variant="outline"
                 size="icon-sm"
                 disabled={currentPage === 0}
-                aria-label="Previous page"
+                aria-label={text.previous}
                 onClick={() => setPage(currentPage - 1)}
               >
                 <ChevronLeft size={15} />
@@ -365,7 +365,7 @@ export function QueuePage() {
                 variant="outline"
                 size="icon-sm"
                 disabled={currentPage >= lastPage}
-                aria-label="Next page"
+                aria-label={text.next}
                 onClick={() => setPage(currentPage + 1)}
               >
                 <ChevronRight size={15} />
@@ -378,11 +378,11 @@ export function QueuePage() {
             <CardHeader>
               <CardTitle className="aside-title">
                 <SlidersHorizontal size={16} />
-                Triage overview
+                {text.triage}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="muted small">What people need help with</p>
+              <p className="muted small">{text.needs}</p>
               <div className="category-bars">
                 {distribution.length ? (
                   distribution.map(([id, count], index) => (
@@ -403,19 +403,19 @@ export function QueuePage() {
                   ))
                 ) : (
                   <p className="muted small">
-                    Category totals appear after your first batch.
+                    {text.emptyCategories}
                   </p>
                 )}
               </div>
               <Link to="/insights" className="text-link">
-                View insights <ArrowUpRight size={14} />
+                {text.insights} <ArrowUpRight size={14} />
               </Link>
             </CardContent>
           </Card>
           <Card className="attention-card">
             <CardHeader>
               <CardTitle className="aside-title">
-                <CircleAlert size={17} />A human touch needed
+                <CircleAlert size={17} />{text.attention}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -432,21 +432,20 @@ export function QueuePage() {
                     <strong>{categoryLabel(row.category)}</strong>
                     <small>
                       {row.escalation_reasons.includes("fraud_suspected")
-                        ? "Possible fraud · prioritize review"
-                        : "Low confidence · confirm the issue"}
+                        ? text.fraud
+                        : text.lowConfidence}
                     </small>
                   </Link>
                 ))}
               {counts.escalated === 0 && (
-                <p className="muted small">No escalations in this queue.</p>
+                <p className="muted small">{text.noEscalations}</p>
               )}
             </CardContent>
           </Card>
           <div className="human-note">
             <ShieldCheck size={21} />
             <p>
-              <strong>Always a person in the loop.</strong> Replies are prepared
-              for review. Approval is a human decision.
+              <strong>{text.humanTitle}</strong> {text.humanBody}
             </p>
           </div>
         </aside>
