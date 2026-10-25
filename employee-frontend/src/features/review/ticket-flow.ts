@@ -1,5 +1,6 @@
-import type { Result } from "../../lib/types"
-import { isArabicMessage, sentence } from "./ticket-flow-copy"
+import type { ExtractedField, Result } from "../../lib/types"
+import { categoryLabel, humanize, percentage } from "../../lib/format"
+import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, sentence, toolLine } from "./ticket-flow-copy"
 import { reviewEvidence } from "./review-evidence"
 
 export const STEP_ORDER = [
@@ -89,6 +90,78 @@ function defaultSelected(route: Route): FlowStepId {
   return "draft"
 }
 
+const FIELD_KEYS = ["txn_ref", "amount", "date", "phone"] as const
+
+function fieldValue(field: ExtractedField | undefined, arabic: boolean): string | null {
+  if (!field) return null
+  if (field.value == null || field.value === "") return sentence("notStated", arabic)
+  if (typeof field.value === "number" || field.currency) {
+    const amount = Number(field.value)
+    const shown = Number.isFinite(amount) ? amount.toLocaleString("en-US") : String(field.value)
+    return `${shown} ${field.currency || "IQD"}`
+  }
+  return String(field.value)
+}
+
+function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): { received: string; produced: string; events: string[] } {
+  const category = result.category ? categoryLabel(result.category) : sentence("noCategory", arabic)
+  const confidence = percentage(result.category_confidence)
+  const priority = result.priority || sentence("noPriority", arabic)
+  const team = result.team || sentence("noTeam", arabic)
+  if (id === "prepare") {
+    const length = result.ticket.text.trim().length
+    const received = length
+      ? sentence("prepareReceived", arabic, { channel: channelName(result.ticket.channel, arabic), length: length.toLocaleString("en-US") })
+      : sentence("prepareEmpty", arabic)
+    return { received, produced: sentence("prepareProduced", arabic), events: [] }
+  }
+  if (id === "jev_classify") {
+    const produced = route === "straight"
+      ? sentence("jevSure", arabic, { category, confidence, priority })
+      : sentence("jevUnsure", arabic)
+    return { received: sentence("cleaned", arabic), produced, events: [] }
+  }
+  if (id === "gemini_classify") {
+    const received = route === "gemini_direct" || route === "gemini_unknown"
+      ? sentence("cleaned", arabic)
+      : sentence("geminiAfterJev", arabic)
+    return { received, produced: sentence("classified", arabic, { category, confidence, priority }), events: [] }
+  }
+  if (id === "extract") {
+    const events = FIELD_KEYS.map((key) => {
+      const label = fieldLabel(key, arabic)
+      const field = result.extracted[key]
+      const value = fieldValue(field, arabic)
+      if (value == null) return sentence("fieldMissing", arabic, { label })
+      return field?.span
+        ? sentence("fieldFrom", arabic, { label, value, span: field.span })
+        : sentence("fieldLine", arabic, { label, value })
+    })
+    return { received: sentence("extractReceived", arabic, { category }), produced: events[events.length - 1], events: events.slice(0, -1) }
+  }
+  if (id === "lookup") {
+    return { received: sentence("lookupReceived", arabic), produced: lookupSentence(result.lookup_status, arabic), events: [] }
+  }
+  if (id === "decide") {
+    const reasons = result.escalation_reasons.map(humanize).join(", ")
+    const produced = result.escalated
+      ? sentence("held", arabic, { reasons: reasons || sentence("notRecorded", arabic) })
+      : `${sentence("assigned", arabic, { team })} ${sentence("noEscalation", arabic)}`
+    return { received: sentence("decideReceived", arabic), produced, events: [] }
+  }
+  const evidence = reviewEvidence(result)
+  const events = [
+    ...evidence.tools.map((event) => toolLine(event, arabic)),
+    ...checkLines(evidence.otherEvents, arabic),
+  ]
+  const citations = result.citations?.length ?? 0
+  const produced = [
+    result.draft_text ? sentence("draftSaved", arabic) : sentence("draftMissing", arabic),
+    citations === 1 ? sentence("citationOne", arabic) : sentence("citations", arabic, { count: citations }),
+  ].join(" ")
+  return { received: sentence("draftReceived", arabic, { category, team }), produced, events }
+}
+
 export function buildTicketFlow(result: Result): TicketFlow {
   const arabic = isArabicMessage(result.ticket.text)
   const route = routeOf(result)
@@ -101,9 +174,11 @@ export function buildTicketFlow(result: Result): TicketFlow {
         ? "unrecorded"
         : used.has(id) ? "used" : "unused"
     const reason = state === "unused" ? unusedReason(id, route, arabic) : null
-    const received = state === "used" ? sentence("recorded", arabic) : sentence(state === "unused" ? "notAsked" : "notRecordedStep", arabic)
-    const produced = reason ?? (state === "used" ? sentence("recorded", arabic) : sentence("notRecordedStep", arabic))
-    return { id, name: NAMES[id], state, reason, received, produced, events: [] }
+    const told = state === "used" ? story(id, result, arabic, route) : null
+    const received = told?.received ?? sentence(state === "unused" ? "notAsked" : "notRecordedStep", arabic)
+    const produced = reason ?? told?.produced ?? sentence("notRecordedStep", arabic)
+    const events = told?.events ?? []
+    return { id, name: NAMES[id], state, reason, received, produced, events }
   })
   if (result.status === "failed") {
     const stages = stageNodes(result)

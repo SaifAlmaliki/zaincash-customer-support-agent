@@ -162,3 +162,30 @@ it("uses the run-stopped sentence on Draft when a failed Jev path has no stage e
   expect(step(flow, "draft").produced).toBe("The run stopped.")
   expect(JSON.stringify(flow)).not.toContain("PIN 1234")
 })
+
+it("describes Prepare without pasting the customer message", () => {
+  const flow = buildTicketFlow(result({}, { text: "The transfer failed", channel: "whatsapp" }))
+  expect(step(flow, "prepare").received).toBe("Read the WhatsApp message (19 characters).")
+  expect(step(flow, "prepare").produced).toBe("Arabic digits were converted to 0–9, and card numbers were hidden.")
+  expect(step(flow, "prepare").received).not.toContain("The transfer failed")
+})
+
+it("says a missing extracted field was not recorded", () => {
+  const flow = buildTicketFlow(result({ extracted: {} }))
+  expect(step(flow, "extract").events).toContain("Transaction reference: This field was not recorded.")
+})
+
+it("uses Arabic received and produced lines when the message is Arabic", () => {
+  const flow = buildTicketFlow(result({}, { text: "التحويل لم يصل", channel: "whatsapp" }))
+  expect(flow.arabic).toBe(true)
+  expect(step(flow, "prepare").received).toContain("واتساب")
+  expect(step(flow, "prepare").produced).toBe("حُوّلت الأرقام العربية إلى 0–9، وأُخفيت أرقام البطاقات.")
+})
+
+it("omits unsafe tool arguments from the Draft events", () => {
+  const flow = buildTicketFlow(result({
+    agent_trace: [{ kind: "tool", tool: "search_knowledge_base", status: "ok", arguments: { query: "refund", password: "secret" } }],
+  }))
+  expect(step(flow, "draft").events.join("\n")).toContain("Searched the knowledge base: refund. Completed.")
+  expect(step(flow, "draft").events.join("\n")).not.toContain("secret")
+})
