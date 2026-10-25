@@ -119,6 +119,18 @@ it("opens Prepare for an empty message and stops the later steps", () => {
   }
 })
 
+it("describes the Empty ticket detail without mentioning a saved reply or policy passages", () => {
+  const flow = buildTicketFlow(result({ classifier_path: "jev", escalation_reasons: ["empty_ticket"] }, { text: "  " }))
+  const emptyStep = step(flow, "escalate_empty")
+  const detail = detailChart(flow, "escalate_empty")
+  expect(emptyStep.state).toBe("used")
+  expect(emptyStep.received).toBe("The customer message was empty.")
+  expect(emptyStep.produced).toBe("Held for a person because the message was empty.")
+  expect(detail).not.toContain("reply")
+  expect(detail).not.toContain("policy passage")
+  expect(detail).not.toContain("policy passages")
+})
+
 it("opens Prepare when Gemini was asked directly", () => {
   const flow = buildTicketFlow(result({
     classifier_path: "gemini",
@@ -130,6 +142,15 @@ it("opens Prepare when Gemini was asked directly", () => {
 
 it("does not invent a Jev skip reason when a Gemini path has no trace", () => {
   const flow = buildTicketFlow(result({ classifier_path: "gemini", agent_trace: [] }))
+  expect(flow.selectedId).toBe("draft")
+  expect(step(flow, "jev_classify")).toMatchObject({ state: "unrecorded", reason: null })
+})
+
+it("marks Jev unrecorded and opens Draft when a Gemini path trace has only a prepare stage", () => {
+  const flow = buildTicketFlow(result({
+    classifier_path: "gemini",
+    agent_trace: [{ kind: "stage", node: "prepare" }],
+  }))
   expect(flow.selectedId).toBe("draft")
   expect(step(flow, "jev_classify")).toMatchObject({ state: "unrecorded", reason: null })
 })
@@ -147,13 +168,38 @@ it("stops a failed run at its last stage event and hides the raw error", () => {
   const flow = buildTicketFlow(result({
     status: "failed",
     classifier_path: "jev",
-    agent_trace: [{ kind: "stage", node: "extract" }],
+    agent_trace: [
+      { kind: "stage", node: "extract" },
+      { kind: "tool", tool: "lookup_transaction", status: "ok", arguments: { txn_ref: "ZC-1044" } },
+    ],
   }))
   expect(flow.selectedId).toBe("extract")
   expect(step(flow, "extract").produced).toBe("The run stopped.")
   expect(step(flow, "lookup")).toMatchObject({ state: "unused", reason: "The run stopped." })
-  expect(step(flow, "draft").state).toBe("unused")
+  expect(step(flow, "draft")).toMatchObject({
+    state: "unused",
+    reason: "The run stopped.",
+    received: "This step was not asked.",
+    produced: "The run stopped.",
+    events: [],
+  })
   expect(JSON.stringify(flow)).not.toContain("PIN 1234")
+})
+
+it("marks a forced-used stop step as not recorded when it was not used before failure", () => {
+  const flow = buildTicketFlow(result({
+    status: "failed",
+    classifier_path: "jev",
+    agent_trace: [{ kind: "stage", node: "gemini_classify" }],
+  }))
+  expect(flow.selectedId).toBe("gemini_classify")
+  expect(step(flow, "gemini_classify")).toMatchObject({
+    state: "used",
+    reason: null,
+    received: "This step was not recorded.",
+    produced: "The run stopped.",
+    events: [],
+  })
 })
 
 it("uses the run-stopped sentence on Draft when a failed Jev path has no stage events", () => {
@@ -176,10 +222,21 @@ it("says a missing extracted field was not recorded", () => {
 })
 
 it("uses Arabic received and produced lines when the message is Arabic", () => {
-  const flow = buildTicketFlow(result({}, { text: "التحويل لم يصل", channel: "whatsapp" }))
+  const flow = buildTicketFlow(result({
+    agent_trace: [
+      { kind: "tool", tool: "lookup_transaction", status: "ok", arguments: { txn_ref: "ZC-1044" } },
+      { kind: "draft", status: "rejected", reasons: ["missing_citation"] },
+    ],
+  }, { text: "التحويل لم يصل", channel: "whatsapp" }))
   expect(flow.arabic).toBe(true)
   expect(step(flow, "prepare").received).toContain("واتساب")
   expect(step(flow, "prepare").produced).toBe("حُوّلت الأرقام العربية إلى 0–9، وأُخفيت أرقام البطاقات.")
+  const draftEvents = step(flow, "draft").events.join("\n")
+  expect(draftEvents).not.toContain("Looked up")
+  expect(draftEvents).not.toContain("Completed")
+  expect(draftEvents).not.toContain("Draft ")
+  expect(draftEvents).toContain("ZC-1044")
+  expect(draftEvents).toContain("اكتمل")
 })
 
 it("omits unsafe tool arguments from the Draft events", () => {
@@ -190,9 +247,15 @@ it("omits unsafe tool arguments from the Draft events", () => {
   expect(step(flow, "draft").events.join("\n")).not.toContain("secret")
 })
 
-it("escapes text that could break a Mermaid node", () => {
+it("escapes text that could break a Mermaid node or inject a directive", () => {
   expect(mermaidText('Say "hi" <script>')).toBe("Say 'hi' script")
   expect(mermaidText("a[b]")).toBe("a(b)")
+  const directive = mermaidText("%%{init: {'theme':'dark'}}%%\r\nHello")
+  expect(directive).not.toContain("%")
+  expect(directive).not.toContain("{")
+  expect(directive).not.toContain("}")
+  expect(directive).not.toContain("\r")
+  expect(directive).not.toContain("\n")
 })
 
 it("draws the full pipeline with the taken step, the skip reason, and the selection", () => {
@@ -201,7 +264,8 @@ it("draws the full pipeline with the taken step, the skip reason, and the select
   expect(chart.startsWith("flowchart TD")).toBe(true)
   expect(chart).toContain("class gemini_classify unused")
   expect(chart).toContain("Jev was already sure.")
-  expect(chart).toContain("class draft used,selected")
+  expect(chart).toContain("  class draft used\n  class draft selected")
+  expect(chart).not.toContain("used,selected")
   expect(chart).toContain("jev_classify --> extract")
 })
 

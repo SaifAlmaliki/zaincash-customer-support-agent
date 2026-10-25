@@ -21,6 +21,8 @@ const EN = {
   prepareReceived: "Read the {channel} message ({length} characters).",
   prepareEmpty: "No customer message was recorded for this step.",
   prepareProduced: "Arabic digits were converted to 0–9, and card numbers were hidden.",
+  emptyReceived: "The customer message was empty.",
+  emptyProduced: "Held for a person because the message was empty.",
   cleaned: "Received the cleaned message.",
   jevSure: "Jev classified this ticket. Gemini was not asked. {category}, {confidence} confidence, priority {priority}.",
   jevUnsure: "Jev was unsure, so Gemini was asked.",
@@ -48,9 +50,13 @@ const EN = {
   credentialUnrecorded: "No credential check was recorded.",
   safetyFlagged: "Safety checks flagged {findings}.",
   safetyClear: "No safety-check findings were recorded.",
+  draftCheckReasons: "Draft {status}: {reasons}.",
+  draftCheckPlain: "Draft {status}.",
+  draftStatusUnknown: "status unknown",
   noPriority: "no priority",
   noTeam: "no team",
   noCategory: "Unclassified",
+  toolFallback: "Ran {name}",
   toolOk: "{action}. Completed.",
   toolCancelled: "{action}. Cancelled.",
   toolIncomplete: "{action}. Did not complete.",
@@ -78,6 +84,8 @@ const AR: Record<keyof typeof EN, string> = {
   prepareReceived: "قُرئت رسالة {channel} ({length} حرفًا).",
   prepareEmpty: "لم تُسجَّل رسالة للعميل في هذه الخطوة.",
   prepareProduced: "حُوّلت الأرقام العربية إلى 0–9، وأُخفيت أرقام البطاقات.",
+  emptyReceived: "كانت رسالة العميل فارغة.",
+  emptyProduced: "أُبقيت لموظف لأن الرسالة كانت فارغة.",
   cleaned: "استلم الرسالة بعد تنظيفها.",
   jevSure: "صنّف جيف هذه التذكرة. لم يُسأل جيميناي. {category}، ثقة {confidence}، أولوية {priority}.",
   jevUnsure: "جيف لم يكن متأكدًا، لذلك سُئل جيميناي.",
@@ -105,9 +113,13 @@ const AR: Record<keyof typeof EN, string> = {
   credentialUnrecorded: "لم يُسجَّل فحص بيانات الدخول.",
   safetyFlagged: "فحوصات السلامة أشارت إلى {findings}.",
   safetyClear: "لم تُسجَّل ملاحظات من فحوصات السلامة.",
+  draftCheckReasons: "فحص المسودة ({status}): {reasons}.",
+  draftCheckPlain: "فحص المسودة ({status}).",
+  draftStatusUnknown: "حالة غير معروفة",
   noPriority: "بدون أولوية",
   noTeam: "بدون فريق",
   noCategory: "بدون تصنيف",
+  toolFallback: "شغّل الأداة {name}",
   toolOk: "{action}. اكتمل.",
   toolCancelled: "{action}. أُلغي.",
   toolIncomplete: "{action}. لم يكتمل.",
@@ -161,15 +173,15 @@ export function lookupSentence(status: string | null, arabic: boolean): string {
   return id ? sentence(id, arabic) : humanize(status)
 }
 
-const TOOLS: Record<string, string> = {
-  lookup_transaction: "Looked up a transaction reference",
-  search_transactions: "Searched transactions",
-  get_customer_recent_transactions: "Listed recent transactions",
-  get_customer_ticket_history: "Checked earlier tickets for this customer",
-  check_service_status: "Checked whether a service was disrupted",
-  search_knowledge_base: "Searched the knowledge base",
-  flag_for_human: "Flagged the ticket for a person",
-  submit_draft: "Submitted a draft reply",
+const TOOLS: Record<string, [string, string]> = {
+  lookup_transaction: ["Looked up a transaction reference", "بحث عن رقم مرجعي للتحويل"],
+  search_transactions: ["Searched transactions", "بحث في التحويلات"],
+  get_customer_recent_transactions: ["Listed recent transactions", "عرض آخر التحويلات"],
+  get_customer_ticket_history: ["Checked earlier tickets for this customer", "راجع التذاكر السابقة لهذا العميل"],
+  check_service_status: ["Checked whether a service was disrupted", "تحقق من حالة الخدمة"],
+  search_knowledge_base: ["Searched the knowledge base", "بحث في قاعدة المعرفة"],
+  flag_for_human: ["Flagged the ticket for a person", "أحال التذكرة إلى موظف"],
+  submit_draft: ["Submitted a draft reply", "أرسل مسودة رد"],
 }
 
 const SAFE_ARGS = ["query", "txn_ref", "phone", "service", "reason"] as const
@@ -181,7 +193,9 @@ export function toolLine(event: { tool?: string; status?: string; arguments?: un
   const key = SAFE_ARGS.find((item) => typeof record[item] === "string" && String(record[item]).trim())
   const raw = key ? String(record[key]).trim() : ""
   const detail = key === "reason" && raw ? humanize(raw) : raw
-  const action = `${TOOLS[name] || humanize(name)}${detail ? `: ${detail}` : ""}`
+  const pair = TOOLS[name]
+  const base = pair ? (arabic ? pair[1] : pair[0]) : (arabic ? sentence("toolFallback", true, { name }) : humanize(name))
+  const action = `${base}${detail ? `: ${detail}` : ""}`
   if (event.status === "ok") return sentence("toolOk", arabic, { action })
   if (event.status === "cancelled") return sentence("toolCancelled", arabic, { action })
   if (event.status) return sentence("toolIncomplete", arabic, { action })
@@ -212,8 +226,8 @@ export function checkLines(
     }
     if (event.kind === "draft") {
       const reasons = texts(event.reasons).map(humanize).join(", ")
-      const status = humanize(event.status || "status unknown").toLowerCase()
-      return [reasons ? `Draft ${status}: ${reasons}.` : `Draft ${status}.`]
+      const status = event.status ? humanize(event.status).toLowerCase() : sentence("draftStatusUnknown", arabic)
+      return [reasons ? sentence("draftCheckReasons", arabic, { status, reasons }) : sentence("draftCheckPlain", arabic, { status })]
     }
     return []
   })

@@ -60,7 +60,8 @@ function routeOf(result: Result): Route {
   if (result.classifier_path === "jev") return "straight"
   if (result.classifier_path === "gemini_fallback" || result.classifier_path === "disagreement") return "cascade"
   if (result.classifier_path === "gemini") {
-    return stageNodes(result).length === 0 ? "gemini_unknown" : "gemini_direct"
+    const stages = stageNodes(result)
+    return stages.includes("gemini_classify") && !stages.includes("jev_classify") ? "gemini_direct" : "gemini_unknown"
   }
   const stages = stageNodes(result)
   if (stages.includes("jev_classify") && stages.includes("gemini_classify")) return "cascade"
@@ -114,6 +115,9 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
       ? sentence("prepareReceived", arabic, { channel: channelName(result.ticket.channel, arabic), length: length.toLocaleString("en-US") })
       : sentence("prepareEmpty", arabic)
     return { received, produced: sentence("prepareProduced", arabic), events: [] }
+  }
+  if (id === "escalate_empty") {
+    return { received: sentence("emptyReceived", arabic), produced: sentence("emptyProduced", arabic), events: [] }
   }
   if (id === "jev_classify") {
     const produced = route === "straight"
@@ -192,12 +196,17 @@ export function buildTicketFlow(result: Result): TicketFlow {
       for (const item of steps) {
         const itemIndex = STEP_ORDER.indexOf(item.id)
         if (item.id === last) {
+          const wasUsed = item.state === "used"
           item.state = "used"
           item.reason = null
+          item.received = wasUsed ? story(item.id, result, arabic, route).received : sentence("notRecordedStep", arabic)
+          if (!wasUsed) item.events = []
           item.produced = sentence("runStopped", arabic)
         } else if (itemIndex > index) {
           item.state = "unused"
           item.reason = sentence("runStopped", arabic)
+          item.received = sentence("notAsked", arabic)
+          item.events = []
           item.produced = sentence("runStopped", arabic)
         }
       }
@@ -212,7 +221,11 @@ export function mermaidText(value: string): string {
     .replaceAll('"', "'")
     .replaceAll("[", "(")
     .replaceAll("]", ")")
+    .replaceAll("{", "(")
+    .replaceAll("}", ")")
+    .replaceAll("%", "")
     .replaceAll("`", "'")
+    .replaceAll("\r", " ")
     .replaceAll("\n", " ")
 }
 
@@ -245,8 +258,8 @@ export function pipelineChart(flow: TicketFlow, selectedId: FlowStepId): string 
     lines.push(`  ${byId.get("jev_classify")?.state === "used" ? "jev_classify" : "prepare"} -.-> gemini_classify`)
   }
   for (const step of flow.steps) {
-    const selected = step.id === selectedId ? ",selected" : ""
-    lines.push(`  class ${step.id} ${step.state}${selected}`)
+    lines.push(`  class ${step.id} ${step.state}`)
+    if (step.id === selectedId) lines.push(`  class ${step.id} selected`)
   }
   return lines.join("\n")
 }

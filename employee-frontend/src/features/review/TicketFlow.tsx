@@ -28,11 +28,14 @@ export function TicketFlow({ result }: { result: Result }) {
     ;(async () => {
       try {
         const mermaid = (await import("mermaid")).default
+        const fontFamily = current.arabic
+          ? 'Tajawal, "Plus Jakarta Sans Variable", sans-serif'
+          : '"Plus Jakarta Sans Variable", sans-serif'
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "strict",
           htmlLabels: false,
-          fontFamily: current.arabic ? "Tajawal, sans-serif" : "Geist Variable, sans-serif",
+          fontFamily,
         })
         const pipeline = await mermaid.render(`ticket-flow-pipeline-${suffix}`, pipelineChart(current, selectedId))
         const detail = await mermaid.render(`ticket-flow-detail-${suffix}`, detailChart(current, selectedId))
@@ -49,7 +52,9 @@ export function TicketFlow({ result }: { result: Result }) {
       cancelled = true
     }
   }, [result, selectedId])
-  const font = flow.arabic ? "Tajawal, sans-serif" : undefined
+  const font = flow.arabic
+    ? 'Tajawal, "Plus Jakarta Sans Variable", sans-serif'
+    : '"Plus Jakarta Sans Variable", sans-serif'
   return (
     <Card>
       <CardHeader>
