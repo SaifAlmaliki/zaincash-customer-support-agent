@@ -205,3 +205,57 @@ export function buildTicketFlow(result: Result): TicketFlow {
   }
   return { arabic, selectedId, steps }
 }
+
+export function mermaidText(value: string): string {
+  return value
+    .replace(/[<>]/g, "")
+    .replaceAll('"', "'")
+    .replaceAll("[", "(")
+    .replaceAll("]", ")")
+    .replaceAll("`", "'")
+    .replaceAll("\n", " ")
+}
+
+function nodeLabel(step: FlowStep, arabic: boolean): string {
+  if (step.state === "used") return step.name
+  if (step.state === "unrecorded") return `${step.name} — ${sentence("notRecorded", arabic)}`
+  return `${step.name} — ${sentence("notUsed", arabic)} — ${step.reason ?? sentence("notRecorded", arabic)}`
+}
+
+export function pipelineChart(flow: TicketFlow, selectedId: FlowStepId): string {
+  const byId = new Map(flow.steps.map((step) => [step.id, step]))
+  const lines = [
+    "flowchart TD",
+    "  classDef used fill:#eef7f0,stroke:#3d7a4a,color:#173222",
+    "  classDef unused fill:#f7f7f8,stroke:#999999,color:#666666,stroke-dasharray:4 3",
+    "  classDef unrecorded fill:#ffffff,stroke:#bbbbbb,color:#666666",
+    "  classDef selected stroke-width:3px,stroke:#1d4e89",
+  ]
+  for (const step of flow.steps) {
+    lines.push(`  ${step.id}["${mermaidText(nodeLabel(step, flow.arabic))}"]`)
+  }
+  const used = flow.steps.filter((step) => step.state === "used").map((step) => step.id)
+  for (let index = 0; index < used.length - 1; index += 1) {
+    lines.push(`  ${used[index]} --> ${used[index + 1]}`)
+  }
+  const unused = (id: FlowStepId) => byId.get(id)?.state === "unused"
+  if (unused("escalate_empty")) lines.push("  prepare -.-> escalate_empty")
+  if (unused("jev_classify")) lines.push("  prepare -.-> jev_classify")
+  if (unused("gemini_classify")) {
+    lines.push(`  ${byId.get("jev_classify")?.state === "used" ? "jev_classify" : "prepare"} -.-> gemini_classify`)
+  }
+  for (const step of flow.steps) {
+    const selected = step.id === selectedId ? ",selected" : ""
+    lines.push(`  class ${step.id} ${step.state}${selected}`)
+  }
+  return lines.join("\n")
+}
+
+export function detailChart(flow: TicketFlow, selectedId: FlowStepId): string {
+  const step = flow.steps.find((item) => item.id === selectedId) ?? flow.steps[0]
+  const parts = [step.received, ...step.events, step.produced]
+  const lines = ["flowchart TD"]
+  parts.forEach((part, index) => lines.push(`  n${index}["${mermaidText(part)}"]`))
+  for (let index = 0; index < parts.length - 1; index += 1) lines.push(`  n${index} --> n${index + 1}`)
+  return lines.join("\n")
+}

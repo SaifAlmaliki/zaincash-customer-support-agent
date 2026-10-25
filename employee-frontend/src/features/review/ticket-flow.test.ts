@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import type { Result } from "../../lib/types"
 import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, sentence, toolLine } from "./ticket-flow-copy"
-import { buildTicketFlow } from "./ticket-flow"
+import { buildTicketFlow, detailChart, mermaidText, pipelineChart } from "./ticket-flow"
 
 it("treats Arabic letters as an Arabic message and a blank message as English", () => {
   expect(isArabicMessage("التحويل لم يصل")).toBe(true)
@@ -188,4 +188,29 @@ it("omits unsafe tool arguments from the Draft events", () => {
   }))
   expect(step(flow, "draft").events.join("\n")).toContain("Searched the knowledge base: refund. Completed.")
   expect(step(flow, "draft").events.join("\n")).not.toContain("secret")
+})
+
+it("escapes text that could break a Mermaid node", () => {
+  expect(mermaidText('Say "hi" <script>')).toBe("Say 'hi' script")
+  expect(mermaidText("a[b]")).toBe("a(b)")
+})
+
+it("draws the full pipeline with the taken step, the skip reason, and the selection", () => {
+  const flow = buildTicketFlow(result())
+  const chart = pipelineChart(flow, flow.selectedId)
+  expect(chart.startsWith("flowchart TD")).toBe(true)
+  expect(chart).toContain("class gemini_classify unused")
+  expect(chart).toContain("Jev was already sure.")
+  expect(chart).toContain("class draft used,selected")
+  expect(chart).toContain("jev_classify --> extract")
+})
+
+it("draws the open step from received through events to produced", () => {
+  const flow = buildTicketFlow(result({
+    agent_trace: [{ kind: "tool", tool: "lookup_transaction", status: "ok", arguments: { txn_ref: "ZC-1044" } }],
+  }))
+  const chart = detailChart(flow, "draft")
+  expect(chart).toContain("flowchart TD")
+  expect(chart).toContain("ZC-1044")
+  expect(chart).toContain("n0 --> n1")
 })
