@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792405901.613356,
-    "seen": 1792925661.8250005,
-    "ast_hash": "22a196f34e5b1da2b8afc757c39d67a7",
+    "mtime": 1793280856.938528,
+    "seen": 1793281170.762928,
+    "ast_hash": "fadb56c8dacc46f858dc29d0563da48b",
     "semantic_hash": ""
   },
   "backend/app/pipeline/runner.md": {
@@ -432,10 +432,10 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1791393292.9701746,
-    "seen": 1792231636.9874647,
-    "ast_hash": "4789c1291682cae8e1db51c0c04934fb",
-    "semantic_hash": "4789c1291682cae8e1db51c0c04934fb"
+    "mtime": 1793280452.3665762,
+    "seen": 1793280577.1137688,
+    "ast_hash": "02247cd1a48d34b4b48979ca92ea6997",
+    "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-10-07-plan1-core-pipeline-part2.md": {
     "mtime": 1791390096.118113,
@@ -1350,9 +1350,9 @@
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/main.tsx": {
-    "mtime": 1792317300.4099617,
-    "seen": 1792319628.1852698,
-    "ast_hash": "d27b039c57b14fd3c0e1dea785c55109",
+    "mtime": 1793281126.5985355,
+    "seen": 1793281170.761528,
+    "ast_hash": "f84ecb1eefcc9073bc618938187ce2d1",
     "semantic_hash": ""
   },
   "users-frontend/apps/web/tsconfig.app.json": {

@@ -9,11 +9,12 @@
   font-family: var(--font-latin);
   line-height: 1.55;
 }
+.intake-frame {
+  width: min(760px, 100%);
+  margin-inline: auto;
+}
 .lang-toggle {
-  position: fixed;
-  z-index: 40;
-  top: 14px;
-  right: 14px;
+  position: static;
   direction: ltr;
   display: inline-flex;
   align-items: center;
@@ -57,7 +58,7 @@
 }
 .intake-header {
   justify-content: space-between;
-  padding: 16px 88px 16px 20px;
+  padding: 16px 20px;
   border-bottom: 3px solid #da3345;
 }
 .intake-brand {
@@ -89,9 +90,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
-  width: min(1120px, 100%);
-  margin: 0 auto;
-  padding: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 16px 20px 24px;
 }
 .intake-conversation,
 .intake-side,
@@ -207,12 +208,6 @@
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
-}
-@media (min-width: 960px) {
-  .intake-layout {
-    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
-    align-items: start;
-  }
 }
 @media (max-width: 720px) {
   .intake-actions {

@@ -102,6 +102,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
 
   return (
     <div className="intake-shell" dir={direction} lang={locale}>
+      <div className="intake-frame">
       <header className="intake-header">
         <div className="intake-brand">
           <span className="intake-mark" aria-hidden="true" />
@@ -110,15 +111,15 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
             <p className="intake-subtitle">{text.subtitle}</p>
           </div>
         </div>
-        </header>
-      <div className="lang-toggle" role="group" aria-label={text.language}>
-        <button type="button" data-locale="ar" aria-pressed={locale === "ar"} aria-label={text.arabic} onClick={() => void chooseLanguage("ar")}>
-          ع
-        </button>
-        <button type="button" data-locale="en" aria-pressed={locale === "en"} aria-label={text.english} onClick={() => void chooseLanguage("en")}>
-          EN
-        </button>
-      </div>
+        <div className="lang-toggle" role="group" aria-label={text.language}>
+          <button type="button" data-locale="ar" aria-pressed={locale === "ar"} aria-label={text.arabic} onClick={() => void chooseLanguage("ar")}>
+            ع
+          </button>
+          <button type="button" data-locale="en" aria-pressed={locale === "en"} aria-label={text.english} onClick={() => void chooseLanguage("en")}>
+            EN
+          </button>
+        </div>
+      </header>
       <main className="intake-layout">
         <div className="intake-conversation">
           {session ? (
@@ -223,6 +224,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
           ) : null}
         </aside>
       </main>
+      </div>
     </div>
   )
 }

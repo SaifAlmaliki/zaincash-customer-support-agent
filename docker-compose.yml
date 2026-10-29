@@ -14,5 +14,37 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Inside the compose network the database hostname is "db", port 5432.
+      # This overrides DATABASE_URL from .env, which points at localhost:5433 for host-side tools.
+      DATABASE_URL: postgresql+psycopg://support:support@db:5432/support
+      # OpenRouter no longer lists Gemini here. Intake needs a vision model that returns structured questions.
+      INTAKE_MODEL: anthropic/claude-haiku-4.5
+      SSL_CERT_FILE: /certs/ca-certificates.crt
+      REQUESTS_CA_BUNDLE: /certs/ca-certificates.crt
+      CURL_CA_BUNDLE: /certs/ca-certificates.crt
+    ports: ["8000:8000"]
+    volumes:
+      - /etc/ssl/certs/ca-certificates.crt:/certs/ca-certificates.crt:ro
+      - ./data/taxonomy.yaml:/app/data/taxonomy.yaml:ro
+      - ./data/intake-uploads:/app/data/intake-uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+
 volumes:
   pgdata:

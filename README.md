@@ -180,39 +180,26 @@ The full design is in [`docs/superpowers/specs/2026-10-07-support-pipeline-desig
 
 ## Run the app
 
-From the repository root in WSL, use two terminals and leave both running. Once, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY`.
-
-**Terminal 1 — database and API.** Run these one at a time from the repository root. Leave the last command running.
-
-Point Python at Ubuntu’s trusted certificates. This terminal needs the variable; a value only in `.env` does not fix TLS on this network.
+From the repository root in WSL, one command starts both services: Postgres (`db`) and the API (`api`).
 
 ```bash
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+docker compose up --build
 ```
 
-Start Postgres and wait until it is healthy. The database stays on port **5433**.
+Leave that terminal open. The first run builds the API image; later runs can use `docker compose up`. To run both in the background instead:
 
 ```bash
-docker compose up -d --wait db
+docker compose up --build -d
 ```
 
-Install the backend Python packages.
+| Service | Container | Address |
+|---|---|---|
+| Postgres | `zaincash-support-db-1` | `localhost:5433` |
+| API | `zaincash-support-api-1` | http://localhost:8000 |
 
-```bash
-uv --directory backend sync
-```
+Wait until `docker ps` shows both as **healthy**. API docs are at http://localhost:8000/api/docs. Compose points the API at Postgres on the Docker network and loads the synthetic transactions on startup.
 
-Create the tables and load the synthetic transactions and the service incident. Safe to run again. The demo tickets match these records.
-
-```bash
-uv --directory backend run support seed-db --transactions tests/fixtures/sample_transactions.jsonl --incidents tests/fixtures/sample_incidents.jsonl
-```
-
-Start the API and leave this terminal open. Wait for `Uvicorn running on http://0.0.0.0:8000`.
-
-```bash
-uv --directory backend run uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+Once, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY`, then start Compose again so the API picks up the keys.
 
 **Terminal 2 — UI.** Open a second terminal.
 
