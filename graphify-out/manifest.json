@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793280856.938528,
-    "seen": 1793281170.762928,
-    "ast_hash": "fadb56c8dacc46f858dc29d0563da48b",
+    "mtime": 1793284311.5625865,
+    "seen": 1793284346.53884,
+    "ast_hash": "28c59464d4496ee757e516aab20c07e0",
     "semantic_hash": ""
   },
   "backend/app/pipeline/runner.md": {
@@ -432,9 +432,9 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1793280452.3665762,
-    "seen": 1793280577.1137688,
-    "ast_hash": "02247cd1a48d34b4b48979ca92ea6997",
+    "mtime": 1793284309.6025865,
+    "seen": 1793284346.5473568,
+    "ast_hash": "13b7596a294e2bab5fb1bc639b44773e",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-10-07-plan1-core-pipeline-part2.md": {
@@ -1332,9 +1332,9 @@
     "semantic_hash": ""
   },
   "users-frontend/apps/web/package.json": {
-    "mtime": 1792405901.7053561,
-    "seen": 1792925661.8234267,
-    "ast_hash": "b340738442c2d3bc3ff19fde76d1ac4e",
+    "mtime": 1793283562.3585749,
+    "seen": 1793283914.6197004,
+    "ast_hash": "32a1c0ae5b624a1e604e69cffe754918",
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/App.tsx": {
@@ -1847,12 +1847,6 @@
     "ast_hash": "bc1e48eec3e0742c3ebf4f6eca2056b7",
     "semantic_hash": ""
   },
-  "users-frontend/apps/web/src/features/intake/ChatTranscript.tsx": {
-    "mtime": 1792405901.709806,
-    "seen": 1792925661.8234365,
-    "ast_hash": "601a7a15e70063cc634303f4306801b6",
-    "semantic_hash": ""
-  },
   "users-frontend/apps/web/src/features/intake/IntakePage.test.tsx": {
     "mtime": 1792925483.4625497,
     "seen": 1792925661.8234396,
@@ -1860,15 +1854,9 @@
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/features/intake/IntakePage.tsx": {
-    "mtime": 1792926476.27855,
-    "seen": 1792926631.726385,
-    "ast_hash": "9bc1460796f55b86063d87c6d77c68be",
-    "semantic_hash": ""
-  },
-  "users-frontend/apps/web/src/features/intake/MessageComposer.tsx": {
-    "mtime": 1792405901.7101154,
-    "seen": 1792925661.8234448,
-    "ast_hash": "7e839ab28bfd57dc8144d84139aa5a1f",
+    "mtime": 1793284268.0185883,
+    "seen": 1793284346.521971,
+    "ast_hash": "b94b1bfd379908c31b49d1ea6402c7ce",
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/features/intake/OwnedImage.tsx": {
@@ -1889,12 +1877,6 @@
     "ast_hash": "8d84aec4299ebb9e6d64ba9752307b06",
     "semantic_hash": ""
   },
-  "users-frontend/apps/web/src/features/intake/ScreenshotPicker.tsx": {
-    "mtime": 1792405901.7101154,
-    "seen": 1792925661.8234565,
-    "ast_hash": "2e6601bffc885d90f36750be152fb3ed",
-    "semantic_hash": ""
-  },
   "users-frontend/apps/web/src/features/intake/api.test.ts": {
     "mtime": 1792405901.7101154,
     "seen": 1792925661.823459,
@@ -1908,9 +1890,9 @@
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/features/intake/copy.ts": {
-    "mtime": 1792925432.0745182,
-    "seen": 1792925661.82347,
-    "ast_hash": "8cd8bf10054d14ad2ae1816931f851ed",
+    "mtime": 1793283453.0985746,
+    "seen": 1793283914.6202586,
+    "ast_hash": "8956a15bc1d612fb087b6f133f333e45",
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/test/setup.ts": {
@@ -1974,15 +1956,15 @@
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/features/intake/locales/ar.json": {
-    "mtime": 1792925431.1265185,
-    "seen": 1792925661.823474,
-    "ast_hash": "b7b06051a48cd2439f3404db5636221a",
+    "mtime": 1793283455.1145742,
+    "seen": 1793283914.6202607,
+    "ast_hash": "dfef00f91ecb522b289033c4e9faa013",
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/features/intake/locales/en.json": {
-    "mtime": 1792925426.2585113,
-    "seen": 1792925661.8234775,
-    "ast_hash": "6ed175ddf48ea977c528f47a752758c6",
+    "mtime": 1793283453.6105745,
+    "seen": 1793283914.6202626,
+    "ast_hash": "35461ee9a1841ab6c12a7b3593eb6c54",
     "semantic_hash": ""
   },
   ".superpowers/brainstorm/59043-1792924854/content/graph-layout.html": {
@@ -2097,6 +2079,18 @@
     "mtime": 1792952002.9632003,
     "seen": 1792952775.5674477,
     "ast_hash": "e0a578eb24f8b4dd8b65a3044c40e92f",
+    "semantic_hash": ""
+  },
+  "users-frontend/apps/web/src/components/ui/agent-chat.tsx": {
+    "mtime": 1793284254.118962,
+    "seen": 1793284346.521734,
+    "ast_hash": "9e0703263f02b7f82e17e77fd12b7a2d",
+    "semantic_hash": ""
+  },
+  "docker/api-entrypoint.sh": {
+    "mtime": 1793284118.0961177,
+    "seen": 1793284141.1741161,
+    "ast_hash": "cbfa4d1ec863634453b37893c21c1715",
     "semantic_hash": ""
   }
 }

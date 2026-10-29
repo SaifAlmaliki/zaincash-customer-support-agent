@@ -3,6 +3,7 @@
   "subtitle": "Tell support what happened before a ticket is sent",
   "conversation": "Conversation",
   "message": "Your message",
+  "placeholder": "Send a message…",
   "send": "Send",
   "attach": "Attach screenshots",
   "remove": "Remove",
@@ -15,6 +16,7 @@
   "notApplicable": "Not applicable",
   "processing": "Reviewing your information…",
   "updateError": "The conversation could not be updated. Retry or refresh to continue.",
+  "errorTitle": "Request failed",
   "fieldLabels": {
     "issue": "Issue",
     "actual": "What happened",

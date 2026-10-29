@@ -7,6 +7,7 @@ export type IntakeCopy = {
   subtitle: string
   conversation: string
   message: string
+  placeholder: string
   send: string
   attach: string
   remove: string
@@ -19,6 +20,7 @@ export type IntakeCopy = {
   notApplicable: string
   processing: string
   updateError: string
+  errorTitle: string
   fieldLabels: Record<string, string>
   continueChat: string
   startNew: string

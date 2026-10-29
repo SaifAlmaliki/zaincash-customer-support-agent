@@ -2,15 +2,19 @@ services:
   db:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: support
-      POSTGRES_PASSWORD: support
-      POSTGRES_DB: support
+      POSTGRES_USER_FILE: /run/secrets/postgres_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB_FILE: /run/secrets/postgres_db
+    secrets:
+      - postgres_user
+      - postgres_password
+      - postgres_db
     ports: ["5433:5432"]  # 5432 is taken by another local project (monster-mq)
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U support -d support"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$(tr -d '\\r\\n' < /run/secrets/postgres_user)\" -d \"$$(tr -d '\\r\\n' < /run/secrets/postgres_db)\""]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -23,19 +27,24 @@ services:
       - path: .env
         required: false
     environment:
-      # Inside the compose network the database hostname is "db", port 5432.
-      # This overrides DATABASE_URL from .env, which points at localhost:5433 for host-side tools.
-      DATABASE_URL: postgresql+psycopg://support:support@db:5432/support
-      # OpenRouter no longer lists Gemini here. Intake needs a vision model that returns structured questions.
-      INTAKE_MODEL: anthropic/claude-haiku-4.5
+      # DATABASE_URL is set by the entrypoint from the mounted secrets.
+      # Drop any host URL from .env so it is not copied into the container.
+      DATABASE_URL: ""
+      TEST_DATABASE_URL: ""
       SSL_CERT_FILE: /certs/ca-certificates.crt
       REQUESTS_CA_BUNDLE: /certs/ca-certificates.crt
       CURL_CA_BUNDLE: /certs/ca-certificates.crt
+    secrets:
+      - postgres_user
+      - postgres_password
+      - postgres_db
     ports: ["8000:8000"]
     volumes:
       - /etc/ssl/certs/ca-certificates.crt:/certs/ca-certificates.crt:ro
       - ./data/taxonomy.yaml:/app/data/taxonomy.yaml:ro
       - ./data/intake-uploads:/app/data/intake-uploads
+      - ./docker/api-entrypoint.sh:/api-entrypoint.sh:ro
+    command: ["/bin/sh", "/api-entrypoint.sh"]
     depends_on:
       db:
         condition: service_healthy
@@ -48,3 +57,11 @@ services:
 
 volumes:
   pgdata:
+
+secrets:
+  postgres_user:
+    file: ./secrets/postgres_user
+  postgres_password:
+    file: ./secrets/postgres_password
+  postgres_db:
+    file: ./secrets/postgres_db

@@ -1,12 +1,6 @@
+.env
+.env.*
+!.env.example
+secrets
 .git
 graphify-out
-**/node_modules
-**/.venv
-**/__pycache__
-**/.pytest_cache
-**/.ruff_cache
-out
-docs
-employee-frontend
-users-frontend
-*.md

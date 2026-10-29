@@ -199,7 +199,7 @@ docker compose up --build -d
 
 Wait until `docker ps` shows both as **healthy**. API docs are at http://localhost:8000/api/docs. Compose points the API at Postgres on the Docker network and loads the synthetic transactions on startup.
 
-Once, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY`, then start Compose again so the API picks up the keys.
+Once, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY`. Copy each file in `secrets/` from its `.example` counterpart (`postgres_user`, `postgres_password`, `postgres_db`). Compose mounts those files and the API builds `DATABASE_URL` from them; that URL does not belong in `.env`. Start Compose again so the API picks up the keys.
 
 **Terminal 2 — UI.** Open a second terminal.
 
