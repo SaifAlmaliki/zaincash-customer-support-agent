@@ -2,68 +2,8 @@ import { describe, expect, it, vi } from "vitest"
 import { IntakeRequestError, type IntakeApi } from "./api"
 import { IntakeController } from "./controller"
 import { browserSessionStorage, memoryStorage, type SessionStorage } from "./session"
+import { emptySession, fakeApi, review } from "./test/fixtures"
 import type { SessionView } from "./types"
-
-function emptySession(overrides: Partial<SessionView> = {}): SessionView {
-  return {
-    id: "session-1",
-    revision: 1,
-    phase: "collecting",
-    language: "en",
-    turn_status: "idle",
-    active_request_id: null,
-    messages: [],
-    attachments: [],
-    readiness: { quality: "collecting", missing: ["issue"], conflicts: [], reason: "Waiting", next_key: "issue" },
-    review: null,
-    receipt: null,
-    error_code: null,
-    ...overrides,
-  }
-}
-
-function fakeApi(overrides: Partial<SessionView> = {}): IntakeApi {
-  const session = emptySession(overrides)
-  return {
-    create: vi.fn(async () => ({ credentials: { session_id: "session-1", token: "token" }, session })),
-    get: vi.fn(async () => session),
-    message: vi.fn(async () => session),
-    review: vi.fn(async () => session),
-    retry: vi.fn(async () => session),
-    submit: vi.fn(async () => ({
-      ticket_reference: "INTAKE-demo",
-      submitted_at: "2026-10-18T09:00:00Z",
-      processing_status: "processing" as const,
-    })),
-    upload: vi.fn(async () => ({
-      attachment: {
-        id: "att-1",
-        filename: "error.png",
-        mime_type: "image/png",
-        size: 2,
-        width: 1,
-        height: 1,
-        message_id: null,
-        removed: false,
-      },
-      session,
-    })),
-    remove: vi.fn(async () => session),
-    image: vi.fn(async () => new Blob(["png"])),
-  }
-}
-
-const review = {
-  id: "review-1",
-  revision: 2,
-  language: "en" as const,
-  quality: "partial_context" as const,
-  text: "The transfer failed.",
-  facts: {},
-  additional_issues: [],
-  unknown_keys: ["amount"],
-  attachment_ids: [],
-}
 
 describe("intake controller", () => {
   it("initializes when the browser denies access to localStorage itself", async () => {
@@ -180,7 +120,6 @@ describe("intake controller", () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(controller.getSnapshot().session?.revision).toBe(5)
     controller.dispose()
-    vi.useRealTimers()
   })
 
   it("does not mutate a submitted report", async () => {
@@ -356,6 +295,5 @@ describe("intake controller", () => {
     await vi.advanceTimersByTimeAsync(70_000)
     expect(controller.getSnapshot().pollingExhausted).toBe(true)
     controller.dispose()
-    vi.useRealTimers()
   })
 })

@@ -342,12 +342,6 @@ export class IntakeController {
       const command = this.pending.payload as ReviewCommand
       return this.reviewNow(command.allow_partial, command.language)
     }
-    if (session?.turn_status === "retryable_failure" && session.active_request_id && this.credentials) {
-      const generation = this.generation
-      await this.dispatch(generation, () =>
-        this.api.retry(this.credentials!, session.active_request_id!, session.revision, this.nextSignal()),
-      )
-    }
   }
 
   private async uploadNow(file: File) {

@@ -1,21 +1,8 @@
 import { describe, expect, it, vi } from "vitest"
 import { createIntakeApi, IntakeRequestError, parseReceipt, parseSession } from "./api"
-import type { SessionView } from "./types"
+import { emptySession } from "./test/fixtures"
 
-const session: SessionView = {
-  id: "session-1",
-  revision: 1,
-  phase: "collecting",
-  language: "en",
-  turn_status: "idle",
-  active_request_id: null,
-  messages: [],
-  attachments: [],
-  readiness: { quality: "collecting", missing: ["issue"], conflicts: [], reason: "Waiting", next_key: "issue" },
-  review: null,
-  receipt: null,
-  error_code: null,
-}
+const session = emptySession()
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } })
@@ -39,7 +26,6 @@ describe("intake api", () => {
     const api = createIntakeApi("http://intake.test/api/intake")
     await expect(api.get({ session_id: "session-1", token: "secret-token" })).rejects.toBeInstanceOf(IntakeRequestError)
     expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain("secret-token")
-    vi.unstubAllGlobals()
   })
 
   it("uploads with progress and without a manual multipart content type", async () => {
@@ -87,6 +73,5 @@ describe("intake api", () => {
     expect(sent.body?.get("request_id")).toBe("req-1")
     expect(progress).toEqual([1])
     expect(String(sent.body?.get("file"))).not.toContain("secret-token")
-    vi.unstubAllGlobals()
   })
 })

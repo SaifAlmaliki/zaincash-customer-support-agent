@@ -660,5 +660,3 @@ export const AgentChat = memo(function AgentChat({
     </div>
   )
 })
-
-export default AgentChat

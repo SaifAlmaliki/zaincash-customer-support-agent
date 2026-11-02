@@ -1,6 +1,6 @@
 -- Synthetic workspace demo. Fictional tickets, transactions, and drafts only.
 -- Does not index the knowledge base (no embeddings). Ingest policy files separately.
--- Expects empty tables. Run cleanup.sql first.
+-- One ticket per story. Expects empty tables. Run cleanup.sql first.
 -- pgAdmin: same connection as cleanup (database "support"), then Execute Script (F5).
 -- Keep the query tool encoding on UTF-8 so the Arabic text stays intact.
 
@@ -33,10 +33,10 @@ INSERT INTO service_incidents (id, service, started_at, ended_at, description) V
 INSERT INTO tickets (
     id, external_id, channel, customer_phone, text, received_at, source, batch_id
 ) VALUES
-    (1, 'S-001', 'app', '07809876543',
+    (1, 'RAG-DEMO-FAILED-TRANSFER', 'app', '07809876543',
      $t$حولت ٥٠ الف لاخوي على رقم 07701234567 امس وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123$t$,
      '2026-10-07T09:30:00+03:00', 'demo', 'demo-seed'),
-    (2, 'S-002', 'whatsapp', '07501112233',
+    (2, 'RAG-DEMO-FRAUD', 'whatsapp', '07501112233',
      $t$واحد اتصل بيه يكول انه موظف زين كاش وطلب الرمز اللي وصلني، انطيته وبعدها انسحب من حسابي 200 الف!! الحكوني$t$,
      '2026-10-07T10:05:00+03:00', 'demo', 'demo-seed'),
     (3, 'S-003', 'app', '07712223344',
@@ -48,16 +48,10 @@ INSERT INTO tickets (
     (5, 'S-005', 'whatsapp', NULL,
      $t$شكد عمولة التحويل لحساب بنكي؟$t$,
      '2026-10-07T13:00:00+03:00', 'demo', 'demo-seed'),
-    (6, 'RAG-DEMO-FAILED-TRANSFER', 'app', '07809876543',
-     $t$حولت ٥٠ الف لاخوي على رقم 07701234567 امس وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123$t$,
-     '2026-10-07T09:30:00+03:00', 'demo', 'demo-seed'),
-    (7, 'RAG-DEMO-GENERAL', 'app', NULL,
+    (6, 'RAG-DEMO-GENERAL', 'app', NULL,
      $t$شلون أشرح مشكلتي للدعم بأمان؟ شنو المعلومات غير السرية اللي أذكرها؟$t$,
-     '2026-10-07T13:00:00+03:00', 'demo', 'demo-seed'),
-    (8, 'RAG-DEMO-FRAUD', 'whatsapp', '07501112233',
-     $t$واحد اتصل بيه يكول انه موظف زين كاش وطلب الرمز اللي وصلني، انطيته وبعدها انسحب من حسابي 200 الف!! الحكوني$t$,
-     '2026-10-07T10:05:00+03:00', 'demo', 'demo-seed'),
-    (9, 'RAG-DEMO-UNSUPPORTED', 'app', NULL,
+     '2026-10-07T13:10:00+03:00', 'demo', 'demo-seed'),
+    (7, 'RAG-DEMO-UNSUPPORTED', 'app', NULL,
      $t$اشرحلي بالتفصيل شلون التشابك الكمي يشتغل بين فوتونين داخل مختبر فيزياء؟$t$,
      '2026-10-07T14:00:00+03:00', 'demo', 'demo-seed');
 
@@ -73,20 +67,20 @@ INSERT INTO runs (
     '{"classifier":"jev","drafter":"demo-seed"}'::jsonb,
     FALSE,
     '{
-      "total": 9,
-      "by_status": {"pending_review": 5, "escalated": 3, "approved": 1},
+      "total": 7,
+      "by_status": {"pending_review": 4, "escalated": 2, "approved": 1},
       "by_category": {
-        "failed_transfer": 2,
-        "fraud_report": 2,
+        "failed_transfer": 1,
+        "fraud_report": 1,
         "login_access": 1,
         "bill_payment": 1,
         "general_inquiry": 2,
         "other": 1
       },
-      "by_team": {"Payments Ops": 3, "Account & Security": 3, "General Care": 3},
-      "by_priority": {"P1": 2, "P2": 2, "P3": 2, "P4": 3},
-      "escalation_reasons": {"fraud_suspected": 2, "no_kb_support": 1},
-      "classifier_paths": {"jev": 9},
+      "by_team": {"Payments Ops": 2, "Account & Security": 2, "General Care": 3},
+      "by_priority": {"P1": 1, "P2": 1, "P3": 2, "P4": 3},
+      "escalation_reasons": {"fraud_suspected": 1, "no_kb_support": 1},
+      "classifier_paths": {"jev": 7},
       "fallback_rate": 0.0,
       "degraded": false,
       "failed_ids": [],
@@ -214,27 +208,7 @@ INSERT INTO ticket_results (
     'pending_review', NULL, 640, 0.0, 'demo-seed', '2026-10-07T15:02:40+03:00'
 ),
 (
-    6, 1, 6, 'failed_transfer', 0.91,
-    '{"failed_transfer": 0.91, "wrong_recipient": 0.05, "other": 0.04}'::jsonb,
-    'P2', 0.88, '{"money_lost": 0.8}'::jsonb, 'jev',
-    '{
-      "amount": {"value": 50000, "span": "٥٠ الف", "start": 6, "end": 12, "method": "span", "confidence": 0.9, "currency": "IQD"},
-      "phone": {"value": "07701234567", "span": "07701234567", "start": 24, "end": 35, "method": "regex", "confidence": 0.99, "currency": null},
-      "txn_ref": {"value": "ZC2410000123", "span": "ZC2410000123", "start": 70, "end": 82, "method": "regex", "confidence": 0.99, "currency": null},
-      "date": {"value": "2026-10-06", "span": "امس", "start": 36, "end": 39, "method": "relative", "confidence": 0.8, "currency": null}
-    }'::jsonb,
-    'matched', 'ZC2410000123', 'Payments Ops', FALSE, '[]'::jsonb, NULL,
-    $t$حسب السجل التجريبي، العملية ZC2410000123 بمبلغ 50000 دينار حالتها معلّقة، مو مكتملة. فريق Payments Ops يراجعها. هذا رد عرض خيالي وما يحرك أي مبلغ.$t$,
-    '["failed_transfer.md#0"]'::jsonb,
-    $tr$[
-      {"kind": "tool", "tool": "lookup_transaction", "status": "ok", "arguments": {"txn_ref": "ZC2410000123"}},
-      {"kind": "draft", "citation_sources": [{"id": "failed_transfer.md#0", "document_id": 1, "chunk_index": 0, "text": "إذا الحالة بالسجل pending، وضّح إن التحويل بعده معلّق حسب السجل.", "filename": "failed_transfer.md", "score": 0.84}]},
-      {"kind": "guardrail", "findings": []}
-    ]$tr$::jsonb,
-    'pending_review', NULL, 990, 0.0, 'demo-seed', '2026-10-07T15:03:00+03:00'
-),
-(
-    7, 1, 7, 'general_inquiry', 0.94,
+    6, 1, 6, 'general_inquiry', 0.94,
     '{"general_inquiry": 0.94, "other": 0.06}'::jsonb,
     'P4', 0.91, '{}'::jsonb, 'jev',
     '{
@@ -254,31 +228,7 @@ INSERT INTO ticket_results (
     'approved', NULL, 700, 0.0, 'demo-seed', '2026-10-07T15:05:00+03:00'
 ),
 (
-    8, 1, 8, 'fraud_report', 0.96,
-    '{"fraud_report": 0.96, "login_access": 0.03, "other": 0.01}'::jsonb,
-    'P1', 0.97,
-    '{"fraud_suspected": 0.98, "money_lost": 0.9}'::jsonb,
-    'jev',
-    '{
-      "amount": {"value": 200000, "span": "200 الف", "start": 78, "end": 85, "method": "span", "confidence": 0.9, "currency": "IQD"},
-      "phone": {"value": null, "span": null, "start": null, "end": null, "method": "none", "confidence": 0.0, "currency": null},
-      "txn_ref": {"value": null, "span": null, "start": null, "end": null, "method": "none", "confidence": 0.0, "currency": null},
-      "date": {"value": null, "span": null, "start": null, "end": null, "method": "none", "confidence": 0.0, "currency": null}
-    }'::jsonb,
-    'matched', 'ZC2410000789', 'Account & Security', TRUE,
-    '["fraud_suspected"]'::jsonb,
-    'Escalated: possible fraud or scam.',
-    $t$هذه شبهة احتيال وتبقى أولوية عالية لفريق Account & Security. أوقف التواصل مع المتصل ولا تشارك أي رمز جديد. هذا رد عرض خيالي وما يعني تجميد الحساب أو استرجاع المبلغ.$t$,
-    '["fraud_report.md#0"]'::jsonb,
-    $tr$[
-      {"kind": "tool", "tool": "lookup_transaction", "status": "ok", "arguments": {"txn_ref": "ZC2410000789"}},
-      {"kind": "draft", "citation_sources": [{"id": "fraud_report.md#0", "document_id": 1, "chunk_index": 0, "text": "اعتبرها شبهة احتيال تحتاج إنسان بأولوية عالية.", "filename": "fraud_report.md", "score": 0.9}]},
-      {"kind": "guardrail", "findings": []}
-    ]$tr$::jsonb,
-    'escalated', NULL, 1120, 0.0, 'demo-seed', '2026-10-07T15:03:20+03:00'
-),
-(
-    9, 1, 9, 'other', 0.72,
+    7, 1, 7, 'other', 0.72,
     '{"other": 0.72, "general_inquiry": 0.2, "app_bug": 0.08}'::jsonb,
     'P4', 0.6, '{}'::jsonb, 'jev',
     '{
@@ -298,7 +248,7 @@ INSERT INTO ticket_results (
 
 INSERT INTO reviews (id, result_id, reviewer, action, final_text, edit_distance, created_at) VALUES
 (
-    1, 7, 'demo.reviewer', 'approve',
+    1, 6, 'demo.reviewer', 'approve',
     $t$اكتب وصف مختصر للمشكلة ورسالة الخطأ ومرجع العملية غير السري إذا عندك. لا ترسل رمز التحقق أو الرقم السري أو صورة المستمسكات. راجعنا النص وثبتناه للعرض فقط.$t$,
     42,
     '2026-10-07T15:05:00+03:00'
