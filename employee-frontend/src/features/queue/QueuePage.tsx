@@ -52,6 +52,7 @@ import {
 } from "@/lib/format"
 import { fill, useCopy } from "@/lib/locale"
 import type { Result } from "@/lib/types"
+import { projectQueue, type QueueTab } from "./queue-projection"
 
 const EMPTY_RESULTS: Result[] = []
 
@@ -62,7 +63,7 @@ export function QueuePage() {
     navigate = useNavigate()
   const [params] = useSearchParams()
   const runId = params.get("run")
-  const [tab, setTab] = useState("all"),
+  const [tab, setTab] = useState<QueueTab>("all"),
     [search, setSearch] = useState("")
   const [team, setTeam] = useState("all"),
     [category, setCategory] = useState("all"),
@@ -74,45 +75,10 @@ export function QueuePage() {
     loadQueue
   )
   const rows = query.data?.items || EMPTY_RESULTS
-  const counts = {
-    all: rows.length,
-    pending_review: rows.filter((row) => row.status === "pending_review")
-      .length,
-    escalated: rows.filter((row) => row.status === "escalated").length,
-    approved: rows.filter((row) => ["approved", "edited"].includes(row.status))
-      .length,
-    processing: rows.filter((row) => row.status === "processing").length,
-  }
-  const filtered = useMemo(
-    () =>
-      rows
-        .filter(
-          (row) =>
-            (tab === "all" ||
-              (tab === "approved"
-                ? ["approved", "edited"].includes(row.status)
-                : row.status === tab)) &&
-            (team === "all" || row.team === team) &&
-            (category === "all" || row.category === category) &&
-            `${row.ticket.text} ${row.ticket.external_id} ${row.ticket.display_name || ""}`
-              .toLowerCase()
-              .includes(search.toLowerCase())
-        )
-        .sort((a, b) => (a.priority || "P9").localeCompare(b.priority || "P9")),
-    [rows, tab, team, category, search]
+  const { counts, filtered, visible, distribution, currentPage, lastPage } = useMemo(
+    () => projectQueue(rows, { tab, team, category, search }, page),
+    [rows, tab, team, category, search, page],
   )
-  const lastPage = Math.max(0, Math.ceil(filtered.length / 8) - 1),
-    currentPage = Math.min(page, lastPage)
-  const visible = filtered.slice(currentPage * 8, currentPage * 8 + 8)
-  const distribution = Object.entries(
-    rows.reduce<Record<string, number>>((acc, row) => {
-      const key = row.category || "other"
-      acc[key] = (acc[key] || 0) + 1
-      return acc
-    }, {})
-  )
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
   return (
     <>
       <PageHeader

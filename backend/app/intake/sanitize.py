@@ -1,7 +1,7 @@
 """Keep explicitly labelled receipt IDs while masking card-like numbers elsewhere."""
 import re
 
-from app.pipeline.stage1_normalize.normalize import mask_cards
+from app.text import mask_cards
 
 _REFERENCE = re.compile(
     r"((?:\b(?:receipt|reference|transaction)(?:\s+(?:reference|number|id))?\b|رقم\s*(?:العملية|المرجع|الإيصال|الايصال))"

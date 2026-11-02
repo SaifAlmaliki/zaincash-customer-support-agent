@@ -78,8 +78,9 @@ class _ModelUsage(AsyncCallbackHandler):
         if response_id in self.seen:
             return
         self.seen.add(response_id)
-        cost = (_number(usage.get("input_tokens")) * self.settings.price_gemini_flash_in
-                + _number(usage.get("output_tokens")) * self.settings.price_gemini_flash_out) / 1e6
+        price_in, price_out = self.settings.draft_token_prices
+        cost = (_number(usage.get("input_tokens")) * price_in
+                + _number(usage.get("output_tokens")) * price_out) / 1e6
         source = "token_estimate"
         reported = metadata.get("cost")
         if type(reported) in (int, float) and math.isfinite(reported) and reported >= 0:

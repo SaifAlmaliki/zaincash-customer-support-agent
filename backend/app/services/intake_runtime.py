@@ -8,7 +8,6 @@ from app.intake.graph import IntakeGraph
 from app.intake.model import OpenRouterIntakeModel
 from app.intake.repository import IntakeRepository
 from app.intake.service import IntakeService
-from app.intake.submission import SubmissionService
 from app.intake.turns import TurnStore
 from app.services.batch_jobs import run_job
 
@@ -22,7 +21,6 @@ def make_intake_service(session_factory, settings, taxonomy) -> IntakeService:
     repo = IntakeRepository(session_factory)
     turns = TurnStore(session_factory, max_images_per_message=settings.intake_max_images_per_message)
     service = IntakeService(repo, turns, graph, store)
-    service.submission = SubmissionService(session_factory, settings)
     return service
 
 

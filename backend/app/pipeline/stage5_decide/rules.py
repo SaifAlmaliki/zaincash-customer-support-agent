@@ -8,9 +8,11 @@ from app.pipeline.contracts import ClassifierOutput, Decision, ExtractedField, L
 from app.taxonomy import Category, most_urgent
 
 FLAG_THRESHOLD = 0.5
-REASON_TEXT = {
-    "low_confidence": "the classifier was not confident",
+LEGACY_REASON_TEXT = {
     "classifier_disagreement": "Jev and Gemini disagree on the category",
+}
+CURRENT_REASON_TEXT = {
+    "low_confidence": "the classifier was not confident",
     "fraud_suspected": "possible fraud or scam",
     "multi_issue": "the ticket raises more than one issue",
     "asks_for_human": "the customer asked for a person",
@@ -24,6 +26,7 @@ REASON_TEXT = {
     "draft_failed_guardrail": "the draft failed a safety check",
     "no_kb_support": "no policy document supports a reply",
 }
+REASON_TEXT = CURRENT_REASON_TEXT | LEGACY_REASON_TEXT
 _LOOKUP_REASONS = {
     "not_found": "txn_not_found",
     "ambiguous": "txn_ambiguous",

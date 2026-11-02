@@ -1,5 +1,5 @@
 from app.pipeline.stage1_normalize.candidates import find_candidates, normalize_phone, parse_amount
-from app.pipeline.stage1_normalize.normalize import to_ascii_digits
+from app.text import to_ascii_digits
 
 
 def _values(cands, field):

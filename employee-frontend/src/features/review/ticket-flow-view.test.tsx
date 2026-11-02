@@ -1,7 +1,18 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
-import type { Result } from "@/lib/types"
+import type { Passage, Result } from "@/lib/types"
 import { TicketFlow } from "./TicketFlow"
+
+const retainedPassage: Passage = {
+  id: "p1",
+  document_id: 1,
+  chunk_index: 0,
+  filename: "saved.md",
+  text: "دليل محفوظ",
+  score: 0.9,
+  page_start: null,
+  page_end: null,
+}
 
 function result(patch: Partial<Result> = {}): Result {
   return {
@@ -24,8 +35,23 @@ function result(patch: Partial<Result> = {}): Result {
     flags: {},
     classifier_path: "jev",
     extracted: {
-      amount: { value: 35000, currency: "IQD", span: "35,000 دينار" },
-      date: { value: "01-10-2026", span: "يوم الخميس" },
+      amount: {
+        value: 35000,
+        currency: "IQD",
+        span: "35,000 دينار",
+        start: null,
+        end: null,
+        method: "test",
+        confidence: 1,
+      },
+      date: {
+        value: "01-10-2026",
+        span: "يوم الخميس",
+        start: null,
+        end: null,
+        method: "test",
+        confidence: 1,
+      },
     },
     lookup_status: "not_applicable",
     matched_txn_ref: null,
@@ -61,4 +87,39 @@ it("renders the pipeline as a thought chain with step names and findings", () =>
 it("marks the latest used step as in progress while the run is still processing", () => {
   const html = renderToStaticMarkup(<TicketFlow result={result({ status: "processing" })} />)
   expect(html).toContain("قيد التنفيذ")
+})
+
+it("renders retained citations and valid tools while excluding malformed entries and secrets", () => {
+  const rawTrace = [
+    null,
+    42,
+    "bad",
+    [],
+    {
+      kind: "tool",
+      tool: "search_knowledge_base",
+      status: "ok",
+      arguments: { query: "refund", password: "secret" },
+    },
+    { kind: "stage", node: "decide", elapsed_ms: 5 },
+  ]
+  const html = renderToStaticMarkup(
+    <TicketFlow
+      result={result({
+        citations: ["p1"],
+        citation_sources: [retainedPassage],
+        agent_trace: rawTrace,
+        draft_text: "رد تجريبي",
+        error: "PIN 1234 should stay hidden",
+      })}
+    />,
+  )
+
+  expect(html).toContain("بحث في قاعدة المعرفة")
+  expect(html).toContain("اكتمل")
+  expect(html).toContain("saved.md")
+  expect(html).toContain("دليل محفوظ")
+  expect(html).not.toContain("secret")
+  expect(html).not.toContain("PIN 1234")
+  expect(html).not.toContain(".py")
 })

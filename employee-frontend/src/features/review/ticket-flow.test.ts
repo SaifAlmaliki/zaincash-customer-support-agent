@@ -1,9 +1,7 @@
 import { expect, it } from "vitest"
 import type { Result } from "../../lib/types"
 import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, sentence, toolLine } from "./ticket-flow-copy"
-import { getLocale, setLocale } from "../../lib/locale"
-import { buildTicketFlow, detailChart, mermaidText, pipelineChart } from "./ticket-flow"
-import { stageFacts } from "./trace-facts"
+import { buildTicketFlow } from "./ticket-flow"
 
 it("treats Arabic letters as an Arabic message and a blank message as English", () => {
   expect(isArabicMessage("التحويل لم يصل")).toBe(true)
@@ -109,9 +107,10 @@ it("opens Draft on a straight Jev path and explains the skipped steps", () => {
 
 it("explains that an uncertain Jev-only result goes to human review", () => {
   const flow = buildTicketFlow(result({ escalated: true, escalation_reasons: ["low_confidence"] }))
-  const detail = detailChart(flow, "jev_classify")
-  expect(detail).toContain("Jev was unsure, so the ticket was flagged for human review.")
-  expect(detail).not.toContain("Gemini")
+  expect(step(flow, "jev_classify").produced).toBe(
+    "Jev was unsure, so the ticket was flagged for human review.",
+  )
+  expect(step(flow, "jev_classify").produced).not.toContain("Gemini")
   expect(step(flow, "gemini_classify").reason).toBe("This Jev-only run did not use Gemini.")
 })
 
@@ -128,15 +127,6 @@ it("does not call a legacy Gemini-unavailable result Jev-only", () => {
   expect(step(flow, "gemini_classify").reason).toBe(
     "Gemini was asked, but no classification was recorded.",
   )
-  const locale = getLocale()
-  try {
-    setLocale("en")
-    expect(stageFacts("classify", legacy)[0]).toBe(
-      "Jev was retained after Gemini was unavailable.",
-    )
-  } finally {
-    setLocale(locale)
-  }
 })
 
 it("opens Jev when Gemini gave the second opinion", () => {
@@ -156,7 +146,7 @@ it("opens Prepare for an empty message and stops the later steps", () => {
 it("describes the Empty ticket detail without mentioning a saved reply or policy passages", () => {
   const flow = buildTicketFlow(result({ classifier_path: "jev", escalation_reasons: ["empty_ticket"] }, { text: "  " }))
   const emptyStep = step(flow, "escalate_empty")
-  const detail = detailChart(flow, "escalate_empty")
+  const detail = [emptyStep.received, ...emptyStep.events, emptyStep.produced].join("\n")
   expect(emptyStep.state).toBe("used")
   expect(emptyStep.received).toBe("The customer message was empty.")
   expect(emptyStep.produced).toBe("Held for a person because the message was empty.")
@@ -300,41 +290,9 @@ it("omits unsafe tool arguments from the Draft events", () => {
   expect(step(flow, "draft").events.join("\n")).not.toContain("secret")
 })
 
-it("escapes text that could break a Mermaid node or inject a directive", () => {
-  expect(mermaidText('Say "hi" <script>')).toBe("Say 'hi' script")
-  expect(mermaidText("a[b]")).toBe("a(b)")
-  const directive = mermaidText("%%{init: {'theme':'dark'}}%%\r\nHello")
-  expect(directive).not.toContain("%")
-  expect(directive).not.toContain("{")
-  expect(directive).not.toContain("}")
-  expect(directive).not.toContain("\r")
-  expect(directive).not.toContain("\n")
-})
-
 it("uses Arabic step names when the profile is Arabic", () => {
   const flow = buildTicketFlow(result(), true)
   expect(step(flow, "prepare").name).toBe("تجهيز")
   expect(step(flow, "jev_classify").name).toBe("جيف")
   expect(step(flow, "gemini_classify").reason).toBe("جيف كان متأكدًا.")
-})
-
-it("draws the full pipeline with the taken step, the skip reason, and the selection", () => {
-  const flow = buildTicketFlow(result())
-  const chart = pipelineChart(flow, flow.selectedId)
-  expect(chart.startsWith("flowchart TD")).toBe(true)
-  expect(chart).toContain("class gemini_classify unused")
-  expect(chart).toContain("Jev was already sure.")
-  expect(chart).toContain("  class draft used\n  class draft selected")
-  expect(chart).not.toContain("used,selected")
-  expect(chart).toContain("jev_classify --> extract")
-})
-
-it("draws the open step from received through events to produced", () => {
-  const flow = buildTicketFlow(result({
-    agent_trace: [{ kind: "tool", tool: "lookup_transaction", status: "ok", arguments: { txn_ref: "ZC-1044" } }],
-  }))
-  const chart = detailChart(flow, "draft")
-  expect(chart).toContain("flowchart TD")
-  expect(chart).toContain("ZC-1044")
-  expect(chart).toContain("n0 --> n1")
 })

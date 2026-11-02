@@ -9,10 +9,10 @@ from datetime import datetime, time, timedelta
 from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.orm import sessionmaker
 
+from app.datetime import parse_dt
 from app.db.models import IncidentRow, TicketRow, TransactionRow
 from app.pipeline.contracts import TxnRecord
 from app.pipeline.stage1_normalize.candidates import normalize_phone
-from app.pipeline.stage4_lookup.lookup import parse_dt
 from app.pipeline.stage6_draft.context import DraftToolInputError
 from app.pipeline.state import PipelineState
 

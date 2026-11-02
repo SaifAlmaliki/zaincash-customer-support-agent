@@ -9,11 +9,11 @@ from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.datetime import parse_dt
 from app.db.models import IncidentRow, RunRow, TicketResultRow, TicketRow, TransactionRow
 from app.pipeline.contracts import Ticket, TicketOutcome, TxnRecord
 from app.pipeline.graph import RunSummary
 from app.pipeline.io.serialize import outcome_to_row
-from app.pipeline.stage4_lookup.lookup import parse_dt
 
 
 def upsert_tickets(session: Session, tickets: Sequence[Ticket], *, source: str,

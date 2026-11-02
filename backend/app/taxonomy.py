@@ -26,7 +26,7 @@ class Category:
     needs_transaction: bool
 
     def describe(self) -> str:
-        """One-line description used by both Jev criteria and Gemini prompts."""
+        """One-line description used by Jev category criteria."""
         parts = [f"{self.what_en} ({self.what_ar})"]
         if self.not_for:
             parts.append(f"Not for: {self.not_for}")
@@ -46,9 +46,6 @@ class Taxonomy:
 
     def get(self, category_id: str) -> Category:
         return self.categories.get(category_id, self.categories["other"])
-
-    def render(self) -> str:
-        return "\n".join(f"- {c.id}: {c.describe()}" for c in self.categories.values())
 
 
 def priority_rank(priority: str) -> int:

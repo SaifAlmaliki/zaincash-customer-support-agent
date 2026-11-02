@@ -2,13 +2,19 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.api.dependencies import SessionDep
 from app.api.schemas import ReviewInput
 from app.db.models import TicketResultRow, TicketRow
 from app.intake.projection import employee_attachment
-from app.services.reviews import record_review
+from app.services.reviews import (
+    InvalidReviewTeam,
+    ReviewCommand,
+    ReviewConflict,
+    ReviewNotFound,
+    record_review,
+)
 from app.services.workspace_queries import latest_results_query, result_view
 
 router = APIRouter(prefix="/api/results", tags=["Results & review"])
@@ -27,8 +33,15 @@ def list_results(session: SessionDep, status: str | None = None, team: str | Non
         ticket_ids = select(TicketRow.id).where(TicketRow.text.contains(q, autoescape=True) |
                                                TicketRow.external_id.contains(q, autoescape=True))
         query = query.where(TicketResultRow.ticket_id.in_(ticket_ids))
-    rows = list(session.scalars(query.order_by(TicketResultRow.priority.asc().nullslast(), TicketResultRow.id.desc())))
-    return {"items": [result_view(session, row) for row in rows[offset:offset + limit]], "total": len(rows)}
+    total = session.scalar(
+        select(func.count()).select_from(query.order_by(None).subquery())
+    ) or 0
+    rows = session.scalars(
+        query.order_by(TicketResultRow.priority.asc().nullslast(), TicketResultRow.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    return {"items": [result_view(session, row) for row in rows], "total": total}
 
 
 @router.get("/{result_id}")
@@ -47,5 +60,14 @@ def read_intake_attachment(result_id: int, attachment_id: UUID, request: Request
 
 @router.post("/{result_id}/reviews")
 def review_result(result_id: int, review: ReviewInput, request: Request, session: SessionDep):
-    result = record_review(session, result_id, review, request.app.state.taxonomy.teams)
+    try:
+        result = record_review(
+            session, result_id, ReviewCommand(**review.model_dump()), request.app.state.taxonomy.teams,
+        )
+    except ReviewNotFound as exc:
+        raise HTTPException(404, str(exc)) from None
+    except ReviewConflict as exc:
+        raise HTTPException(409, str(exc)) from None
+    except InvalidReviewTeam as exc:
+        raise HTTPException(422, str(exc)) from None
     return result_view(session, result, detail=True)

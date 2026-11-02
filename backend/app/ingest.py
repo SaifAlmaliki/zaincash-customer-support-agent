@@ -7,9 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from app.datetime import BAGHDAD, parse_dt
 from app.pipeline.contracts import Ticket
 from app.pipeline.stage1_normalize.normalize import sanitize_for_storage
-from app.pipeline.stage4_lookup.lookup import BAGHDAD, parse_dt
 
 
 def load_jsonl(path: str | Path) -> list[dict[str, Any]]:

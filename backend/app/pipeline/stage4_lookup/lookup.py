@@ -2,16 +2,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from typing import Any, Protocol
 
+from app.datetime import BAGHDAD, parse_dt
 from app.pipeline.contracts import ExtractedField, LookupResult, TxnRecord
 from app.taxonomy import Category
 
 AMOUNT_TOLERANCE = 0.01
 DATE_TOLERANCE_DAYS = 3
 DEFAULT_WINDOW_DAYS = 14
-BAGHDAD = timezone(timedelta(hours=3))
 
 
 class TransactionRepo(Protocol):
@@ -19,11 +19,6 @@ class TransactionRepo(Protocol):
 
     def search(self, *, phone: str, amount_min: int | None, amount_max: int | None,
                start: datetime, end: datetime, limit: int = 10) -> list[TxnRecord]: ...
-
-
-def parse_dt(value: Any) -> datetime:
-    dt = value if isinstance(value, datetime) else datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    return dt if dt.tzinfo else dt.replace(tzinfo=BAGHDAD)
 
 
 def txn_from_dict(d: dict[str, Any]) -> TxnRecord:

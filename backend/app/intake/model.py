@@ -31,7 +31,6 @@ _PROMPT_LIMIT = 24_000
 
 class ModelBudget:
     def __init__(self, timeout_s: float, max_requests: int) -> None:
-        self.timeout_s = timeout_s
         self.max_requests = max_requests
         self.deadline = time.monotonic() + timeout_s
         self.used = 0

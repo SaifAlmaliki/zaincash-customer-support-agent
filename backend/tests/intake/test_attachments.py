@@ -100,6 +100,44 @@ def test_cross_session_read_and_removal(store, repo):
         store.read(owner, attachment.id)
 
 
+def test_remove_replays_physical_unlink_without_revision_change(store, repo, tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from app.intake.db_models import IntakeOperationRow
+
+    owner, view = repo.create("ar")
+    attachment, view = store.upload(owner, uuid4(), view.revision, "shot.png", png_bytes())
+    request_id = uuid4()
+    original_unlink = Path.unlink
+    attempts = 0
+
+    def fail_first_unlink(path, missing_ok=False):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise OSError("simulated unlink failure")
+        return original_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", fail_first_unlink)
+    with pytest.raises(OSError, match="simulated unlink failure"):
+        store.remove(owner, attachment.id, request_id, view.revision)
+
+    after_failure = repo.get(owner)
+    assert after_failure.revision == view.revision + 1
+    assert after_failure.attachments[0].removed is True
+    replayed = store.remove(owner, attachment.id, request_id, after_failure.revision)
+    assert replayed.revision == after_failure.revision
+    assert attempts == 2
+    assert not list(tmp_path.rglob("*.png"))
+
+    with store._sf() as session:
+        from sqlalchemy import func, select
+        count = session.scalar(select(func.count()).select_from(IntakeOperationRow).where(
+            IntakeOperationRow.request_id == request_id
+        ))
+    assert count == 1
+
+
 def test_active_turn_rejects_upload(store, repo, intake_db):
     from app.intake.db_models import IntakeSessionRow
     credentials, view = repo.create("ar")

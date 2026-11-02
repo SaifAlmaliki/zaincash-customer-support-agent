@@ -13,8 +13,9 @@ from app.config import Settings
 from app.db.document_models import UploadedDocument
 from app.db.session import make_engine, make_sessionmaker, reset_db
 from app.kb.documents import store_document
+from app.kb.embeddings import EmbeddingError
 from app.kb.models import KnowledgeDocumentIndex
-from app.kb.service import KnowledgeService
+from app.kb.service import KnowledgeError, KnowledgeExecutionError, KnowledgeService
 from app.main import create_app
 from tests.kb_api_fakes import Embeddings
 
@@ -283,6 +284,37 @@ def test_actual_guardrail_failure_is_separate_from_reply(evidence_client):
     assert detail["requests_credentials"] == 0.8
     assert "draft_failed_guardrail" in detail["escalation_reasons"]
     assert detail["draft_text"] and detail["citation_sources"]
+
+
+@pytest.mark.parametrize("error", [
+    EmbeddingError("PRIVATE-provider-secret"),
+    KnowledgeError("PRIVATE-provider-secret"),
+    TimeoutError("PRIVATE-provider-secret"),
+])
+def test_search_expected_failures_keep_safe_503(client, monkeypatch, error):
+    async def fail_search(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(client.app.state.knowledge, "search", fail_search)
+    response = client.post("/api/knowledge/search", json={"query": "policy"})
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Knowledge search unavailable; check the provider and index, then retry."
+    )
+    assert "PRIVATE-provider-secret" not in response.text
+
+
+def test_search_unexpected_fault_logs_only_safe_type(client, monkeypatch, caplog):
+    async def fail_search(*args, **kwargs):
+        raise KnowledgeExecutionError(RuntimeError("PRIVATE-provider-secret"))
+
+    monkeypatch.setattr(client.app.state.knowledge, "search", fail_search)
+    with caplog.at_level("WARNING", logger="app.api.knowledge"):
+        response = client.post("/api/knowledge/search", json={"query": "policy"})
+    assert response.status_code == 503
+    assert "PRIVATE-provider-secret" not in response.text
+    assert "RuntimeError" in caplog.text
+    assert "PRIVATE-provider-secret" not in caplog.text
 
 
 def test_health_distinguishes_failed_from_empty(client, kb_env):

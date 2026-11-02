@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 
 from app.llm import LLMUnavailable, StructuredLLM
 from app.pipeline.contracts import FieldPick, NormalizedTicket
-from app.pipeline.stage1_normalize.normalize import to_ascii_digits
-from app.pipeline.stage2_classify.prompts import render_prompt
+from app.pipeline.stage3_extract.prompts import render_prompt
+from app.text import to_ascii_digits
 
 GEMINI_EXTRACT_CONFIDENCE = 0.6
 

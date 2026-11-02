@@ -34,6 +34,24 @@ def events(result, kind):
     return [e for e in result.trace if e["kind"] == kind]
 
 
+@pytest.mark.parametrize("reported,expected", [(None, 0.0006), (0.0, 0.0), (0.25, 0.25)])
+async def test_anthropic_fallback_prices_and_provider_cost_precedence(reported, expected):
+    from uuid import uuid4
+
+    from langchain_core.outputs import ChatGeneration, LLMResult
+
+    from app.pipeline.stage6_draft.agent import _ModelUsage
+    from app.pipeline.stage6_draft.context import DraftContext
+
+    settings = Settings(
+        _env_file=None, anthropic_model="anthropic/claude-sonnet-5.5",
+    )
+    ledger = _ModelUsage(DraftContext(draft_state()), settings)
+    response = LLMResult(generations=[[ChatGeneration(message=answer(cost=reported))]])
+    await ledger.on_llm_end(response, run_id=uuid4())
+    assert ledger.cost_usd == pytest.approx(expected)
+
+
 async def test_real_agent_search_submit_keeps_sources_usage_and_existing_escalation():
     agent, model = drafter()
     state = draft_state(reasons=("fraud_suspected",))

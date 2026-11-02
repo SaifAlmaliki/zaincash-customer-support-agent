@@ -7,7 +7,7 @@ from app.db.models import RunRow, TicketRow
 from app.db.repository import create_run, upsert_tickets
 from app.pipeline.contracts import Ticket
 from app.pipeline.factory import model_ids
-from app.pipeline.stage2_classify.prompts import PROMPT_VERSION
+from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
 from app.services.batch_jobs import run_job
 from app.services.workspace_queries import run_view
 

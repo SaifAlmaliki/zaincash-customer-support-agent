@@ -43,6 +43,12 @@ def test_anthropic_model_selects_the_draft_model_only(monkeypatch):
     assert settings.gemini_model == "google/gemini-3.8-flash"
 
 
+def test_draft_token_prices_follow_the_selected_draft_model():
+    assert Settings(_env_file=None).draft_token_prices == (0.75, 3.75)
+    claude = Settings(_env_file=None, anthropic_model="anthropic/claude-sonnet-5.5")
+    assert claude.draft_token_prices == (3.0, 15.0)
+
+
 def test_drafting_limits_load_from_environment(monkeypatch):
     monkeypatch.setenv("AGENT_MAX_TOOL_CALLS", "6")
     monkeypatch.setenv("AGENT_TIMEOUT_S", "30")

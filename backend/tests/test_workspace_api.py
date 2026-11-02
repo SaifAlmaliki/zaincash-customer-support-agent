@@ -61,6 +61,47 @@ def test_batch_and_queue_expose_real_results(client):
     assert client.get("/api/results/99999").status_code == 404
 
 
+def test_result_list_paginates_filters_and_run_id(client):
+    first_run = start_run(client, [
+        {"external_id": "needle-a", "text": "needle alpha"},
+        {"external_id": "needle-b", "text": "needle beta"},
+        {"external_id": "other", "text": "unrelated"},
+    ])
+    second_run = start_run(client, [{"external_id": "second-run", "text": "needle second"}])
+    assert second_run != first_run
+    query = (
+        f"/api/results?run_id={first_run}&status=pending_review&team=General%20Care"
+        "&category=general_inquiry&priority=P4&q=needle&offset=1&limit=1"
+    )
+    page = client.get(query).json()
+    assert page["total"] == 2
+    assert len(page["items"]) == 1
+    assert page["items"][0]["run_id"] == first_run
+    assert "needle" in page["items"][0]["ticket"]["text"]
+    empty = client.get(query.replace("offset=1", "offset=99")).json()
+    assert empty == {"items": [], "total": 2}
+
+
+def test_result_list_uses_count_page_and_no_intake_query(client):
+    from sqlalchemy import event
+
+    start_run(client)
+    engine = client.app.state.session_factory.kw["bind"]
+    statements = []
+
+    def observe(_conn, _cursor, statement, _parameters, _context, _many):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", observe)
+    try:
+        response = client.get("/api/results?offset=0&limit=1")
+        assert response.status_code == 200, response.text
+    finally:
+        event.remove(engine, "before_cursor_execute", observe)
+    assert len([sql for sql in statements if "ticket_results" in sql]) == 2
+    assert not [sql for sql in statements if "intake_submissions" in sql]
+
+
 def test_review_requires_text_and_rejects_stale_updates(client):
     start_run(client)
     result = client.get("/api/results").json()["items"][0]
@@ -76,6 +117,57 @@ def test_review_requires_text_and_rejects_stale_updates(client):
     assert saved.json()["draft_text"] is None
     assert len(saved.json()["reviews"]) == 1
     assert client.post(url, json=request).status_code == 409
+
+
+def review_payload(result, **updates):
+    payload = {
+        "action": "approve",
+        "reviewer": "Reviewer",
+        "final_text": "هلا بيك، نراجع استفسارك.",
+        "expected_updated_at": result["updated_at"],
+    }
+    payload.update(updates)
+    return payload
+
+
+def test_review_missing_stale_and_team_errors_keep_http_contract(client):
+    missing = {
+        "action": "approve", "reviewer": "Reviewer", "final_text": "رد",
+        "expected_updated_at": datetime.now(UTC).isoformat(),
+    }
+    response = client.post("/api/results/99999/reviews", json=missing)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Ticket result not found."
+
+    start_run(client)
+    result = client.get("/api/results").json()["items"][0]
+    url = f"/api/results/{result['id']}/reviews"
+    stale = review_payload(result, expected_updated_at="2000-01-01T00:00:00+00:00")
+    response = client.post(url, json=stale)
+    assert response.status_code == 409
+    assert response.json()["detail"] == "This ticket was updated by another reviewer. Refresh before saving."
+
+    invalid_team = review_payload(result, action="reassign", team="Not a team", final_text=None)
+    response = client.post(url, json=invalid_team)
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Select a valid support team."
+
+
+@pytest.mark.parametrize("status,message", [
+    ("processing", "This ticket is still processing."),
+    ("failed", "Processing failed. Run the ticket again before reviewing it."),
+])
+def test_review_state_errors_keep_http_contract(client, status, message):
+    from app.db.models import TicketResultRow
+
+    start_run(client)
+    result = client.get("/api/results").json()["items"][0]
+    with client.app.state.session_factory.begin() as session:
+        session.get(TicketResultRow, result["id"]).status = status
+    current = client.get(f"/api/results/{result['id']}").json()
+    response = client.post(f"/api/results/{result['id']}/reviews", json=review_payload(current))
+    assert response.status_code == 409
+    assert response.json()["detail"] == message
 
 
 def test_batch_failure_is_isolated_and_conflicting_ids_rejected(client):

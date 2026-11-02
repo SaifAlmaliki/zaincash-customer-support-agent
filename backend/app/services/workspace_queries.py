@@ -38,11 +38,15 @@ def result_view(session, result, *, detail=False):
         )]
         txn = session.get(TransactionRow, result.matched_txn_ref) if result.matched_txn_ref else None
         value["transaction"] = columns(txn) if txn else None
-    intake = intake_result_view(session, result.ticket_id)
-    if intake is not None:
-        for attachment in intake["attachments"]:
-            attachment["download_url"] = f"/api/results/{result.id}/intake/attachments/{attachment['id']}"
-    value["intake"] = intake if detail else None
+        intake = intake_result_view(session, result.ticket_id)
+        if intake is not None:
+            for attachment in intake["attachments"]:
+                attachment["download_url"] = (
+                    f"/api/results/{result.id}/intake/attachments/{attachment['id']}"
+                )
+        value["intake"] = intake
+    else:
+        value["intake"] = None
     return value
 
 

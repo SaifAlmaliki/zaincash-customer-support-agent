@@ -329,6 +329,17 @@ async def test_all_eight_tools_and_seven_parallel_calls_execute_only_six(api, st
     assert context.submission is None
 
 
+async def test_retired_classifier_disagreement_cannot_be_introduced(api, state, sf, settings):
+    context, tools, _ = tools_for(api, state, sf, settings)
+    with pytest.raises(api[0].DraftToolInputError, match="Unknown escalation reason"):
+        await tools["flag_for_human"].ainvoke({
+            "reason": "classifier_disagreement", "note": "historical result only",
+        })
+    assert context.reasons == ["txn_not_found"]
+    assert context.notes == []
+    assert context.trace[-1]["error_type"] == "DraftToolInputError"
+
+
 async def test_submission_is_terminal_including_invalid_later_calls(api, state, sf, settings):
     context, tools, _ = tools_for(api, state, sf, settings)
     assert tools["submit_draft"].return_direct is True

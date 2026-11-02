@@ -18,9 +18,10 @@ from app.pipeline.stage1_normalize.candidates import (
     normalize_phone,
     parse_amount,
 )
-from app.pipeline.stage1_normalize.normalize import fold_arabic, to_ascii_digits
+from app.pipeline.stage1_normalize.normalize import fold_arabic
 from app.pipeline.stage3_extract.extract import normalize_value
 from app.pipeline.state import PipelineState
+from app.text import to_ascii_digits
 
 _SECRET = re.compile(
     r"(?<!\w)(?:otp|pin|passwords?|passcodes?|one[ -]time[ -](?:password|code)"

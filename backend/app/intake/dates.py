@@ -3,11 +3,10 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
-from app.pipeline.stage1_normalize.normalize import to_ascii_digits
+from app.datetime import BAGHDAD
+from app.text import to_ascii_digits
 
-BAGHDAD = ZoneInfo("Asia/Baghdad")
 _RELATIVE = {
     "today": 0,
     "yesterday": -1,

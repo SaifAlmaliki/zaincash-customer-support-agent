@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.datetime import BAGHDAD
 from app.pipeline.stage1_normalize.normalize import sanitize_for_storage
 
 Mode = Literal["jev"]
@@ -35,7 +36,6 @@ class TicketInput(BaseModel):
     @classmethod
     def ensure_timezone(cls, value):
         if value.tzinfo is None:
-            from app.pipeline.stage4_lookup.lookup import BAGHDAD
             value = value.replace(tzinfo=BAGHDAD)
         return value
 

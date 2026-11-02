@@ -14,8 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from app.api import intake, knowledge, results, runs, workspace
 from app.config import Settings
 from app.db.models import RunRow
-from app.db.session import init_db, make_engine, make_sessionmaker
-from app.db.workspace_schema import upgrade_workspace_schema
+from app.db.session import initialize_database, make_engine, make_sessionmaker
 from app.intake.errors import IntakeError
 from app.intake.submission import SubmissionService
 from app.pipeline.factory import build_pipeline
@@ -38,8 +37,7 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
         engine = None
         if session_factory is None:
             engine = make_engine(settings.database_url)
-            init_db(engine)
-            upgrade_workspace_schema(engine)
+            initialize_database(engine)
             app.state.session_factory = make_sessionmaker(engine)
         intake_service = (intake_builder or make_intake_service)(app.state.session_factory, settings, app.state.taxonomy)
         app.state.intake = intake_service

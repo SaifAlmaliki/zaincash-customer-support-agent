@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from dataclasses import asdict
 from urllib.parse import quote
 
@@ -16,8 +17,11 @@ from app.kb.documents import (
     document_view,
     store_document,
 )
-from app.kb.service import DocumentNotFoundError
+from app.kb.embeddings import EmbeddingError
+from app.kb.service import DocumentNotFoundError, KnowledgeError, KnowledgeExecutionError
 from app.services.knowledge_runtime import knowledge_configured
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/knowledge", tags=["Knowledge documents"])
 
@@ -69,8 +73,18 @@ async def search_knowledge(body: KnowledgeSearchInput, request: Request):
         async with asyncio.timeout(request.app.state.settings.agent_timeout_s):
             result = await request.app.state.knowledge.search(body.query, category=body.category, k=body.k)
         return asdict(result)
-    except Exception:
-        raise HTTPException(503, "Knowledge search unavailable; check the provider and index, then retry.") from None
+    except (EmbeddingError, KnowledgeError, TimeoutError):
+        raise HTTPException(
+            503, "Knowledge search unavailable; check the provider and index, then retry.",
+        ) from None
+    except Exception as exc:
+        diagnostic_type = (
+            exc.diagnostic_type if isinstance(exc, KnowledgeExecutionError) else type(exc).__name__
+        )
+        logger.warning("Knowledge search failed with %s", diagnostic_type)
+        raise HTTPException(
+            503, "Knowledge search unavailable; check the provider and index, then retry.",
+        ) from None
 
 
 @router.post("/{document_id}/index", status_code=202)

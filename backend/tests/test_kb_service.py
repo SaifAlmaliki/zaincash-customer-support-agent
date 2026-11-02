@@ -650,7 +650,7 @@ async def test_db_deadline_includes_pool_and_checkout_without_late_claim(
 
 
 async def test_db_deadline_is_cumulative_across_publication_statements(support_test, settings, monkeypatch):
-    from app.kb import service
+    from app.kb import database, service
 
     document_id = upload(support_test)
     # Only statement completions advance this clock. Pool/parse/embed scheduling
@@ -663,6 +663,7 @@ async def test_db_deadline_is_cumulative_across_publication_statements(support_t
             return clock[0]
 
     monkeypatch.setattr(service, "monotonic", phase_time)
+    monkeypatch.setattr(database, "monotonic", phase_time)
     monkeypatch.setattr(service, "INDEXING_TIMEOUT_S", 120.0)
     statement_budgets = []
     completed_statements = []

@@ -19,13 +19,13 @@ from app.db.repository import (
     save_outcomes,
     upsert_tickets,
 )
-from app.db.session import init_db, make_engine, make_sessionmaker
+from app.db.session import initialize_database, make_engine, make_sessionmaker
 from app.ingest import load_jsonl, load_tickets
 from app.pipeline import factory
 from app.pipeline.contracts import Ticket
 from app.pipeline.graph import run_batch
 from app.pipeline.io.serialize import outcome_to_dict
-from app.pipeline.stage2_classify.prompts import PROMPT_VERSION
+from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
 from app.pipeline.stage4_lookup.lookup import InMemoryTransactionRepo, txn_from_dict
 from app.services.knowledge_ingest import MAX_INGEST_DOCUMENTS, ingest_one, ingest_paths, retry_ids
 from app.services.knowledge_runtime import knowledge_configured, make_knowledge_service
@@ -39,7 +39,7 @@ class Mode(StrEnum):
 
 def _sessionmaker(settings: Settings):
     engine = make_engine(settings.database_url)
-    init_db(engine)
+    initialize_database(engine)
     return make_sessionmaker(engine)
 
 

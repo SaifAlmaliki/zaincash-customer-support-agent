@@ -108,6 +108,33 @@ async def test_draft_node_never_retries_or_restarts_paid_work(tax):
     assert drafter.calls == 1
 
 
+async def test_failed_order_check_does_not_repeat_paid_sibling(tax):
+    class OrderCheckFailsOnce(FakeJevRunnable):
+        def __init__(self):
+            super().__init__()
+            self.main_attempts = 0
+            self.order_attempts = 0
+
+        async def ainvoke(self, request):
+            if list(request["questions"]) == ["category"]:
+                self.order_attempts += 1
+                if self.order_attempts == 1:
+                    raise httpx.ConnectError("order check unavailable")
+            else:
+                self.main_attempts += 1
+            return await super().ainvoke(request)
+
+    runnable = OrderCheckFailsOnce()
+    jev = JevClassifier(
+        runnable, tax, model_id="jev-1.13.0", t_jev=0.6,
+        min_top_prob=0.6, price_in_per_m=0.042, max_state_chars=6000,
+    )
+    [outcome], _ = await _run(_deps(tax, jev=jev), [make_ticket("حوالة")], concurrency=1)
+    assert (runnable.main_attempts, runnable.order_attempts) == (1, 1)
+    assert outcome.status == "failed"
+    assert "ConnectError" in outcome.error
+
+
 async def test_review_findings_notes_and_degradation_are_merged(tax):
     class Reviewed:
         async def draft(self, state):

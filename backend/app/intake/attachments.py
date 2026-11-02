@@ -21,6 +21,7 @@ from app.intake.evidence import remove_attachment_evidence
 from app.intake.repository import (
     IntakeRepository,
     assert_same_operation,
+    attachment_from_row,
     operation_fingerprint,
     session_view,
 )
@@ -56,7 +57,7 @@ class AttachmentStore:
                 if existing is not None:
                     assert_same_operation(existing.fingerprint, fingerprint)
                     stored = session.scalar(select(IntakeAttachmentRow).where(IntakeAttachmentRow.operation_id == existing.id))
-                    return self._public(stored), session_view(session, row)
+                    return attachment_from_row(stored), session_view(session, row)
                 self._ensure_mutable(row, expected_revision)
                 decoded = self._decode(content)
                 safe_name = _display_name(filename, decoded["extension"])
@@ -90,7 +91,7 @@ class AttachmentStore:
                 row.updated_at = now
                 session.commit()
                 stored = session.get(IntakeAttachmentRow, attachment_id)
-                return self._public(stored), session_view(session, row)
+                return attachment_from_row(stored), session_view(session, row)
         except Exception:
             if created_path is not None and created_path.exists():
                 with self._sf() as session:
@@ -129,28 +130,32 @@ class AttachmentStore:
             ))
             if existing is not None:
                 assert_same_operation(existing.fingerprint, fingerprint)
-                return session_view(session, row)
-            self._ensure_mutable(row, expected_revision)
-            attachment = session.get(IntakeAttachmentRow, attachment_id)
-            if attachment is None or attachment.session_id != row.id:
-                raise NotOwned("Conversation not found.")
-            now = datetime.now(UTC)
-            session.add(IntakeOperationRow(
-                id=uuid.uuid4(), session_id=row.id, request_id=request_id, kind="remove",
-                fingerprint=fingerprint, status="completed", attempt_id=uuid.uuid4(),
-                claimed_revision=row.revision + 1, request_json={"attachment_id": str(attachment_id)},
-                result_json={"removed": True}, error_code=None, usage=[], created_at=now, updated_at=now,
-            ))
-            attachment.removed = True
-            state = remove_attachment_evidence(IntakeState.model_validate(row.state), attachment_id)
-            row.state = state.model_dump(mode="json")
-            row.review = None
-            row.phase = "collecting" if row.phase != "submitted" else row.phase
-            row.revision += 1
-            row.updated_at = now
-            path = self.root / attachment.storage_key
-            session.commit()
-            view = session_view(session, row)
+                attachment = session.get(IntakeAttachmentRow, attachment_id)
+                if attachment is not None and attachment.session_id == row.id:
+                    path = self.root / attachment.storage_key
+                view = session_view(session, row)
+            else:
+                self._ensure_mutable(row, expected_revision)
+                attachment = session.get(IntakeAttachmentRow, attachment_id)
+                if attachment is None or attachment.session_id != row.id:
+                    raise NotOwned("Conversation not found.")
+                now = datetime.now(UTC)
+                session.add(IntakeOperationRow(
+                    id=uuid.uuid4(), session_id=row.id, request_id=request_id, kind="remove",
+                    fingerprint=fingerprint, status="completed", attempt_id=uuid.uuid4(),
+                    claimed_revision=row.revision + 1, request_json={"attachment_id": str(attachment_id)},
+                    result_json={"removed": True}, error_code=None, usage=[], created_at=now, updated_at=now,
+                ))
+                attachment.removed = True
+                state = remove_attachment_evidence(IntakeState.model_validate(row.state), attachment_id)
+                row.state = state.model_dump(mode="json")
+                row.review = None
+                row.phase = "collecting" if row.phase != "submitted" else row.phase
+                row.revision += 1
+                row.updated_at = now
+                path = self.root / attachment.storage_key
+                session.commit()
+                view = session_view(session, row)
         if path is not None:
             path.unlink(missing_ok=True)
         return view
@@ -220,10 +225,3 @@ class AttachmentStore:
         if not path.is_file():
             raise ImageRejected("Image could not be read.")
         return ImageInput(id=row.id, mime_type=row.mime_type, data=path.read_bytes())
-
-    @staticmethod
-    def _public(row: IntakeAttachmentRow) -> Attachment:
-        return Attachment(
-            id=row.id, filename=row.filename, mime_type=row.mime_type, size=row.size,
-            width=row.width, height=row.height, message_id=row.message_id, removed=row.removed,
-        )

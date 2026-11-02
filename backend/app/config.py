@@ -17,8 +17,6 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     typesafe_api_key: str = ""
     gemini_model: str = "google/gemini-3.8-flash"
-    gemini_strong_model: str = "google/gemini-2.5-pro"
-    gemini_embed_model: str = "gemini-embedding-001"
     # Optional drafting override. Jev classification and other model-backed features are unaffected.
     anthropic_model: str = ""
     rag_enabled: bool = True
@@ -52,8 +50,9 @@ class Settings(BaseSettings):
     # USD per 1M tokens. Check current pricing before reporting costs.
     price_gemini_flash_in: float = 0.75
     price_gemini_flash_out: float = 3.75
-    price_gemini_pro_in: float = 1.25
-    price_gemini_pro_out: float = 10.0
+    # Fallback estimate for Anthropic drafting when OpenRouter omits cost.
+    price_anthropic_in: float = Field(default=3.0, ge=0, allow_inf_nan=False)
+    price_anthropic_out: float = Field(default=15.0, ge=0, allow_inf_nan=False)
     price_jev_in: float = 0.042
     # Fallback estimate only: OpenAI text-embedding-3-small, $0.02/1M input tokens.
     # https://developers.openai.com/api/docs/models/text-embedding-3-small (2026-10-17)
@@ -104,7 +103,7 @@ class Settings(BaseSettings):
             raise ValueError("EMBEDDING_MODEL must be a non-empty model ID")
         return value.strip()
 
-    @field_validator("gemini_model", "gemini_strong_model")
+    @field_validator("gemini_model")
     @classmethod
     def qualify_gemini_model(cls, value: str) -> str:
         """Accept legacy .env model names while recording the OpenRouter model ID."""
@@ -121,6 +120,12 @@ class Settings(BaseSettings):
     @property
     def draft_model(self) -> str:
         return self.anthropic_model or self.gemini_model
+
+    @property
+    def draft_token_prices(self) -> tuple[float, float]:
+        if self.anthropic_model:
+            return self.price_anthropic_in, self.price_anthropic_out
+        return self.price_gemini_flash_in, self.price_gemini_flash_out
 
 
 @lru_cache

@@ -16,7 +16,7 @@ const RunsPage = lazy(() =>
   }))
 )
 const RunDetailPage = lazy(() =>
-  import("@/features/runs/RunsPage").then((module) => ({
+  import("@/features/runs/RunDetailPage").then((module) => ({
     default: module.RunDetailPage,
   }))
 )

@@ -1,47 +1,24 @@
 import { useEffect, useRef, useState } from "react"
-import {
-  BookOpen,
-  Download,
-  FileText,
-  FileUp,
-  Search,
-  Trash2,
-  Database,
-  ArrowRight,
-  Info,
-  RefreshCw,
-} from "lucide-react"
+import { BookOpen, FileUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   ConfirmDialog,
-  EmptyState,
   ErrorState,
-  LoadingState,
   PageHeader,
-  StatusBadge,
 } from "@/components/shared/workspace-ui"
 import { useWorkspace } from "@/lib/workspace"
-import { fill, getLocale, useCopy } from "@/lib/locale"
+import { fill, useCopy } from "@/lib/locale"
 import { api } from "@/lib/api"
-import { dateLabel, sizeLabel } from "@/lib/format"
 import type { KnowledgeDocument } from "@/lib/types"
 import { useKnowledgeLibrary } from "./use-knowledge-library"
 import { KnowledgeSearch } from "./KnowledgeSearch"
+import { DocumentList } from "./DocumentList"
+import { KnowledgeReadiness } from "./KnowledgeReadiness"
 
 export function KnowledgePage() {
   const copy = useCopy()
   const text = copy.knowledge
-  const statusLabels = copy.status as Record<string, string>
-  const readinessStatus: Record<string, string> = {
-    disabled: text.statusDisabled,
-    unconfigured: text.statusUnconfigured,
-    ready: text.statusReady,
-    indexing: text.statusIndexing,
-    failed: text.statusFailed,
-    empty: text.statusEmpty,
-  }
   const workspace = useWorkspace(),
     input = useRef<HTMLInputElement>(null)
   const query = useKnowledgeLibrary(workspace.revision)
@@ -207,266 +184,25 @@ export function KnowledgePage() {
               {text.paused}
             </p>
           )}
-          <Card>
-            <CardHeader>
-              <CardTitle className="section-title">
-                <FileText size={15} />
-                {text.documents}
-                <span className="muted small">
-                  {fill(text.shown, {
-                    shown: documents.length,
-                    stored: query.documents.length,
-                  })}
-                </span>
-              </CardTitle>
-              <Button variant="ghost" size="sm" disabled={busy} onClick={query.refresh}>
-                <RefreshCw size={14} />
-                {text.refresh}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="input-with-icon">
-                <Search size={16} />
-                <Input
-                  aria-label={text.searchDocuments}
-                  placeholder={text.findByName}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              {query.loading ? (
-                <LoadingState />
-              ) : documents.length ? (
-                <div className="document-list">
-                  {documents.map((doc) => {
-                    const pending = query.pendingIds.includes(doc.id)
-                    const active = pending || doc.status === "indexing"
-                    const requestable = query.canRequestIndex(doc)
-                    const indexAction =
-                      pending && requestable
-                        ? text.requestAgain
-                        : active
-                          ? text.indexPending
-                          : doc.status === "failed"
-                            ? text.retryIndex
-                            : doc.status === "indexed"
-                              ? text.reindex
-                              : text.indexDocument
-                    return (
-                    <div className="document-item" key={doc.id}>
-                      <span className="document-icon">
-                        <FileText size={16} />
-                      </span>
-                      <div className="document-body">
-                        <div className="document-heading">
-                          <strong>{doc.filename}</strong>
-                          <StatusBadge
-                            status={
-                              pending && doc.status !== "indexing"
-                                ? "index_requested"
-                                : doc.status
-                            }
-                          />
-                          <span className="muted small">
-                            {fill(text.passagesCount, { count: doc.chunk_count })}
-                          </span>
-                        </div>
-                        <small>
-                          {sizeLabel(doc.size)} ·{" "}
-                          {fill(text.uploaded, { date: dateLabel(doc.created_at) })}
-                        </small>
-                        {pending && doc.status !== "indexing" && (
-                          <p className="field-help">
-                            {fill(text.pendingHelp, {
-                              status: statusLabels[doc.status] || doc.status,
-                            })}{" "}
-                            {requestable && text.pendingRetry}
-                          </p>
-                        )}
-                        {doc.error && (
-                          <p className="document-error">
-                            {pending ? text.previousAttempt : text.indexingFailed}
-                            {doc.error} {!active && text.checkAndRetry}
-                          </p>
-                        )}
-                        {doc.status === "awaiting_indexing" && !pending && (
-                          <p className="field-help">
-                            {text.awaitingHelp}{" "}
-                            {configured
-                              ? text.awaitingConfigured
-                              : text.awaitingUnconfigured}
-                          </p>
-                        )}
-                        {doc.embedding_model && (
-                          <small>
-                            {fill(text.dimensions, {
-                              model: doc.embedding_model,
-                              count: doc.embedding_dimensions ?? "",
-                            })}
-                            {doc.indexed_at
-                              ? ` · ${fill(text.indexedOn, { date: dateLabel(doc.indexed_at) })}`
-                              : ""}
-                          </small>
-                        )}
-                        {!!doc.category_tags.length && (
-                          <small>
-                            {fill(text.categories, {
-                              list: doc.category_tags.join(
-                                getLocale() === "ar" ? "، " : ", "
-                              ),
-                            })}
-                          </small>
-                        )}
-                      </div>
-                      <div className="document-actions">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={busy || !requestable || !configured}
-                          onClick={() => void indexDocument(doc)}
-                          aria-label={`${indexAction}: ${doc.filename}`}
-                        >
-                          {indexAction}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-pressed={selectedId === doc.id}
-                          onClick={() => setSelectedId(doc.id)}
-                        >
-                          {text.inspect}
-                          <span className="sr-only">: {doc.filename}</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          nativeButton={false}
-                          render={<a href={`/api/knowledge/${doc.id}/download`} />}
-                          aria-label={fill(text.download, { name: doc.filename })}
-                        >
-                          <Download size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={fill(text.deleteNamed, { name: doc.filename })}
-                          disabled={busy || active}
-                          onClick={() => setRemove(doc)}
-                        >
-                          <Trash2 size={15} />
-                        </Button>
-                      </div>
-                    </div>
-                  )})}
-                </div>
-              ) : (
-                <EmptyState
-                  title={search ? text.noMatch : text.emptyLibrary}
-                  description={text.emptyHint}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <DocumentList
+            documents={documents}
+            storedCount={query.documents.length}
+            search={search}
+            loading={query.loading}
+            busy={busy}
+            configured={configured}
+            selectedId={selectedId}
+            pendingIds={query.pendingIds}
+            canRequestIndex={query.canRequestIndex}
+            onSearchChange={setSearch}
+            onRefresh={query.refresh}
+            onIndex={(doc) => void indexDocument(doc)}
+            onInspect={(doc) => setSelectedId(doc.id)}
+            onDelete={setRemove}
+          />
           <KnowledgeSearch configured={configured} selected={selected} onClose={() => setSelectedId(null)} />
         </div>
-        <aside className="evidence-stack">
-          <Card>
-            <CardHeader>
-              <CardTitle className="section-title">
-                <Database size={15} />
-                {text.lifecycle}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="document-lifecycle">
-                <li>
-                  <span>1</span>
-                  <div>
-                    <strong>{text.stepStore}</strong>
-                    <p>{text.stepStoreBody}</p>
-                  </div>
-                  <BadgeLabel text={text.available} />
-                </li>
-                <li>
-                  <span>2</span>
-                  <div>
-                    <strong>{text.stepEmbed}</strong>
-                    <p>{text.stepEmbedBody}</p>
-                  </div>
-                  <BadgeLabel text={configured ? text.configured : text.needsSetup} />
-                </li>
-                <li>
-                  <span>3</span>
-                  <div>
-                    <strong>{text.stepCite}</strong>
-                    <p>{text.stepCiteBody}</p>
-                  </div>
-                  <BadgeLabel
-                    text={
-                      workspace.health?.knowledge?.ready
-                        ? text.ready
-                        : text.needsIndex
-                    }
-                  />
-                </li>
-              </ol>
-            </CardContent>
-          </Card>
-          <Card className="knowledge-readiness">
-            <CardHeader>
-              <CardTitle className="section-title">{text.readiness}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="muted small">
-                {workspace.health?.knowledge
-                  ? fill(text.searchable, {
-                      count: workspace.health.knowledge.indexed_document_count,
-                      status:
-                        readinessStatus[workspace.health.knowledge.status] ||
-                        workspace.health.knowledge.status,
-                    })
-                  : text.readinessUnavailable}
-              </p>
-              {workspace.health?.knowledge && (
-                <>
-                  <p className="field-help">
-                    {fill(text.dimensions, {
-                      model: workspace.health.knowledge.embedding_model,
-                      count: workspace.health.knowledge.embedding_dimensions,
-                    })}
-                  </p>
-                  <p className="field-help">
-                    {!workspace.health.knowledge.enabled
-                      ? text.retrievalDisabled
-                      : !configured
-                        ? text.configureProvider
-                        : workspace.health.knowledge.ready
-                          ? text.passagesReady
-                          : text.indexFirst}
-                  </p>
-                  <p className="field-help">
-                    {workspace.health.drafting?.credential_check_configured
-                      ? text.credentialOn
-                      : text.credentialOff}{" "}
-                    {text.readinessScope}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-          <div className="knowledge-note">
-            <Info size={16} />
-            <div>
-              <strong>{text.noteTitle}</strong>
-              <p>{text.noteBody}</p>
-              <span>
-                {text.flowUpload} <ArrowRight size={13} />
-                {text.flowIndex} <ArrowRight size={13} />
-                {text.flowGround}
-              </span>
-            </div>
-          </div>
-        </aside>
+        <KnowledgeReadiness health={workspace.health} configured={configured} />
       </div>
       <ConfirmDialog
         open={remove !== null}
@@ -480,8 +216,4 @@ export function KnowledgePage() {
       />
     </>
   )
-}
-
-function BadgeLabel({ text }: { text: string }) {
-  return <small className="lifecycle-state">{text}</small>
 }

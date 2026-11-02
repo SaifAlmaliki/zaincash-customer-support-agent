@@ -7,7 +7,7 @@ A React + TypeScript + shadcn/ui back-office workspace for **Topic 06: Support P
 The implementation is in WSL Ubuntu-24.04:
 
 ```text
-/home/cvzmh_saif/dev/zaincash-support/customer-support-ui
+/home/cvzmh_saif/dev/zaincash-support/employee-frontend
 ```
 
 From Windows Explorer or an IDE:
@@ -32,7 +32,7 @@ uv --directory backend run uvicorn app.main:app --host 0.0.0.0 --port 8000
 Terminal 2:
 
 ```bash
-cd customer-support-ui
+cd employee-frontend
 npm ci
 npm run dev -- --port 5173
 ```
@@ -62,7 +62,7 @@ The workspace reads and writes through FastAPI. PostgreSQL is the source of trut
 5. **Ticket review:** inspect the original message, source spans, transaction evidence, retained cited passages, draft checks and actual tool trace. Edit a reply, reassign, approve or reject. Changes are audited; stale edits receive a conflict response. Checks and citations describe the original generated draft, not later edits.
 6. **Copy approved reply:** copy the saved, approved response. Approval never sends a message.
 
-The **One pipeline. Every ticket.** strip is an informational stage-to-code map. Clicking a stage opens its description and implementation files. It does not execute the pipeline. Ticket details show actual stage-completion events when the API recorded them; no tool calls are invented.
+The ticket flow view explains recorded stage and tool activity from API result data. It does not execute the pipeline. Ticket details show actual stage-completion events when the API recorded them; no tool calls are invented.
 
 ## Current capability boundaries
 
@@ -86,17 +86,16 @@ src/
     layout/                       Sidebar, top bar, workspace context
     shared/                       Status, confidence, filters, dialogs, empty/error states
   features/
-    queue/                        Queue filters, pagination and triage overview
-    review/                       Source evidence, reply editor, audit and stage/tool trace
-    runs/                         File/paste intake, batch progress and history
-    knowledge/                    Index lifecycle, bounded polling, passage inspection and search
+    queue/                        Pure queue projection, filters, pagination and triage overview
+    review/                       Source evidence, reply editor, audit and active stage/tool flow
+    runs/                         Run history, RunDetailPage and bounded result loading
+    knowledge/                    Index lifecycle, document/readiness views, passage inspection and search
     insights/                     Weekly counts and imported evaluation reports
   hooks/use-resource.ts           Fetching, polling, cancellation and retry
   lib/
     api.ts                        Shared HTTP client and complete-queue loading
     types.ts                      Frontend data contracts
     imports.ts                    Ticket-file and evaluation-report validation
-    stages.ts                     Stage labels and source file map
     format.ts                     Shared display/download helpers
   styles/workspace.css           Shared semantic layout and responsive styling
 ```
@@ -120,6 +119,7 @@ NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt npm exec shadcn -- add <c
 ## Verification
 
 ```bash
+npm run typecheck
 npm test
 npm run lint
 npm run build
@@ -132,6 +132,6 @@ Backend integration tests use only the dedicated `support_test` database. Fronte
 
 The [2026-10-17 verification record](../docs/verification/2026-10-17-rag-drafting.md) separates real API/provider/browser checks from Task 7's controlled fake-response UI fault tests. Live checks covered empty knowledge, malformed-source failed indexing/retry, Arabic search, actual drafts, edit/approve/reload and historical citations after source deletion. A 390px review layout had no horizontal overflow. All eight Plan 3 tasks are completed and reviewed, with all final review findings resolved.
 
-Current final evidence: **689 backend tests** (69.23s), Ruff and the offline Arabic-pack verifier freshly passed under the controller. **25 frontend tests**, lint and production build passed on the same final UI code according to `final-fix-report.md`; the controller did not rerun those frontend checks. The original Task 8 **665/21** results remain historical evidence.
+Current final evidence: **689 backend tests** (69.23s), Ruff and the offline Arabic-pack verifier freshly passed under the controller. For current frontend verification, run the commands above; this guide does not duplicate a test count that can become outdated. The original Task 8 **665/21** results remain historical evidence.
 
 Use [the demo runbook](../docs/demo-readiness.md) with `data/demo/rag_tickets.jsonl`. For judge uploads, the [Arabic pack](../data/test-kb/README.md) contains 13 localized sources (12 corpus policies plus recovered temporary doc2), individually or as one bundle. Its translated bytes have offline parser/integrity validation only, not new live retrieval/drafting quality evidence. All policies are **fictional**, not real ZainCash terms or the future held-out evaluation set. Remaining work: Plan 2 evaluation; packaging/CI; disclosure, data card and broader failure evidence; weekly statistical reporting (stretch).

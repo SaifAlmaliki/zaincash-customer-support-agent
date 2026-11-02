@@ -1452,15 +1452,6 @@ html[lang="ar"] .brand > div {
   line-height: 1.7;
   color: var(--muted-foreground);
 }
-.trace-facts {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.trace-facts li {
-  color: var(--foreground);
-  padding: 2px 0;
-}
 .stage-trace code {
   display: block;
   overflow-wrap: anywhere;

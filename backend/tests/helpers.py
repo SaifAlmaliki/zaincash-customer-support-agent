@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
+from app.datetime import BAGHDAD
 from app.pipeline.contracts import Ticket
 
-BAGHDAD = timezone(timedelta(hours=3))
 RECEIVED = datetime(2026, 10, 7, 9, 30, tzinfo=BAGHDAD)  # a Wednesday
 
 

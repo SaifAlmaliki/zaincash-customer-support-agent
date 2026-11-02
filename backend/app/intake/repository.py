@@ -86,7 +86,7 @@ def _message(row: IntakeMessageRow, attachment_ids: list) -> Message:
     )
 
 
-def _attachment(row: IntakeAttachmentRow) -> Attachment:
+def attachment_from_row(row: IntakeAttachmentRow) -> Attachment:
     return Attachment(
         id=row.id,
         filename=row.filename,
@@ -117,7 +117,7 @@ def load_attachments(session: Session, session_id: uuid.UUID) -> list[Attachment
         .where(IntakeAttachmentRow.session_id == session_id)
         .order_by(IntakeAttachmentRow.created_at, IntakeAttachmentRow.id)
     )
-    return [_attachment(row) for row in rows]
+    return [attachment_from_row(row) for row in rows]
 
 
 def customer_review(data: dict | None) -> CustomerReview | None:

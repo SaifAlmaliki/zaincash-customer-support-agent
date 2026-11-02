@@ -62,3 +62,9 @@ def test_merge_and_empty(tax):
     e = empty_ticket_decision(tax.get("other"))
     assert e.escalated and e.reasons == ("empty_ticket",) and e.priority == "P4"
     assert note_for(()) == ""
+
+
+def test_legacy_classifier_disagreement_note_remains_available():
+    assert note_for(("classifier_disagreement",)) == (
+        "Escalated: Jev and Gemini disagree on the category."
+    )

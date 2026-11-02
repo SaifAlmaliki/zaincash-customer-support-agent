@@ -32,10 +32,9 @@ def test_every_category_is_complete(taxonomy):
         assert c.team in taxonomy.teams
 
 
-def test_describe_and_render(taxonomy):
-    d = taxonomy.get("failed_transfer").describe()
-    assert "Not for:" in d and "Examples:" in d
-    assert "- failed_transfer: " in taxonomy.render()
+def test_describe(taxonomy):
+    description = taxonomy.get("failed_transfer").describe()
+    assert "Not for:" in description and "Examples:" in description
 
 
 def test_priority_helpers():

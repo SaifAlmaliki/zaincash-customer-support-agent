@@ -2,11 +2,10 @@ from app.pipeline.stage1_normalize.normalize import (
     detect_arabizi,
     fold_arabic,
     has_latin_mix,
-    mask_cards,
     normalize,
     sanitize_for_storage,
-    to_ascii_digits,
 )
+from app.text import mask_cards, to_ascii_digits
 from tests.helpers import make_ticket
 
 

@@ -25,6 +25,13 @@ def init_db(engine: Engine) -> None:
     Base.metadata.create_all(engine)
 
 
+def initialize_database(engine: Engine) -> None:
+    from app.db.workspace_schema import upgrade_workspace_schema
+
+    init_db(engine)
+    upgrade_workspace_schema(engine)
+
+
 def reset_db(engine: Engine) -> None:
     Base.metadata.drop_all(engine)
     init_db(engine)

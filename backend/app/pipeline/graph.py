@@ -16,7 +16,8 @@ from app.pipeline.contracts import Ticket, TicketOutcome
 from app.pipeline.execution import ticket_execution
 from app.pipeline.stage1_normalize.candidates import find_candidates
 from app.pipeline.stage1_normalize.normalize import normalize
-from app.pipeline.stage2_classify.base import Classifier, FieldExtractor
+from app.pipeline.stage2_classify.base import Classifier
+from app.pipeline.stage3_extract.base import FieldExtractor
 from app.pipeline.stage3_extract.extract import fill_gaps, finalize
 from app.pipeline.stage4_lookup.lookup import TransactionRepo, match_transaction
 from app.pipeline.stage5_decide.rules import decide, empty_ticket_decision, merge_reasons
@@ -132,7 +133,7 @@ def build_graph(deps: PipelineDeps):
     b = StateGraph(PipelineState)
     b.add_node("prepare", n.prepare)
     b.add_node("escalate_empty", n.escalate_empty)
-    b.add_node("jev_classify", n.jev_classify, retry_policy=deps.retry)
+    b.add_node("jev_classify", n.jev_classify, retry_policy=RetryPolicy(max_attempts=1))
     b.add_node("extract", n.extract, retry_policy=deps.retry)
     b.add_node("lookup", n.lookup)
     b.add_node("decide", n.decide)

@@ -14,7 +14,7 @@ from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
 from app.kb.service import KnowledgeExecutionError, KnowledgeService
-from app.pipeline.stage5_decide.rules import REASON_TEXT
+from app.pipeline.stage5_decide.rules import CURRENT_REASON_TEXT
 from app.pipeline.stage6_draft.context import (
     DraftAlreadySubmitted,
     DraftContext,
@@ -66,7 +66,9 @@ class _Knowledge(_Input):
     k: int = Field(default=5, ge=1, le=10)
 
 
-_REASONS = frozenset(REASON_TEXT) | {"kb_unavailable", "draft_timeout", "draft_tool_limit", "draft_not_submitted"}
+_REASONS = frozenset(CURRENT_REASON_TEXT) | {
+    "kb_unavailable", "draft_timeout", "draft_tool_limit", "draft_not_submitted",
+}
 
 
 class _Flag(_Input):

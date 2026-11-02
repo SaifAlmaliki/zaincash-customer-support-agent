@@ -13,8 +13,8 @@ from app.kb.embeddings import OpenRouterEmbedder
 from app.kb.service import KnowledgeService
 from app.llm import GeminiStructuredLLM, StructuredLLM
 from app.pipeline.graph import MODES, PipelineDeps, build_graph
-from app.pipeline.stage2_classify.gemini import GeminiExtractor
 from app.pipeline.stage2_classify.jev import JevClassifier
+from app.pipeline.stage3_extract.gemini import GeminiExtractor
 from app.pipeline.stage4_lookup.lookup import TransactionRepo
 from app.pipeline.stage6_draft.agent import RagDrafter
 from app.pipeline.stage6_draft.credentials import (

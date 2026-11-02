@@ -21,11 +21,10 @@ from app.intake.repository import (
     load_messages,
     operation_fingerprint,
     processing_status,
-    session_view,
 )
 from app.pipeline.contracts import Ticket
 from app.pipeline.factory import model_ids
-from app.pipeline.stage2_classify.prompts import PROMPT_VERSION
+from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
 
 
 @dataclass
@@ -161,9 +160,3 @@ class SubmissionService:
         )
         receipt = Receipt(ticket_reference=ticket.external_id, submitted_at=submission.submitted_at, processing_status=status)
         return SubmissionResult(receipt, submission.run_id, ticket, self.mode, dispatch)
-
-
-def current_session_view(service: SubmissionService, credentials: Credentials):
-    with service._sf() as session:
-        row = service.repo.authenticate(session, credentials)
-        return session_view(session, row)

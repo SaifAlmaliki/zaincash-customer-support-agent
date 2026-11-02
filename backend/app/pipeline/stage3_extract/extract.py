@@ -15,7 +15,7 @@ from app.pipeline.contracts import (
 )
 from app.pipeline.stage1_normalize.candidates import TXN_FULL, normalize_phone, parse_amount
 from app.pipeline.stage1_normalize.dates import resolve_date
-from app.pipeline.stage2_classify.base import FieldExtractor
+from app.pipeline.stage3_extract.base import FieldExtractor
 
 _NO_PICK = FieldPick(None, 0.0, "none")
 

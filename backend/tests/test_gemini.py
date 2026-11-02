@@ -1,5 +1,5 @@
 from app.pipeline.stage1_normalize.normalize import normalize
-from app.pipeline.stage2_classify.gemini import ExtractedSpan, GeminiExtractor, GeminiFields
+from app.pipeline.stage3_extract.gemini import ExtractedSpan, GeminiExtractor, GeminiFields
 from tests.fakes import FakeStructuredLLM
 from tests.helpers import make_ticket
 
