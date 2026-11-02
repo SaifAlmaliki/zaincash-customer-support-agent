@@ -23,6 +23,7 @@ adapters
 adaptive
 add
 adding
+additional
 admission
 advance
 after
@@ -58,10 +59,12 @@ and
 animate
 answer
 answers
+anthropic
 any
 api
 app
 append
+appended
 applicable
 application
 applies
@@ -75,6 +78,7 @@ arabizi
 arbitrary
 arbitrates
 are
+args
 argument
 arguments
 arithmetic
@@ -92,6 +96,7 @@ asyncio
 atomic
 atomically
 attach
+attached
 attachment
 attachments
 attempt
@@ -115,6 +120,7 @@ backoff
 bad
 badge
 baghdad
+bar
 bare
 base
 based
@@ -123,6 +129,7 @@ batch
 batched
 batches
 become
+becomes
 been
 before
 begin
@@ -132,6 +139,7 @@ below
 bilingual
 bill
 billed
+biller
 bind
 blank
 block
@@ -151,6 +159,7 @@ bounds
 breakdown
 broken
 browser
+bubble
 budget
 bug
 build
@@ -176,6 +185,7 @@ can
 cancel
 cancellation
 cancelled
+cancels
 candidate
 candidates
 cannot
@@ -195,6 +205,7 @@ cascades
 cased
 cases
 cash
+catalog
 categories
 category
 cell
@@ -203,8 +214,11 @@ change
 changed
 changes
 changing
+channel
 character
 characters
+chart
+charts
 chat
 check
 checked
@@ -213,6 +227,7 @@ checkout
 checkpoint
 checks
 child
+chip
 choices
 choose
 chunk
@@ -237,9 +252,13 @@ client
 clients
 close
 closure
+clsx
 cmd
 code
 collapse
+collapsible
+collapsiblecontent
+collapsibletrigger
 collect
 collecting
 collection
@@ -291,6 +310,7 @@ consulting
 consume
 consumers
 contain
+contains
 content
 context
 contextlib
@@ -351,9 +371,13 @@ deadlines
 decide
 decimal
 decision
+decisions
 declarative
 decode
 decoded
+decoder
+decoding
+decompression
 dedupes
 deduplicated
 default
@@ -414,6 +438,7 @@ dispatch
 dispatcher
 dispatches
 display
+displays
 dispose
 dispute
 disputes
@@ -429,6 +454,7 @@ download
 draft
 drafter
 drafting
+draw
 dropping
 dump
 dumped
@@ -444,6 +470,7 @@ editor
 edits
 effects
 eight
+elsewhere
 embed
 embedder
 embedding
@@ -465,6 +492,7 @@ enough
 enqueue
 ensure
 entries
+entrypoint
 enum
 env
 envelopes
@@ -491,6 +519,7 @@ example
 exc
 exception
 exceptions
+excerpt
 exchange
 exclude
 excludes
@@ -523,6 +552,7 @@ extracted
 extraction
 extractor
 fabricated
+fabrication
 facing
 fact
 factory
@@ -550,7 +580,6 @@ fences
 fictional
 field
 fields
-figtree
 file
 filename
 files
@@ -613,7 +642,6 @@ gap
 gaps
 gate
 gated
-geist
 gemini
 gen
 general
@@ -636,6 +664,7 @@ guard
 guarded
 guardrail
 guardrails
+guessed
 guidance
 guided
 hallucinated
@@ -737,9 +766,11 @@ interfaces
 internal
 interpret
 interpretation
+interprets
 interrupted
 into
 invalid
+invalidates
 invented
 invents
 investigation
@@ -756,6 +787,7 @@ issue
 item
 itertools
 its
+jakarta
 jest
 jev
 job
@@ -777,6 +809,7 @@ knowledge
 known
 kyc
 label
+labelled
 labels
 lang
 langchain
@@ -784,6 +817,7 @@ langgraph
 language
 last
 late
+latency
 later
 latest
 latin
@@ -806,8 +840,10 @@ limitations
 limited
 limits
 line
+lines
 lint
 list
+listeners
 live
 llm
 load
@@ -815,6 +851,8 @@ loaded
 loading
 loads
 local
+locale
+locales
 locally
 locals
 lock
@@ -826,6 +864,7 @@ login
 lookback
 lookup
 loop
+lose
 losing
 loss
 lost
@@ -844,10 +883,12 @@ maps
 marker
 markers
 mask
+masking
 masks
 match
 matched
 matches
+matching
 material
 math
 max
@@ -860,6 +901,7 @@ merchant
 merge
 merged
 merging
+mermaid
 message
 messages
 metadata
@@ -880,11 +922,13 @@ mode
 model
 models
 modes
+modified
 modular
 module
 moment
 money
 most
+motion
 multimodal
 multiplier
 must
@@ -894,6 +938,7 @@ mutations
 name
 named
 names
+narrative
 narrow
 natural
 navigation
@@ -922,6 +967,7 @@ normalizes
 not
 note
 notes
+notice
 noul
 now
 null
@@ -929,6 +975,7 @@ number
 numbers
 numeric
 object
+observations
 observe
 occurrences
 ocr
@@ -984,7 +1031,9 @@ page
 pages
 pagination
 paid
+paired
 panel
+paperclip
 paragraph
 paragraphs
 parallel
@@ -1028,12 +1077,12 @@ phone
 phones
 phrases
 pick
-picker
 picks
 pil
 pipeline
 pivot
 place
+placeholder
 placeholders
 plain
 plan
@@ -1063,6 +1112,7 @@ preferred
 prefers
 prefix
 prepare
+present
 preserve
 preserved
 preserves
@@ -1078,9 +1128,11 @@ prior
 priority
 private
 probability
+probe
 process
 processing
 produce
+produced
 programming
 progress
 prohibitions
@@ -1092,6 +1144,7 @@ promoted
 prompt
 prompts
 propagates
+proposal
 proposals
 props
 protocol
@@ -1105,10 +1158,13 @@ public
 publication
 publish
 published
+punctuation
 pure
+put
 pydantic
 pypdf
 pytest
+python
 qualified
 qualify
 quality
@@ -1118,9 +1174,11 @@ question
 questions
 queue
 queued
+quote
 quoted
 quotes
 racing
+radix
 rag
 raise
 raised
@@ -1148,6 +1206,7 @@ rechecks
 recipient
 recognize
 reconcile
+reconciles
 record
 recorded
 recording
@@ -1172,7 +1231,10 @@ refuse
 regex
 registered
 registries
+regression
+regressions
 reindex
+reinspection
 reject
 rejected
 rejection
@@ -1189,7 +1251,10 @@ remove
 removed
 render
 renderable
+reopen
 reordered
+repair
+repaired
 repairs
 repeat
 repeatable
@@ -1219,13 +1284,16 @@ resets
 resolution
 resolve
 resolved
+resolves
 resource
 respect
 respond
 response
 responses
 responsibilities
+restart
 restarts
+restated
 restore
 restores
 result
@@ -1257,8 +1325,11 @@ reviews
 revision
 right
 roadmap
+role
+roles
 rollback
 root
+rooted
 rounding
 route
 router
@@ -1280,8 +1351,10 @@ safety
 same
 sample
 samples
+sanitization
 sanitize
 sanitizes
+sans
 save
 saved
 scale
@@ -1306,14 +1379,18 @@ secrets
 security
 see
 seed
+sees
 select
 selected
+selects
 self
 semantic
+semantically
 send
 sends
 sent
 sentence
+sentences
 separate
 separates
 separator
@@ -1341,6 +1418,7 @@ shapes
 share
 shared
 sharing
+shimmer
 short
 show
 sibling
@@ -1392,6 +1470,7 @@ statements
 status
 stay
 stays
+step
 still
 stop
 stops
@@ -1399,6 +1478,7 @@ storage
 store
 stored
 stores
+story
 str
 streamed
 streaming
@@ -1408,6 +1488,7 @@ string
 strip
 structured
 style
+styles
 submission
 submit
 submitted
@@ -1421,6 +1502,7 @@ sufficient
 summarize
 summary
 summed
+superseded
 supplied
 supplies
 support
@@ -1428,6 +1510,7 @@ supported
 surfaces
 survives
 swallows
+swapped
 switch
 syntax
 synthetic
@@ -1439,6 +1522,7 @@ tags
 tail
 tailwind
 tailwindcss
+tajawal
 takes
 target
 task
@@ -1460,6 +1544,7 @@ testing
 tests
 text
 textarea
+texts
 that
 the
 their
@@ -1467,6 +1552,7 @@ theme
 then
 these
 this
+thought
 thread
 threading
 three
@@ -1480,6 +1566,7 @@ times
 timezone
 timing
 title
+toggle
 token
 tokens
 tolerant
@@ -1495,7 +1582,6 @@ tracked
 tracks
 transaction
 transactions
-transcript
 transfer
 transient
 transitions
@@ -1539,10 +1625,13 @@ unknown
 unless
 unlock
 unowned
+unreconciled
+unrelated
 unresolvable
 unresolved
 unsafe
 unscheduled
+unseen
 unsubmitted
 unsupported
 unsure
@@ -1587,6 +1676,7 @@ variance
 variants
 vectors
 verbatim
+verdict
 verification
 verified
 verify
@@ -1615,8 +1705,10 @@ weak
 web
 weekday
 weekly
+what
 when
 whether
+which
 while
 whole
 widen
@@ -1677,6 +1769,7 @@ zoneinfo
 الواضحة
 بالخطأ
 تصعيد
+تكول
 توثيق
 توليد
 خريطة
@@ -1688,8 +1781,10 @@ zoneinfo
 شبهة
 شراء
 صالحة
+ظاهرة
 عينات
 غير
+فاتورة
 قواعد
 لجنة
 للدعم
@@ -1698,12 +1793,15 @@ zoneinfo
 ليست
 ماذا
 مبلغ
+مدفوعة
 مسودة
 مشاكل
 معرفة
+ناجحة
 نزاع
 وأسئلة
 والبحث
+والجهة
 والفهرسة
 وخارج
 وكيل

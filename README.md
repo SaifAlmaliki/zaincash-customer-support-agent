@@ -1,276 +1,169 @@
 # ZainCash Support Pipeline
 
-This is a back-office pipeline for ZainCash support tickets written in Iraqi dialect. For each ticket it decides the category, sets a priority, extracts the key details, finds the matching transaction, routes the ticket to the right team, and drafts a reply for a person to approve. The employee pipeline is not a chatbot, and it never sends a reply on its own. If it is unsure about a ticket, it escalates it to a person with a note.
-
-Customers can describe a problem in a separate intake conversation. That conversation gathers the report, asks only for missing context, and shows a review before anything is submitted. Submission creates one normal ticket for this same pipeline. It does not recover money, change an account, or mark the problem resolved.
+Back-office automation for Iraqi Arabic support tickets. The pipeline classifies each ticket, extracts its details, finds the relevant transaction, routes it to a team, and prepares a grounded reply for human review.
 
 Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation**.
 
+> **People stay in control.** The pipeline never sends replies, moves money, or changes accounts. Uncertain or unsafe outcomes are escalated with a reason.
+
 ## How a ticket flows
 
-```mermaid
-flowchart LR
-    subgraph ticket["Path"]
-        direction TB
-        A([Support tickets arrive<br/>React intake · employee UI · CLI batch<br/>FastAPI stores one ticket in Postgres])
-        B[Clean the text<br/>Python, no model<br/>Arabic digits → 0-9, hide card numbers]
-        C[Jev reads the ticket<br/>TypeSafe Jev · 1 of 12 categories<br/>priority P1–P4 · 6 red flags · 4 field picks]
-        G[Look up the transaction<br/>Python matcher · Postgres 16<br/>synthetic demo records]
-        H[Route to 1 of 7 teams<br/>Python rules · taxonomy file<br/>raise priority for fraud or stuck money]
-        I[Keep escalation reasons<br/>any reason in the list on the right]
-        J[Draft a reply in Iraqi Arabic<br/>LangChain agent · Gemini via OpenRouter<br/>pgvector policy search]
-        K{Draft passes safety checks?<br/>Python guardrails + Jev<br/>cites policy · no invented numbers<br/>never asks for OTP/PIN}
-        R[Ready for review]
-        X[Escalate to a human<br/>with a short note explaining why]
-        Q[Support agent reviews<br/>React employee workspace<br/>Approve · Edit · Reject]
-        Z([Agent sends the approved reply<br/>nothing is sent automatically])
+1. **Arrive** — a customer submits the intake conversation, or an employee uploads tickets through the workspace or CLI.
+2. **Prepare** — Python normalizes the text, masks card numbers, and finds candidate details.
+3. **Classify and extract** — Jev chooses the category, priority, flags, and relevant text spans. Gemini may fill a missing extraction field.
+4. **Investigate and route** — SQL matches the transaction; deterministic rules assign the team and preserve escalation reasons.
+5. **Draft and check** — the drafting agent uses retrieved policies and transaction evidence. Guardrails check the reply.
+6. **Review** — a support agent approves, edits, rejects, or reassigns the result. Nothing is sent automatically.
 
-        A --> B --> C --> G
-        G --> H --> I
-        I --> J --> K
-        K -- Check failed or earlier flags --> X
-        K -- Passed, no earlier flags --> R
-        X --> Q
-        R --> Q
-        Q --> Z
-    end
+The LangGraph path is:
 
-    subgraph lists["Full lists"]
-        direction TB
-        CAT["12 categories, and the team each one goes to<br/>Failed transfer → Payments Ops<br/>Bill payment → Payments Ops<br/>Wrong recipient → Disputes<br/>Refund request → Disputes<br/>Login and access → Account and Security<br/>Account verification → Account and Security<br/>Fraud report → Account and Security<br/>Agent dispute → Agent Network<br/>Card issue → Cards<br/>App issue → Tech Support<br/>General inquiry → General Care<br/>Other → General Care"]
-        TEAMS["7 teams<br/>Payments Ops<br/>Disputes<br/>Account and Security<br/>Agent Network<br/>Cards<br/>Tech Support<br/>General Care"]
-        PRI["Priorities P1–P4<br/>P1 money at risk now, or fraud<br/>P2 money lost or stuck<br/>P3 service blocked<br/>P4 information question"]
-        FLAGS["6 red flags<br/>Fraud suspected<br/>Money lost<br/>More than one issue<br/>Urgent or angry<br/>Names a specific transaction<br/>Asks for a person"]
-        FIELDS["4 field picks<br/>Transaction ID<br/>Amount<br/>Phone<br/>Date"]
-        WHY["Escalation reasons<br/>Low confidence<br/>Fraud<br/>Several issues<br/>Asked for a person<br/>Missing details<br/>Transaction not found<br/>Several transactions match<br/>Amount mismatch<br/>Date mismatch<br/>Empty ticket<br/>Drafter unavailable<br/>Draft failed a check<br/>No policy supports a reply"]
-        CAT ~~~ TEAMS ~~~ PRI ~~~ FLAGS ~~~ FIELDS ~~~ WHY
-    end
-
-    classDef terminal fill:#e8f5c8,stroke:#6b8f3c,color:#1a1a1a
-    classDef decision fill:#d6ecff,stroke:#3b82f6,color:#1a1a1a
-    classDef action fill:#efe6ff,stroke:#8b7cc9,color:#1a1a1a
-    classDef escalate fill:#f8e6df,stroke:#c4a090,color:#1a1a1a
-    classDef note fill:#f6f1e7,stroke:#b9a88a,color:#1a1a1a
-
-    class A,Z terminal
-    class K decision
-    class B,C,G,H,I,J,R action
-    class X,Q escalate
-    class CAT,TEAMS,PRI,FLAGS,FIELDS,WHY note
+```text
+prepare → jev_classify → extract → lookup → decide → draft
 ```
 
-Colours in the diagram:
-- **Green:** where tickets come in and where they finish.
-- **Blue:** decisions the pipeline makes.
-- **Purple:** automatic steps.
-- **Orange:** steps a person handles.
-- **Sand:** the full lists. The path says "1 of 12" or "1 of 7"; that column is every category, team, priority, flag, field and escalation reason.
 
-Every path ends with a person approving the reply.
+[Explore the architecture and ticket-flow diagrams](docs/pipeline-architecture.html).
 
-### Category rules
+## Quick start
 
-Jev assigns exactly one category from the list in the diagram. The same row in [`data/taxonomy.yaml`](data/taxonomy.yaml) sets the lowest priority and whether lookup has to find a transaction. The employee workspace reads this file too.
+### 1. Configure the environment
 
-| Category | Id | Team | Lowest priority | Transaction required |
-|---|---|---|---|---|
-| Failed transfer | `failed_transfer` | Payments Ops | P2 | Yes |
-| Bill payment | `bill_payment` | Payments Ops | P3 | Yes |
-| Wrong recipient | `wrong_recipient` | Disputes | P2 | Yes |
-| Refund request | `refund_request` | Disputes | P3 | Yes |
-| Login & access | `login_access` | Account & Security | P3 | No |
-| Account verification | `account_kyc` | Account & Security | P4 | No |
-| Fraud report | `fraud_report` | Account & Security | P1 | No |
-| Agent dispute | `agent_dispute` | Agent Network | P2 | Yes |
-| Card issue | `card_issue` | Cards | P3 | No |
-| App issue | `app_bug` | Tech Support | P3 | No |
-| General inquiry | `general_inquiry` | General Care | P4 | No |
-| Other | `other` | General Care | P4 | No |
+You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter key.
 
-Priorities, from most urgent to least:
+```bash
+cp .env.example .env
+```
 
-- **P1** — money at risk now, or fraud. A fraud flag forces P1, and every fraud report is escalated.
-- **P2** — money lost or stuck. A money-lost flag cannot sit below P2.
-- **P3** — the customer is blocked from a service.
-- **P4** — an information question.
+Set these values in `.env`:
 
-The team is still assigned when a ticket is escalated. The note tells the reviewer why: low confidence, fraud, more than one issue, the customer asked for a person, a required field is missing, the transaction is missing or ambiguous, the amount or date does not match, the ticket is empty, the drafter was unavailable, the draft failed a check, or no policy supports a reply.
-
-### Stack on each phase
-
-LangGraph runs this path as one Python 3.11 graph. A model is called only on the phases that name one. Field extraction sits between classification and lookup; the diagram folds that step into the arrow after Jev. Uncertain Jev results keep their classification but are escalated for human review.
-
-| Phase | What happens | Stack |
-|---|---|---|
-| Arrive | The customer intake app gathers the report and submits one ticket. An employee can also paste text, upload CSV or JSON, or start a CLI batch. | Intake and employee apps: React 19, Vite, TypeScript, Tailwind. The employee app also uses shadcn and React Router. API: FastAPI on Uvicorn. Intake model: Gemini through OpenRouter. Storage: Postgres 16. |
-| Clean | Arabic-Indic digits become 0–9, card numbers are masked, and regex lists the amounts, dates, phones and transaction IDs a model may choose. | Python, LangGraph node `prepare`. |
-| Classify | Choose the category, priority and red flags, and point at the real amount, date, phone and transaction ID. | Jev (TypeSafe System One) through `langchain-typesafe`. Scores are calibrated, and Jev selects only spans already in the ticket. |
-| Extract | A picked value is kept when it matches a span of the original text. Gemini may fill one required field when the regex list has nothing usable. | Python span checks, then Gemini for that gap only. |
-| Look up | Categories marked above as needing a transaction are matched on reference, amount and date in the synthetic records. | Python matcher, SQLAlchemy and psycopg, Postgres 16 (`pgvector/pgvector:pg16`). |
-| Route | The team comes from the category table. Priority is raised to that category's floor, and further for fraud or lost money. | Python rules in `stage5_decide/rules.py`. |
-| Draft | An agent writes an Iraqi-Arabic reply from policy passages and the matched transaction. It may call up to six read-only tools within 30 seconds. | LangChain agent, Gemini through OpenRouter. Policy search uses pgvector. Embeddings are `text-embedding-3-small` through OpenRouter, 768 dimensions. |
-| Safety | The draft has to cite a policy, use only numbers from the ticket or the transaction, and avoid asking for an OTP or PIN. A failed check escalates. | Python guardrails, plus Jev for credential wording. |
-| Review | A support agent approves, edits or rejects. The approved text stays in the workspace until a person sends it. | React employee workspace, FastAPI review API, Postgres. |
-
-The same steps as files and function names are in [Where each step lives](#where-each-step-lives).
-
-## Where each step lives
-
-The diagram above is the path a ticket takes. This is the same path as code: the LangGraph node, the file under `backend/app/pipeline/`, and the tool or model that does the work.
-
-| Flow step | LangGraph node | File(s) | Tool(s) / model |
-|---|---|---|---|
-| Clean the text (digits → 0-9, hide cards) | `prepare` | `stage1_normalize/normalize.py` | `normalize()`, `mask_cards()`, `fold_arabic()` |
-| Find refs, phones, amounts, and dates | `prepare` | `stage1_normalize/candidates.py` | `find_candidates()` — recall-tuned regex, the options Jev is allowed to pick |
-| Resolve relative dates | (used in extract) | `stage1_normalize/dates.py` | `resolve_date()` |
-| Jev reads the ticket | `jev_classify` | `stage2_classify/jev.py` | Jev via langchain-typesafe: category, priority, flags, candidate picks (+ reversed-option check) |
-| Extraction prompt | — | `stage2_classify/prompts/gemini_extract_v1.md` | Prompt file (versioned) |
-| Extract ref, amount, date, phone | `extract` | `stage3_extract/extract.py` | `finalize()`, `fill_gaps()`, span verification. Gemini fills a field only when regex found nothing or the Jev pick is weak |
-| Look up the transaction | `lookup` | `stage4_lookup/lookup.py` (+ `app/db/repository.py`) | `match_transaction()` |
-| Route to team + red-flag check | `decide` | `stage5_decide/rules.py` | `decide()`, `merge_reasons()` |
-| Draft the reply | `draft` | `stage6_draft/agent.py`, `model.py`, `context.py`, `prompts/draft_v1.md` | Bounded LangChain agent through OpenRouter; 6 executed tools / 30 seconds |
-| Safety checks on the draft | `draft` | `stage6_draft/guardrails.py`, `credentials.py` | Grounded facts/citations, Arabic/length checks, local credential-request detection + Jev |
-| Knowledge-base search | `draft` (tool) | `stage6_draft/tools.py`, `app/kb/service.py` | `search_knowledge_base`, compatible pgvector passages |
-| Parse, embed and publish sources | Outside ticket graph | `app/kb/parse.py`, `embeddings.py`, `service.py` | OpenRouter embeddings; durable indexing lifecycle |
-
-The eight drafting tools are built in `stage6_draft/tools.py`. Read-only investigations use `stage6_draft/investigation.py`; no tool changes a financial record:
-
-| Tool | What it does |
+| Setting | Purpose |
 |---|---|
-| `lookup_transaction` | Ticket-scoped exact reference lookup |
-| `search_transactions` | Bounded candidate search constrained by ticket evidence |
-| `get_customer_recent_transactions` | Recent activity for the ticket's known customer |
-| `get_customer_ticket_history` | Prior contacts for that customer |
-| `check_service_status` | Known synthetic service incidents |
-| `search_knowledge_base` | Relevant policy passages and embedding cost |
-| `flag_for_human` | Preserve/add an escalation reason |
-| `submit_draft` | Record the cited draft and internal note (terminal) |
+| `TYPESAFE_API_KEY` | Required for Jev classification and credential checks. |
+| `OPENROUTER_API_KEY` | Required for the configured extraction, drafting, intake, and embedding features. |
+| `ANTHROPIC_MODEL` | Drafting and the RAG reply. Set to `anthropic/claude-sonnet-5.5`. Empty uses `GEMINI_MODEL`. |
+| `INTAKE_MODEL` | Customer intake. Set to `anthropic/claude-sonnet-5.5`. Empty uses `GEMINI_MODEL`. |
+| `GEMINI_MODEL` | Extraction gap fill. Leave unset to use `google/gemini-3.8-flash`. |
+| `EMBEDDING_MODEL` | RAG retrieval. Leave unset to use `openai/text-embedding-3-small`. |
 
-Orchestration, outside any single stage:
+Copy every file in `secrets/` from its `.example` counterpart, removing the `.example` suffix. Compose builds `DATABASE_URL` from those files; do not put that URL in `.env`.
 
-| What | File |
-|---|---|
-| Build the graph, run a batch, summarize | `pipeline/graph.py` |
-| LangGraph state | `pipeline/state.py` |
-| Shared dataclasses | `pipeline/contracts.py` |
-| Wire model clients and pipeline dependencies | `pipeline/factory.py` |
-| Outcome → dict or database row | `pipeline/io/serialize.py` |
+### 2. Start Postgres and the API
 
-## Models
-
-| Model | What it does here |
-|---|---|
-| **Jev** (TypeSafe System One) | Fast, cheap classification. Its confidence scores are calibrated, and it picks extracted values directly from the ticket text, so it cannot invent them. |
-| **Gemini 3.8 Flash** (via OpenRouter) | Fallback extraction and grounded drafting when no Anthropic drafting model is configured; selected with `GEMINI_MODEL`. It is not used for classification. |
-| **text-embedding-3-small** (via OpenRouter) | Knowledge indexing and query embeddings, 768 dimensions. |
-
-## Design
-
-The full design is in [`docs/superpowers/specs/2026-10-07-support-pipeline-design.md`](docs/superpowers/specs/2026-10-07-support-pipeline-design.md).
-
-## Run the app
-
-From the repository root in WSL, one command starts both services: Postgres (`db`) and the API (`api`).
+From the repository root:
 
 ```bash
 docker compose up --build
 ```
 
-Leave that terminal open. The first run builds the API image; later runs can use `docker compose up`. To run both in the background instead:
+Wait until both containers are healthy. Use `docker compose up --build -d` to run them in the background.
 
-```bash
-docker compose up --build -d
-```
+### 3. Start the employee workspace
 
-| Service | Container | Address |
-|---|---|---|
-| Postgres | `zaincash-support-db-1` | `localhost:5433` |
-| API | `zaincash-support-api-1` | http://localhost:8000 |
-
-Wait until `docker ps` shows both as **healthy**. API docs are at http://localhost:8000/api/docs. Compose points the API at Postgres on the Docker network and loads the synthetic transactions on startup.
-
-Once, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY`. Copy each file in `secrets/` from its `.example` counterpart (`postgres_user`, `postgres_password`, `postgres_db`). Compose mounts those files and the API builds `DATABASE_URL` from them; that URL does not belong in `.env`. Start Compose again so the API picks up the keys.
-
-**Terminal 2 — UI.** Open a second terminal.
-
-Move into the UI project.
+In a second terminal:
 
 ```bash
 cd employee-frontend
-```
-
-Install the UI packages. The next time you start, you can skip this and run only the command below.
-
-```bash
 npm ci
-```
-
-Start the UI and leave this terminal open.
-
-```bash
 npm run dev
 ```
 
-Open http://localhost:5173 and select **Live workspace**. API docs are at http://localhost:8000/api/docs.
+### 4. Start customer intake (optional)
 
-**Terminal 3 — customer intake.** From `users-frontend/`:
+In a third terminal:
 
 ```bash
+cd users-frontend
 npm ci
 npm --workspace web run dev
 ```
 
-Open http://localhost:5174. The customer app talks to the same API through `/api`. Set `INTAKE_MODEL=google/gemini-2.5-flash` in `.env` for the vision/structured-output model verified during the intake completion audit; `.env.example` includes it. An empty override still falls back to `GEMINI_MODEL`, but the prior `google/gemini-3.8-flash` selection was unreliable in this check. Restart the API after changing model settings. Uploaded screenshots stay in `INTAKE_UPLOAD_DIR` (`data/intake-uploads` under the repository by default). A customer can review a partial report, correct a detail by sending another message, and submit once. The receipt means the report was received for an employee to review. Operators retry a failed intake ticket with the existing batch API using its stored ID, text and customer fields unchanged.
+Restart the API after changing model settings.
 
-The [intake verification record](docs/verification/2026-10-18-customer-intake.md) includes the repaired gaps, **781/40/31** backend/customer/employee test results, browser handoff and an opt-in synthetic live-vision probe.
+| Application | Address |
+|---|---|
+| Employee workspace | http://localhost:5173 |
+| Customer intake | http://localhost:5174 |
+| API | http://localhost:8000 |
+| API documentation | http://localhost:8000/api/docs |
+| PostgreSQL | `localhost:5433` |
 
-### Show it in the browser
+## Try the demo
 
-1. **Knowledge base** → upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md) and wait until it says **Indexed**. Upload that one file. Do not also upload the copies in [`data/test-kb/ar/`](data/test-kb/ar/).
-2. **New batch** → upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl) and start processing with **Jev-only classification**.
-3. Open the four results: a pending transfer matched to `ZC2410000123`, a general question, a P1 fraud escalation, and an out-of-scope question. Edit one reply and choose **Save & approve**. Approval is stored. Nothing is sent.
+1. Open **Knowledge base** and upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md). Wait for **Indexed**. Do not also upload the copies in `data/test-kb/ar/`.
+2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing with Jev-only classification.
+3. Inspect the transfer, general question, fraud escalation, and out-of-scope result. Edit a reply and choose **Save & approve**.
 
-What each ticket and policy should show is in [`data/demo/README.md`](data/demo/README.md) and [`data/test-kb/README.md`](data/test-kb/README.md).
+The demo data is synthetic. Files in `data/kb/` are fictional guidance, not real ZainCash policies or promises.
 
-### Optional checks
+See the [full demo walkthrough](docs/demo-readiness.md).
 
-From `backend/`:
+## Models
+
+Jev is called through TypeSafe. Claude, Gemini, and the embedding model are called through OpenRouter. These are the IDs this checkout runs.
+
+| Step | Model |
+|---|---|
+| Prepare | No model. Python normalizes the text and finds candidate spans. |
+| Classify | `jev-1.13.0` (`JEV_MODEL`). Category, priority, flags, and text spans. |
+| Extract | No model for a span Jev already chose. `google/gemini-3.8-flash` (`GEMINI_MODEL`, unset here so the code default applies) only when a required field is still missing or the Jev pick is below 0.5 confidence. |
+| Lookup | No model. SQLAlchemy matches the transaction in Postgres. |
+| Decide | No model. Rules in `data/taxonomy.yaml` choose the team, priority, and escalation reason. |
+| RAG retrieval | `openai/text-embedding-3-small` (`EMBEDDING_MODEL`, unset here so the code default applies), 768 dimensions. |
+| Draft and the RAG reply | `anthropic/claude-sonnet-5.5` (`ANTHROPIC_MODEL`). Jev still checks credential wording in the draft guardrail. |
+| Customer intake | `anthropic/claude-sonnet-5.5` (`INTAKE_MODEL`). |
+
+`GEMINI_STRONG_MODEL` and `GEMINI_EMBED_MODEL` are set in `.env` and are not called by these steps.
+
+## Where each step lives
+
+| Step | LangGraph node | Main code |
+|---|---|---|
+| Prepare | `prepare` | `backend/app/pipeline/stage1_normalize/` |
+| Classify | `jev_classify` | `backend/app/pipeline/stage2_classify/jev.py` |
+| Extract | `extract` | `backend/app/pipeline/stage3_extract/extract.py` |
+| Match transaction | `lookup` | `backend/app/pipeline/stage4_lookup/` |
+| Route and escalate | `decide` | `backend/app/pipeline/stage5_decide/rules.py` |
+| Draft and check | `draft` | `backend/app/pipeline/stage6_draft/` |
+| Orchestration | — | `backend/app/pipeline/graph.py`, `factory.py`, and `state.py` |
+
+The taxonomy in [`data/taxonomy.yaml`](data/taxonomy.yaml) defines the 12 categories, team mappings, minimum priorities, and transaction requirements.
+
+## Checks
+
+Backend, from `backend/`:
 
 ```bash
 uv run pytest -q
 uv run ruff check app tests
 ```
 
-The Postgres tests need the database running and use the separate `support_test` database. A terminal batch, without the UI, is `uv --directory backend run support run-batch tests/fixtures/sample_tickets.jsonl --out out/run.json`. New batches always use `jev` mode.
+Employee frontend, from `employee-frontend/`:
 
-## Status
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-**Plan 1 and the review workspace are implemented. All eight Plan 3 RAG tasks are completed and reviewed; final review findings are resolved and controller verification passed.** Database-backed runs now retrieve policies, draft Arabic replies, retain citations/tool traces and enforce human review. Explicit `RAG_ENABLED=false` and `--no-db` remain classification-only.
+PostgreSQL integration tests use the separate `support_test` database.
 
-On 2026-10-17, 12 fictional policies were indexed through real OpenRouter embeddings. Supported Arabic searches ranked their intended policy first; supported general-inquiry and pending-transfer drafts passed checks. Fraud stayed P1/escalated; the unsupported physics question received only a scoped refusal with `no_kb_support`. Browser edit/approve/reload and saved citations after temporary-source reindex/deletion were verified. A live transfer attempt timed out before a same-settings retry succeeded; two initial credential-warning false positives led to a narrow regression-tested fix. These are smoke observations, not held-out quality metrics.
+Run a Jev-only CLI batch from the repository root:
 
-See the [demo runbook and remaining work](docs/demo-readiness.md) and [commands, counts, costs and live evidence](docs/verification/2026-10-17-rag-drafting.md). `data/kb/` is **fictional demonstration guidance, not real ZainCash policies, fees, promises or account access**.
+```bash
+uv --directory backend run support run-batch \
+  ../data/demo/rag_tickets.jsonl --out ../out/run.json
+```
 
-Final automated evidence (2026-10-17): the controller freshly verified **689 backend tests** (69.23s), Ruff and the offline Arabic-pack verifier. The final-fix report records **25 frontend tests**, frontend lint and production build passing on the same final UI code; these frontend checks were not rerun by the controller. The earlier **665/21** results remain Task 8 history in the verification record. Automated fake-provider results and parser-only validation of the translated Arabic pack add no new live retrieval/drafting quality claim.
+## More documentation
 
-### Earlier Plan 1 evidence
+- [Architecture and ticket flow](docs/pipeline-architecture.html)
+- [Demo readiness and remaining work](docs/demo-readiness.md)
+- [Full design specification](docs/superpowers/specs/2026-10-07-support-pipeline-design.md)
+- [RAG verification record](docs/verification/2026-10-17-rag-drafting.md)
+- [Customer-intake verification record](docs/verification/2026-10-18-customer-intake.md)
 
-Live smoke results on 2026-10-07:
-
-| Check | Result |
-|---|---|
-| Jev response shape (`jev-1.13.0`) | Passed; adapter and fake are compatible |
-| In-memory `jev` | 5 tickets, no failures |
-| In-memory `gemini` | 5 tickets, no failures, using `google/gemini-3.8-flash`; final reported batch cost $0.058727 |
-| In-memory `cascade` | 5 tickets, no failures; all used Jev, so Gemini fallback was not exercised |
-| Database `cascade`, run twice after migration | Runs 3 and 4 completed with 5 results each; 5 ticket rows total, including the earlier runs |
-
-The cascade fixture checks passed: S-001 was `failed_transfer`, matched its transaction and extracted **50,000 IQD**; S-002 escalated for `fraud_suspected` at **P1**; S-005 was `general_inquiry` at **P4**. Per-ticket outputs are saved locally to `out/smoke-{jev,gemini,cascade}.json`.
-
-To repeat the Jev smoke test, run the in-memory command above with `--mode jev --out ../out/smoke-jev.json` and confirm `total: 5` and `failed_ids: []`. These five fixtures are a connectivity and pipeline check; held-out accuracy evaluation comes in Plan 2.
-
-Remaining: **Plan 2 held-out evaluation**; **Plan 5 packaging/CI**, disclosure, data card and broader evidence-backed failure modes; and the **weekly statistical report as stretch work**. The workspace's existing weekly counts and imported evaluation display do not implement those deliverables.
+The review workspace and RAG drafting flow are implemented. Held-out evaluation, broader packaging/CI, and formal disclosure work remain.
 
 ## License
 
-This project is proprietary. The [license](LICENSE) allows a recipient to read and study the source in order to understand it and ask the copyright holder questions. Publishing, selling, sharing it outside that recipient, and reusing it require Saif Almaliki's prior written approval.
+This project is proprietary. The [license](LICENSE) allows a recipient to read and study the source and ask the copyright holder questions. Publishing, selling, sharing it outside that recipient, and reusing it require Saif Almaliki's prior written approval.
