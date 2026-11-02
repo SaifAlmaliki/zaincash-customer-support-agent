@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "7363d8a8-26fc-498d-b06b-f4f9d5f322a5",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/candidate.json",
+  "output": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/ticket-flow.html",
+  "specification": {
+    "sha256": "9ee3a880ec98117c56957c1bba1f71227411bf7823b9cc5596e9843885fc8edd",
+    "bytes": 7816
+  },
+  "artifact": {
+    "sha256": "8c3731a48b3a1ac7f643b062a7511a318de7792b861da955ce81c461a443d117",
+    "bytes": 857222
+  }
+}

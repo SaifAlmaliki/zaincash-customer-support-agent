@@ -10,6 +10,13 @@ def test_yesterday_is_anchored_to_message_in_baghdad():
     assert canonical_digits("٥٠٠٠٠ / ۵۰۰۰۰") == "50000 / 50000"
 
 
+def test_named_weekday_resolves_to_the_latest_matching_day():
+    from app.intake.dates import normalize_reported_date
+    sent = datetime(2026, 11, 2, 12, tzinfo=ZoneInfo("UTC"))
+    assert normalize_reported_date("يوم الخميس", sent) == "2026-10-29"
+    assert normalize_reported_date("Thursday", sent) == "2026-10-29"
+
+
 def test_ambiguous_slash_date_is_not_fabricated():
     from app.intake.dates import normalize_reported_date
     sent = datetime(2026, 10, 18, 0, 5, tzinfo=ZoneInfo("Asia/Baghdad"))

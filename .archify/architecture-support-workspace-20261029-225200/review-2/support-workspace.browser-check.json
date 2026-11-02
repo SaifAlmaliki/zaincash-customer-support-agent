@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "browser-check",
+  "evidenceKind": "automated-browser",
+  "status": "fail",
+  "visualReview": "not-requested",
+  "provenance": "current",
+  "deliveryReceiptId": "bccd537f-4b90-42ed-88cb-aa25ca372ff6",
+  "artifact": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.html",
+    "sha256": "8c0fbcc7ca194a2d92dbd9f512dad9d05c7753e966a9160552f5c057a29b96f5",
+    "bytes": 855092
+  },
+  "state": {
+    "detail": "read",
+    "motion": "still"
+  },
+  "chrome": {
+    "status": "available",
+    "executable": "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
+  },
+  "diagnostics": [
+    {
+      "code": "viewer/browser-check-runtime",
+      "severity": "error",
+      "message": "browser-check could not complete its Chrome inspection.",
+      "subject": {
+        "artifact": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.html"
+      },
+      "evidence": {
+        "reason": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[1029/224003.557:ERROR:chrome\\app\\chrome_main_delegate.cc:1226] Remote debugging pipe file descriptors are not open.\nChrome transport: Node v22.23.2, libuv 1.51.0, linux; pid=34344, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+      },
+      "supportedFixes": [
+        "resolve the reported Chrome inspection error, then rerun browser-check"
+      ]
+    }
+  ],
+  "containment": {
+    "status": "fail",
+    "policy": "fit-or-reader-declared-readable-vertical-scroll",
+    "viewports": []
+  },
+  "themeStates": {
+    "status": "fail",
+    "viewports": []
+  },
+  "readability": {
+    "status": "fail",
+    "minimumProjectedNodeTextPx": 6,
+    "viewports": []
+  },
+  "viewerChrome": {
+    "status": "fail",
+    "viewports": []
+  },
+  "captures": {
+    "status": "not-requested",
+    "screenshots": [],
+    "contactSheet": null
+  },
+  "sidecars": {
+    "directory": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/review-2",
+    "receipt": "support-workspace.browser-check.json",
+    "files": []
+  },
+  "error": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[1029/224003.557:ERROR:chrome\\app\\chrome_main_delegate.cc:1226] Remote debugging pipe file descriptors are not open.\nChrome transport: Node v22.23.2, libuv 1.51.0, linux; pid=34344, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+}

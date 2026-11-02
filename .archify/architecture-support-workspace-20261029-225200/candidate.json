@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ZainCash Support Workspace",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-support-workspace-20261029-225200/support-workspace.html",
+    "repository": {
+      "url": "https://github.com/SaifAlmaliki/zaincash-customer-support-agent.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "1c5ccce35d4b024d5e14a91d4fd76245340517f4"
+    }
+  },
+  "components": [
+    {
+      "id": "customer",
+      "type": "external",
+      "label": "Customer",
+      "sublabel": "browser",
+      "icon": "person",
+      "pos": [40, 250],
+      "size": [132, 64],
+      "sources": [
+        { "path": "users-frontend/apps/web/vite.config.ts", "line": 8, "end_line": 12, "label": "Intake dev server" }
+      ]
+    },
+    {
+      "id": "employee",
+      "type": "external",
+      "label": "Employee",
+      "sublabel": "browser",
+      "icon": "person",
+      "pos": [40, 40],
+      "size": [132, 64],
+      "sources": [
+        { "path": "employee-frontend/src/App.tsx", "line": 46, "end_line": 60, "label": "Workspace routes" }
+      ]
+    },
+    {
+      "id": "intake",
+      "type": "frontend",
+      "label": "Intake app",
+      "sublabel": "React :5174",
+      "pos": [250, 250],
+      "size": [156, 64],
+      "sources": [
+        { "path": "users-frontend/apps/web/vite.config.ts", "line": 8, "end_line": 12, "label": "Proxy to API" },
+        { "path": "users-frontend/apps/web/src/features/intake/api.ts", "line": 134, "end_line": 147, "label": "Intake client" }
+      ]
+    },
+    {
+      "id": "workspace",
+      "type": "frontend",
+      "label": "Employee app",
+      "sublabel": "React :5173",
+      "pos": [250, 40],
+      "size": [156, 64],
+      "sources": [
+        { "path": "employee-frontend/vite.config.ts", "line": 9, "end_line": 10, "label": "Proxy to API" },
+        { "path": "employee-frontend/src/App.tsx", "line": 46, "end_line": 60, "label": "Queue and review" }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI",
+      "sublabel": "Uvicorn :8000",
+      "tag": "one worker",
+      "pos": [500, 250],
+      "size": [160, 68],
+      "sources": [
+        { "path": "backend/app/main.py", "line": 81, "end_line": 106, "label": "App and routers" },
+        { "path": "docker-compose.yml", "line": 22, "end_line": 50, "label": "API container" }
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "backend",
+      "label": "LangGraph",
+      "sublabel": "in-process stages",
+      "tag": "cascade",
+      "pos": [760, 250],
+      "size": [168, 72],
+      "sources": [
+        { "path": "backend/app/pipeline/graph.py", "line": 172, "end_line": 196, "label": "Compiled graph" },
+        { "path": "backend/app/pipeline/factory.py", "line": 64, "end_line": 127, "label": "Wire models" },
+        { "path": "backend/app/services/batch_jobs.py", "line": 19, "end_line": 21, "label": "Build and run" }
+      ]
+    },
+    {
+      "id": "jev",
+      "type": "external",
+      "label": "Jev",
+      "sublabel": "TypeSafe classify",
+      "pos": [760, 40],
+      "size": [150, 64],
+      "sources": [
+        { "path": "backend/app/pipeline/factory.py", "line": 34, "end_line": 37, "label": "Jev client" }
+      ]
+    },
+    {
+      "id": "openrouter",
+      "type": "cloud",
+      "label": "OpenRouter",
+      "sublabel": "Gemini, embeddings",
+      "pos": [1000, 40],
+      "size": [168, 64],
+      "sources": [
+        { "path": "backend/app/pipeline/factory.py", "line": 40, "end_line": 44, "label": "Gemini client" },
+        { "path": "backend/app/services/intake_runtime.py", "line": 18, "end_line": 21, "label": "Intake model" },
+        { "path": "backend/app/services/knowledge_runtime.py", "line": 12, "end_line": 14, "label": "Embeddings" }
+      ]
+    },
+    {
+      "id": "taxonomy",
+      "type": "database",
+      "label": "taxonomy.yaml",
+      "sublabel": "mounted rules",
+      "pos": [500, 460],
+      "size": [160, 64],
+      "sources": [
+        { "path": "backend/app/taxonomy.py", "line": 64, "end_line": 89, "label": "Load categories" },
+        { "path": "docker-compose.yml", "line": 44, "end_line": 44, "label": "Read-only mount" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "Postgres 16",
+      "sublabel": "pgvector :5433",
+      "pos": [760, 460],
+      "size": [168, 64],
+      "sources": [
+        { "path": "docker-compose.yml", "line": 2, "end_line": 15, "label": "pgvector image" },
+        { "path": "backend/app/db/models.py", "line": 25, "end_line": 49, "label": "Tickets and runs" },
+        { "path": "backend/app/db/repository.py", "line": 41, "end_line": 49, "label": "Save outcomes" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Docker Compose",
+      "wraps": ["api", "pipeline", "taxonomy", "postgres"],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    { "id": "employee-opens-workspace", "from": "employee", "to": "workspace", "label": "browser", "variant": "emphasis" },
+    { "id": "customer-opens-intake", "from": "customer", "to": "intake", "label": "browser", "variant": "emphasis" },
+    { "id": "intake-submits", "from": "intake", "to": "api", "label": "submit", "variant": "emphasis" },
+    { "id": "workspace-calls-api", "from": "workspace", "to": "api", "label": "HTTPS", "fromSide": "right", "toSide": "top" },
+    { "id": "api-starts-graph", "from": "api", "to": "pipeline", "label": "run_job", "variant": "emphasis" },
+    { "id": "api-reads-rules", "from": "api", "to": "taxonomy", "label": "rules", "fromSide": "bottom", "toSide": "top" },
+    { "id": "api-writes-tickets", "from": "api", "to": "postgres", "label": "tickets", "fromSide": "bottom", "toSide": "left" },
+    { "id": "api-calls-openrouter", "from": "api", "to": "openrouter", "label": "intake", "fromSide": "top", "toSide": "left" },
+    { "id": "pipeline-calls-jev", "from": "pipeline", "to": "jev", "label": "classify", "fromSide": "top", "toSide": "bottom" },
+    { "id": "pipeline-calls-openrouter", "from": "pipeline", "to": "openrouter", "label": "draft", "fromSide": "right", "toSide": "bottom" },
+    { "id": "pipeline-saves-results", "from": "pipeline", "to": "postgres", "label": "results", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Two front doors",
+      "items": [
+        "Customers use the intake app on port 5174",
+        "Employees use the workspace on port 5173",
+        "Both Vite apps proxy /api to Uvicorn :8000"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "One API process",
+      "items": [
+        "FastAPI stores tickets, then runs LangGraph in-process",
+        "Jev classifies first; Gemini is the second opinion and drafter",
+        "Screenshots stay on the mounted intake-uploads volume"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Nothing is sent",
+      "items": [
+        "Results wait for approve, edit, reject, or reassign",
+        "The reviewed text is an audit row, not an outbound message"
+      ]
+    }
+  ]
+}

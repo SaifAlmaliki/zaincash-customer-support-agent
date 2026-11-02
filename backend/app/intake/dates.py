@@ -17,6 +17,12 @@ _RELATIVE = {
     "البارحة": -1,
     "البارحه": -1,
 }
+# Python weekday(): Monday is 0. A named day means the latest matching calendar day.
+_WEEKDAYS = {
+    "الاثنين": 0, "الإثنين": 0, "الثلاثاء": 1, "الاربعاء": 2, "الأربعاء": 2, "الخميس": 3,
+    "الجمعة": 4, "الجمعه": 4, "السبت": 5, "الاحد": 6, "الأحد": 6,
+    "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6,
+}
 _ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _SLASH = re.compile(r"\d{1,2}\s*/\s*\d{1,2}")
 
@@ -52,4 +58,9 @@ def normalize_reported_date(value: str, source_time: datetime) -> str | None:
     if matches and len(set(matches)) == 1:
         anchor = source_time.astimezone(BAGHDAD).date() + timedelta(days=matches[0])
         return anchor.isoformat()
+    day_name = folded.removeprefix("يوم").strip()
+    if day_name in _WEEKDAYS:
+        anchor = source_time.astimezone(BAGHDAD).date()
+        resolved = anchor - timedelta(days=(anchor.weekday() - _WEEKDAYS[day_name]) % 7)
+        return resolved.isoformat()
     return None

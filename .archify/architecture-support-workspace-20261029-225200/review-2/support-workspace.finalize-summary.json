@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/candidate.json",
+    "sha256": "958c76020973bec9f24167179af54b05133b16da7cd6692b6c168118cc8afa2c",
+    "bytes": 7146
+  },
+  "artifact": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.html",
+    "sha256": "8c0fbcc7ca194a2d92dbd9f512dad9d05c7753e966a9160552f5c057a29b96f5",
+    "bytes": 855092
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "fail"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/browser-check-runtime",
+      "severity": "error",
+      "message": "browser-check could not complete its Chrome inspection.",
+      "subject": {
+        "artifact": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.html"
+      },
+      "evidence": {
+        "reason": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[1029/224003.557:ERROR:chrome\\app\\chrome_main_delegate.cc:1226] Remote debugging pipe file descriptors are not open.\nChrome transport: Node v22.23.2, libuv 1.51.0, linux; pid=34344, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+      },
+      "supportedFixes": [
+        "resolve the reported Chrome inspection error, then rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/review-2/support-workspace.finalize.json",
+    "summaryReceipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/review-2/support-workspace.finalize-summary.json",
+    "browserCheckReceipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/review-2/support-workspace.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 4864,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}

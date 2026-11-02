@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "bccd537f-4b90-42ed-88cb-aa25ca372ff6",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/candidate.json",
+  "output": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.html",
+  "specification": {
+    "sha256": "958c76020973bec9f24167179af54b05133b16da7cd6692b6c168118cc8afa2c",
+    "bytes": 7146
+  },
+  "artifact": {
+    "sha256": "8c0fbcc7ca194a2d92dbd9f512dad9d05c7753e966a9160552f5c057a29b96f5",
+    "bytes": 855092
+  }
+}

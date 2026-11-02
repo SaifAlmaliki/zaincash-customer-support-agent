@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "running",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-10-29T21:37:43.316Z",
+  "specification": {
+    "path": "\\\\wsl.localhost\\Ubuntu-24.04\\home\\cvzmh_saif\\dev\\zaincash-support\\.archify\\architecture-support-workspace-20261029-225200\\candidate.json",
+    "sha256": "958c76020973bec9f24167179af54b05133b16da7cd6692b6c168118cc8afa2c",
+    "bytes": 7146
+  },
+  "artifact": {
+    "path": "\\\\wsl.localhost\\Ubuntu-24.04\\home\\cvzmh_saif\\dev\\zaincash-support\\.archify\\architecture-support-workspace-20261029-225200\\support-workspace.html"
+  },
+  "stages": {},
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "diagnostics": [],
+  "evidence": {
+    "receipt": "\\\\wsl.localhost\\Ubuntu-24.04\\home\\cvzmh_saif\\dev\\zaincash-support\\.archify\\architecture-support-workspace-20261029-225200\\review-2\\support-workspace.finalize.json",
+    "summaryReceipt": "\\\\wsl.localhost\\Ubuntu-24.04\\home\\cvzmh_saif\\dev\\zaincash-support\\.archify\\architecture-support-workspace-20261029-225200\\review-2\\support-workspace.finalize-summary.json"
+  },
+  "visualReview": "not-requested"
+}

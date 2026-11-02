@@ -57,6 +57,21 @@ def test_later_disagreement_without_correction_remains_a_conflict():
     assert result.facts["amount"].status == "conflicting"
 
 
+def test_restated_narrative_keeps_the_known_fact():
+    first = message(
+        "دفعت فاتورة الكهرباء وطلعت ناجحة بس بعدها جاني اشعار انها ما مدفوعة",
+        at=datetime(2026, 11, 2, 12, tzinfo=UTC),
+    )
+    later = message("get notification its not payed", at=first.created_at + timedelta(minutes=1))
+    original = fact("actual", "بعدها جاني اشعار انها ما مدفوعة", first)
+    result = merge_analysis(
+        context([first, later], [original], category="bill_payment"),
+        proposal(fact("actual", "get notification its not payed", later)),
+    )
+    assert result.facts["actual"].status == "known"
+    assert result.facts["actual"].value == "بعدها جاني اشعار انها ما مدفوعة"
+
+
 def test_additional_issue_is_resolved_in_place_instead_of_appended():
     first = message("I do not know the second issue", at=datetime(2026, 10, 18, tzinfo=UTC))
     later = message("The second issue is a locked card", at=first.created_at + timedelta(minutes=1))

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "skipped",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/candidate.json",
+    "sha256": "958c76020973bec9f24167179af54b05133b16da7cd6692b6c168118cc8afa2c",
+    "bytes": 7146
+  },
+  "artifact": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.html",
+    "sha256": "8c0fbcc7ca194a2d92dbd9f512dad9d05c7753e966a9160552f5c057a29b96f5",
+    "bytes": 855092
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "skipped"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/chrome-unavailable",
+      "severity": "warning",
+      "message": "No supported browser found. Install Chrome/Chromium (or Microsoft Edge), or set ARCHIFY_CHROME to its executable path.",
+      "subject": {
+        "artifact": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.html"
+      },
+      "evidence": {
+        "executable": null
+      },
+      "supportedFixes": [
+        "set ARCHIFY_CHROME to a Chrome/Chromium executable (or Microsoft Edge) and rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.finalize.json",
+    "summaryReceipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.finalize-summary.json",
+    "browserCheckReceipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/architecture-support-workspace-20261029-225200/support-workspace.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3469,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}

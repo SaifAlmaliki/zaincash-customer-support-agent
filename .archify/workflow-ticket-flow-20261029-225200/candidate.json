@@ -1,0 +1,200 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "How a ZainCash Ticket Moves",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": ".archify/workflow-ticket-flow-20261029-225200/ticket-flow.html",
+    "repository": {
+      "url": "https://github.com/SaifAlmaliki/zaincash-customer-support-agent.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "1c5ccce35d4b024d5e14a91d4fd76245340517f4"
+    }
+  },
+  "lanes": [
+    { "id": "customer", "label": "Customer" },
+    { "id": "staff", "label": "Employee" },
+    { "id": "pipeline", "label": "LangGraph" },
+    { "id": "services", "label": "Models and data" }
+  ],
+  "phases": [
+    { "id": "arrive", "label": "Arrive", "fromCol": 0, "toCol": 2 },
+    { "id": "decide", "label": "Classify", "fromCol": 3, "toCol": 3, "variant": "emphasis" },
+    { "id": "close", "label": "Draft and review", "fromCol": 4, "toCol": 5 }
+  ],
+  "groups": [],
+  "mainPath": ["customer", "intake", "api", "classify", "resolve", "review"],
+  "nodes": [
+    {
+      "id": "customer",
+      "lane": "customer",
+      "col": 0,
+      "type": "external",
+      "label": "Customer",
+      "sublabel": "describes a problem",
+      "icon": "person",
+      "sources": [
+        { "path": "users-frontend/apps/web/src/features/intake/api.ts", "line": 134, "end_line": 147, "label": "Start a session" }
+      ]
+    },
+    {
+      "id": "intake",
+      "lane": "customer",
+      "col": 1,
+      "type": "frontend",
+      "label": "Intake app",
+      "sublabel": "review, then submit",
+      "sources": [
+        { "path": "backend/app/api/intake.py", "line": 110, "end_line": 124, "label": "Review and submit" },
+        { "path": "backend/app/services/intake_runtime.py", "line": 29, "end_line": 33, "label": "Dispatch one ticket" }
+      ]
+    },
+    {
+      "id": "empty",
+      "lane": "staff",
+      "col": 3,
+      "type": "security",
+      "label": "Empty ticket",
+      "sublabel": "no model call",
+      "sources": [
+        { "path": "backend/app/pipeline/graph.py", "line": 76, "end_line": 83, "label": "Skip to escalation" },
+        { "path": "backend/app/pipeline/stage5_decide/rules.py", "line": 79, "end_line": 81, "label": "Empty decision" }
+      ]
+    },
+    {
+      "id": "workspace",
+      "lane": "staff",
+      "col": 1,
+      "type": "frontend",
+      "label": "Employee app",
+      "sublabel": "paste, CSV, or JSON",
+      "sources": [
+        { "path": "employee-frontend/src/App.tsx", "line": 49, "end_line": 58, "label": "Queue, runs, review" },
+        { "path": "backend/app/api/runs.py", "line": 30, "end_line": 68, "label": "Start a batch" }
+      ]
+    },
+    {
+      "id": "api",
+      "lane": "customer",
+      "col": 2,
+      "type": "backend",
+      "label": "FastAPI",
+      "sublabel": "store, then dispatch",
+      "sources": [
+        { "path": "backend/app/api/runs.py", "line": 49, "end_line": 68, "label": "Store and enqueue" },
+        { "path": "backend/app/services/batch_jobs.py", "line": 84, "end_line": 86, "label": "Run the batch" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "lane": "services",
+      "col": 2,
+      "type": "database",
+      "label": "Postgres",
+      "sublabel": "tickets and results",
+      "sources": [
+        { "path": "backend/app/db/repository.py", "line": 19, "end_line": 37, "label": "Upsert tickets" },
+        { "path": "backend/app/db/repository.py", "line": 41, "end_line": 49, "label": "Save outcomes" }
+      ]
+    },
+    {
+      "id": "classify",
+      "lane": "pipeline",
+      "col": 3,
+      "type": "backend",
+      "label": "Prepare and classify",
+      "sublabel": "mask cards, then Jev",
+      "tag": "cascade",
+      "sources": [
+        { "path": "backend/app/pipeline/graph.py", "line": 71, "end_line": 79, "label": "Empty-text gate" },
+        { "path": "backend/app/pipeline/graph.py", "line": 85, "end_line": 111, "label": "Jev then Gemini" },
+        { "path": "backend/app/pipeline/stage2_classify/cascade.py", "line": 21, "end_line": 38, "label": "Combine opinions" }
+      ]
+    },
+    {
+      "id": "jev",
+      "lane": "services",
+      "col": 3,
+      "type": "external",
+      "label": "Jev",
+      "sublabel": "TypeSafe",
+      "sources": [
+        { "path": "backend/app/pipeline/factory.py", "line": 34, "end_line": 37, "label": "Jev client" }
+      ]
+    },
+    {
+      "id": "resolve",
+      "lane": "pipeline",
+      "col": 4,
+      "type": "backend",
+      "label": "Lookup and draft",
+      "sublabel": "route, then reply",
+      "sources": [
+        { "path": "backend/app/pipeline/graph.py", "line": 113, "end_line": 144, "label": "Extract through draft" },
+        { "path": "backend/app/pipeline/stage5_decide/rules.py", "line": 45, "end_line": 69, "label": "Escalate with a note" },
+        { "path": "backend/app/pipeline/graph.py", "line": 199, "end_line": 205, "label": "Outcome status" }
+      ]
+    },
+    {
+      "id": "gemini",
+      "lane": "services",
+      "col": 4,
+      "type": "cloud",
+      "label": "OpenRouter",
+      "sublabel": "Gemini",
+      "sources": [
+        { "path": "backend/app/pipeline/factory.py", "line": 40, "end_line": 61, "label": "Gemini and drafter" }
+      ]
+    },
+    {
+      "id": "review",
+      "lane": "staff",
+      "col": 5,
+      "type": "security",
+      "label": "Human review",
+      "sublabel": "approve, edit, reject",
+      "sources": [
+        { "path": "backend/app/services/reviews.py", "line": 10, "end_line": 34, "label": "Record the review" },
+        { "path": "backend/app/api/results.py", "line": 48, "end_line": 51, "label": "Review route" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "customer-opens-intake", "from": "customer", "to": "intake", "variant": "emphasis" },
+    { "id": "intake-submits", "from": "intake", "to": "api", "label": "submit", "variant": "emphasis" },
+    { "id": "employee-uploads", "from": "workspace", "to": "api", "label": "batch", "role": "branch" },
+    { "id": "api-stores-ticket", "from": "api", "to": "postgres", "label": "SQL" },
+    { "id": "api-runs-graph", "from": "api", "to": "classify", "label": "run", "variant": "emphasis" },
+    { "id": "classify-asks-jev", "from": "classify", "to": "jev", "label": "classify" },
+    { "id": "classify-asks-gemini", "from": "classify", "to": "gemini", "label": "if unsure", "variant": "dashed", "role": "branch" },
+    { "id": "classify-continues", "from": "classify", "to": "resolve", "label": "has text", "variant": "emphasis" },
+    { "id": "empty-escalates", "from": "classify", "to": "empty", "label": "empty", "variant": "security", "role": "error", "fromSide": "top", "toSide": "bottom" },
+    { "id": "empty-awaits-review", "from": "empty", "to": "review", "label": "needs a person", "variant": "security" },
+    { "id": "resolve-asks-gemini", "from": "resolve", "to": "gemini", "label": "draft" },
+    { "id": "resolve-saves", "from": "resolve", "to": "postgres", "label": "save", "role": "branch" },
+    { "id": "resolve-awaits-review", "from": "resolve", "to": "review", "label": "needs a person", "variant": "emphasis" },
+    { "id": "review-writes-audit", "from": "review", "to": "api", "label": "audit", "role": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Cascade",
+      "items": [
+        "Jev runs first in jev and cascade modes",
+        "Gemini runs when Jev is unsure or fails, or when the batch is gemini-only",
+        "Disagreement still continues through lookup and draft"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Where it stops",
+      "items": [
+        "Only an empty ticket skips lookup and draft",
+        "Any escalation reason marks the result escalated and still waits for a person",
+        "A failed draft cannot be reviewed; nothing is sent to the customer"
+      ]
+    }
+  ]
+}

@@ -150,6 +150,10 @@ def _apply(previous: Fact | None, update: Fact, messages: dict) -> Fact:
         return previous
     if update.status == "known" and _newer_correction(previous, update, messages):
         return update.model_copy(update={"supersedes": [*previous.evidence, *previous.supersedes]})
+    # A shorter wording or a translation of a narrative fact is the same report.
+    # Amounts, dates, phones, and references still conflict when they disagree.
+    if previous.status == "known" and update.status == "known" and update.key not in _PRECISE:
+        return previous
     return previous.model_copy(update={
         "status": "conflicting",
         "value": update.value or previous.value,

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "skipped",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/candidate.json",
+    "sha256": "9ee3a880ec98117c56957c1bba1f71227411bf7823b9cc5596e9843885fc8edd",
+    "bytes": 7816
+  },
+  "artifact": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/ticket-flow.html",
+    "sha256": "8c3731a48b3a1ac7f643b062a7511a318de7792b861da955ce81c461a443d117",
+    "bytes": 857222
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "skipped"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/chrome-unavailable",
+      "severity": "warning",
+      "message": "No supported browser found. Install Chrome/Chromium (or Microsoft Edge), or set ARCHIFY_CHROME to its executable path.",
+      "subject": {
+        "artifact": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/ticket-flow.html"
+      },
+      "evidence": {
+        "executable": null
+      },
+      "supportedFixes": [
+        "set ARCHIFY_CHROME to a Chrome/Chromium executable (or Microsoft Edge) and rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/ticket-flow.finalize.json",
+    "summaryReceipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/ticket-flow.finalize-summary.json",
+    "browserCheckReceipt": "/home/cvzmh_saif/dev/zaincash-support/.archify/workflow-ticket-flow-20261029-225200/ticket-flow.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3618,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}
