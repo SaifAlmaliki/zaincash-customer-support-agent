@@ -8,19 +8,18 @@ Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation
 
 ## How a ticket flows
 
-1. **Arrive** — a customer submits the intake conversation, or an employee uploads tickets through the workspace or CLI.
-2. **Prepare** — Python normalizes the text, masks card numbers, and finds candidate details.
-3. **Classify and extract** — Jev chooses the category, priority, flags, and relevant text spans. Gemini may fill a missing extraction field.
-4. **Investigate and route** — SQL matches the transaction; deterministic rules assign the team and preserve escalation reasons.
-5. **Draft and check** — the drafting agent uses retrieved policies and transaction evidence. Guardrails check the reply.
-6. **Review** — a support agent approves, edits, rejects, or reassigns the result. Nothing is sent automatically.
+| Step | What happens | Model | Code |
+|---|---|---|---|
+| Arrive | A customer submits intake, or an employee uploads tickets. | `anthropic/claude-sonnet-5.5` (`INTAKE_MODEL`) | `backend/app/intake/` |
+| Prepare | Normalize the text, mask card numbers, and find candidate spans. | None | `backend/app/pipeline/stage1_normalize/` |
+| Classify | Choose the category, priority, flags, and text spans. Jev is the only classifier. | `jev-1.13.0` (`JEV_MODEL`), through TypeSafe | `backend/app/pipeline/stage2_classify/jev.py` |
+| Extract | Normalize the spans Jev chose. Gemini is asked only when a required field has no span. A low-confidence Jev pick is kept. | `google/gemini-3.8-flash` (`GEMINI_MODEL` default), through OpenRouter, for a missing span only | `backend/app/pipeline/stage3_extract/extract.py` |
+| Lookup | Match the transaction. | None. SQLAlchemy and Postgres. | `backend/app/pipeline/stage4_lookup/` |
+| Decide | Assign the team and priority. If Jev is not confident, escalate and tell the reviewer: "the classifier was not confident." | None. Rules in [`data/taxonomy.yaml`](data/taxonomy.yaml). | `backend/app/pipeline/stage5_decide/rules.py` |
+| Draft | Retrieve policy chunks, write a cited reply, and run the guardrails. Jev checks credential wording. | Reply: `anthropic/claude-sonnet-5.5` (`ANTHROPIC_MODEL`). Retrieval: `openai/text-embedding-3-small` (`EMBEDDING_MODEL` default), 768 dimensions. | `backend/app/pipeline/stage6_draft/` |
+| Review | An agent approves, edits, rejects, or reassigns. Nothing is sent. | None | Employee workspace |
 
-The LangGraph path is:
-
-```text
-prepare → jev_classify → extract → lookup → decide → draft
-```
-
+The graph is `prepare → jev_classify → extract → lookup → decide → draft`. An empty `ANTHROPIC_MODEL` or `INTAKE_MODEL` uses `GEMINI_MODEL` for that step. `GEMINI_STRONG_MODEL` and `GEMINI_EMBED_MODEL` are not called.
 
 [Explore the architecture and ticket-flow diagrams](docs/pipeline-architecture.html).
 
@@ -34,16 +33,7 @@ You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter ke
 cp .env.example .env
 ```
 
-Set these values in `.env`:
-
-| Setting | Purpose |
-|---|---|
-| `TYPESAFE_API_KEY` | Required for Jev classification and credential checks. |
-| `OPENROUTER_API_KEY` | Required for the configured extraction, drafting, intake, and embedding features. |
-| `ANTHROPIC_MODEL` | Drafting and the RAG reply. Set to `anthropic/claude-sonnet-5.5`. Empty uses `GEMINI_MODEL`. |
-| `INTAKE_MODEL` | Customer intake. Set to `anthropic/claude-sonnet-5.5`. Empty uses `GEMINI_MODEL`. |
-| `GEMINI_MODEL` | Extraction gap fill. Leave unset to use `google/gemini-3.8-flash`. |
-| `EMBEDDING_MODEL` | RAG retrieval. Leave unset to use `openai/text-embedding-3-small`. |
+Set `TYPESAFE_API_KEY` and `OPENROUTER_API_KEY` in `.env`. The model for each step is in the table above; `.env.example` already contains those IDs.
 
 Copy every file in `secrets/` from its `.example` counterpart, removing the `.example` suffix. Compose builds `DATABASE_URL` from those files; do not put that URL in `.env`.
 
@@ -96,37 +86,6 @@ Restart the API after changing model settings.
 The demo data is synthetic. Files in `data/kb/` are fictional guidance, not real ZainCash policies or promises.
 
 See the [full demo walkthrough](docs/demo-readiness.md).
-
-## Models
-
-Jev is called through TypeSafe. Claude, Gemini, and the embedding model are called through OpenRouter. These are the IDs this checkout runs.
-
-| Step | Model |
-|---|---|
-| Prepare | No model. Python normalizes the text and finds candidate spans. |
-| Classify | `jev-1.13.0` (`JEV_MODEL`). Category, priority, flags, and text spans. |
-| Extract | No model for a span Jev already chose. `google/gemini-3.8-flash` (`GEMINI_MODEL`, unset here so the code default applies) only when a required field is still missing or the Jev pick is below 0.5 confidence. |
-| Lookup | No model. SQLAlchemy matches the transaction in Postgres. |
-| Decide | No model. Rules in `data/taxonomy.yaml` choose the team, priority, and escalation reason. |
-| RAG retrieval | `openai/text-embedding-3-small` (`EMBEDDING_MODEL`, unset here so the code default applies), 768 dimensions. |
-| Draft and the RAG reply | `anthropic/claude-sonnet-5.5` (`ANTHROPIC_MODEL`). Jev still checks credential wording in the draft guardrail. |
-| Customer intake | `anthropic/claude-sonnet-5.5` (`INTAKE_MODEL`). |
-
-`GEMINI_STRONG_MODEL` and `GEMINI_EMBED_MODEL` are set in `.env` and are not called by these steps.
-
-## Where each step lives
-
-| Step | LangGraph node | Main code |
-|---|---|---|
-| Prepare | `prepare` | `backend/app/pipeline/stage1_normalize/` |
-| Classify | `jev_classify` | `backend/app/pipeline/stage2_classify/jev.py` |
-| Extract | `extract` | `backend/app/pipeline/stage3_extract/extract.py` |
-| Match transaction | `lookup` | `backend/app/pipeline/stage4_lookup/` |
-| Route and escalate | `decide` | `backend/app/pipeline/stage5_decide/rules.py` |
-| Draft and check | `draft` | `backend/app/pipeline/stage6_draft/` |
-| Orchestration | — | `backend/app/pipeline/graph.py`, `factory.py`, and `state.py` |
-
-The taxonomy in [`data/taxonomy.yaml`](data/taxonomy.yaml) defines the 12 categories, team mappings, minimum priorities, and transaction requirements.
 
 ## Checks
 

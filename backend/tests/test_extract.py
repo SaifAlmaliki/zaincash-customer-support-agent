@@ -49,6 +49,15 @@ def test_gemini_span_not_in_text_is_null():
     assert ex["amount"].value is None
 
 
+async def test_low_confidence_jev_pick_is_not_sent_to_gemini():
+    nt, cands = _setup()
+    ex = finalize({"amount": FieldPick("50 الف", 0.4, "jev_pick")}, cands, nt)
+    fake = FakeExtractor(picks={"amount": FieldPick("50 الف", 0.6, "gemini", "50000")})
+    filled, cost = await fill_gaps(ex, nt, ("amount",), fake)
+    assert fake.requested == []
+    assert filled["amount"].method == "jev_pick" and cost == 0.0
+
+
 async def test_fill_gaps_only_asks_for_weak_required_fields():
     nt, cands = _setup("حولت خمسين الف امس")
     ex = finalize({"date": FieldPick("امس", 0.9, "jev_pick")}, cands, nt)

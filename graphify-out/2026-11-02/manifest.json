@@ -1524,9 +1524,9 @@
     "semantic_hash": ""
   },
   "backend/app/intake/dates.py": {
-    "mtime": 1792405901.617356,
-    "seen": 1792925661.8165178,
-    "ast_hash": "9def43903db2f686adfa3e30470b2d9d",
+    "mtime": 1793624786.472142,
+    "seen": 1793624972.4731889,
+    "ast_hash": "c1611c9625334840e9906d186e108c3b",
     "semantic_hash": ""
   },
   "backend/app/intake/db_models.py": {
@@ -1542,9 +1542,9 @@
     "semantic_hash": ""
   },
   "backend/app/intake/evidence.py": {
-    "mtime": 1792405901.617356,
-    "seen": 1792925661.8165221,
-    "ast_hash": "cebf9809249fe616d04cf0cc7403d332",
+    "mtime": 1793624782.6799014,
+    "seen": 1793624972.473294,
+    "ast_hash": "ad28e801df62bf3dc4ed5e110b83fdd6",
     "semantic_hash": ""
   },
   "backend/app/intake/graph.py": {
@@ -1644,9 +1644,9 @@
     "semantic_hash": ""
   },
   "backend/tests/intake/test_dates.py": {
-    "mtime": 1792405901.625356,
-    "seen": 1792925661.818632,
-    "ast_hash": "3c556a74156f8fc950993c3aca688774",
+    "mtime": 1793624756.6054099,
+    "seen": 1793624972.4757833,
+    "ast_hash": "90498ac46ebc8f04c7a33a8cd8cdca61",
     "semantic_hash": ""
   },
   "backend/tests/intake/test_evidence.py": {
@@ -1704,9 +1704,9 @@
     "semantic_hash": ""
   },
   "backend/app/intake/prompts/intake_v1.md": {
-    "mtime": 1792405901.621356,
-    "seen": 1792925661.8250022,
-    "ast_hash": "1123b3c58161605515f45dd6b5287579",
+    "mtime": 1793624788.124432,
+    "seen": 1793624972.48235,
+    "ast_hash": "44e6190bc55a72a148dd27a1b3726248",
     "semantic_hash": ""
   },
   "backend/app/intake/prompts/review_v1.md": {
@@ -1938,9 +1938,9 @@
     "semantic_hash": ""
   },
   "backend/tests/intake/test_evidence_regressions.py": {
-    "mtime": 1792405901.6293561,
-    "seen": 1792925661.8186347,
-    "ast_hash": "58c626d72d2da554f7582da70f9d46a4",
+    "mtime": 1793624763.9582667,
+    "seen": 1793624972.475819,
+    "ast_hash": "dfe42083d5820d75709da5e292b8ec23",
     "semantic_hash": ""
   },
   "backend/tests/intake/test_graph.py": {
@@ -2091,6 +2091,102 @@
     "mtime": 1793284118.0961177,
     "seen": 1793284141.1741161,
     "ast_hash": "cbfa4d1ec863634453b37893c21c1715",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/candidate.json": {
+    "mtime": 1793309718.8060234,
+    "seen": 1793624972.4718354,
+    "ast_hash": "7f82a0ad3915ddacbb4bf2b7ff70caca",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/review-2/.archify-remove-5b3545a20b89477a42a242baa95f9f3a/.archify-finalize-3dc47abf-ccb8-4ee3-a57c-17b320aa13ce.json": {
+    "mtime": 1793309871.4980142,
+    "seen": 1793624972.4718397,
+    "ast_hash": "4007f8a62f114c1bdb1a016c66358e80",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/review-2/support-workspace.browser-check.json": {
+    "mtime": 1793310003.6168451,
+    "seen": 1793624972.471842,
+    "ast_hash": "a509c09c1144b8ca153de96832e6408b",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/review-2/support-workspace.finalize-summary.json": {
+    "mtime": 1793310003.635574,
+    "seen": 1793624972.4718432,
+    "ast_hash": "c6bae1a8fa0d9ef8fa47c856d38c37bf",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/review-2/support-workspace.finalize.json": {
+    "mtime": 1793310003.6220224,
+    "seen": 1793624972.4718447,
+    "ast_hash": "aff743f21616f234396e11a317d2ae08",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/support-workspace.browser-check.json": {
+    "mtime": 1793309743.1856203,
+    "seen": 1793624972.4718456,
+    "ast_hash": "f36c588b99494663cf02c2b308030524",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/support-workspace.delivery.json": {
+    "mtime": 1793310001.850022,
+    "seen": 1793624972.471846,
+    "ast_hash": "e82998a25f7a0fe29b3f6715be9e1d40",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/support-workspace.finalize-summary.json": {
+    "mtime": 1793309743.2053564,
+    "seen": 1793624972.471847,
+    "ast_hash": "7d604edb7e376149be9e16dc222f6d20",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/support-workspace.finalize.json": {
+    "mtime": 1793309743.190021,
+    "seen": 1793624972.4718482,
+    "ast_hash": "3df346d0281e717bc6c67b4894010652",
+    "semantic_hash": ""
+  },
+  ".archify/workflow-ticket-flow-20261029-225200/candidate.json": {
+    "mtime": 1793310648.5140083,
+    "seen": 1793624972.4718492,
+    "ast_hash": "b70af84e414be4252e93e95bff52bd00",
+    "semantic_hash": ""
+  },
+  ".archify/workflow-ticket-flow-20261029-225200/ticket-flow.browser-check.json": {
+    "mtime": 1793310658.5493922,
+    "seen": 1793624972.47185,
+    "ast_hash": "170e309054c1e5d4932b80c58ffdb03b",
+    "semantic_hash": ""
+  },
+  ".archify/workflow-ticket-flow-20261029-225200/ticket-flow.delivery.json": {
+    "mtime": 1793310657.1580079,
+    "seen": 1793624972.471851,
+    "ast_hash": "596e9c41287ce6e9087a6a71f88f9f8f",
+    "semantic_hash": ""
+  },
+  ".archify/workflow-ticket-flow-20261029-225200/ticket-flow.finalize-summary.json": {
+    "mtime": 1793310658.5710237,
+    "seen": 1793624972.4718523,
+    "ast_hash": "e3b5b2f746a1fc2965de4a15757ebc7d",
+    "semantic_hash": ""
+  },
+  ".archify/workflow-ticket-flow-20261029-225200/ticket-flow.finalize.json": {
+    "mtime": 1793310658.550871,
+    "seen": 1793624972.4718537,
+    "ast_hash": "2feed0a9ecfbc431206db5d89fb056a4",
+    "semantic_hash": ""
+  },
+  ".archify/architecture-support-workspace-20261029-225200/support-workspace.html": {
+    "mtime": 1793310001.2113872,
+    "seen": 1793624972.481958,
+    "ast_hash": "5e0f154b8b80cb9ecb54862990ecdcb3",
+    "semantic_hash": ""
+  },
+  ".archify/workflow-ticket-flow-20261029-225200/ticket-flow.html": {
+    "mtime": 1793310656.562008,
+    "seen": 1793624972.481959,
+    "ast_hash": "e879653ab537f6f68d80554ad7bd7fd7",
     "semantic_hash": ""
   }
 }

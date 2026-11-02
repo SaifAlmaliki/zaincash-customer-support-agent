@@ -1,17 +1,17 @@
 # Graph Report - zaincash-support  (2026-11-02)
 
 ## Corpus Check
-- 318 files · ~386,466 words
+- 322 files · ~284,423 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 32 file(s) not represented in the graph (top: (none) 20, .jsonl 4, .css 4)
 
 ## Summary
-- 3084 nodes · 9477 edges · 151 communities (112 shown, 39 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 1041 edges (avg confidence: 0.92)
+- 3060 nodes · 9361 edges · 169 communities (125 shown, 44 thin omitted)
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 1028 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1c5ccce3`
+- Built from commit: `7c877bc0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,7 +20,7 @@
 - intake/types.ts
 - pytest
 - TurnStore
-- test_draft_guardrails.py
+- investigation.py
 - agent.py
 - QueuePage.tsx
 - Customer conversation intake for ZainCash support
@@ -34,8 +34,8 @@
 - ui/package.json
 - employee-frontend/src/App.tsx
 - users-frontend/package.json
-- make_output
-- knowledge.py
+- make_ticket
+- TicketRow
 - web/package.json
 - test_recovery_regressions.py
 - compilerOptions
@@ -53,7 +53,7 @@
 - search_knowledge_base
 - web/components.json
 - Pipeline Spec Rules
-- pipeline/contracts.py
+- jev.py
 - ui/components.json
 - Settings
 - fact
@@ -71,18 +71,18 @@
 - Submit Draft Tool
 - Project Root
 - parse_document
-- attachments.py
+- test_attachments.py
 - pipeline/graph.py
 - rules.py
 - workspace-ui.tsx
 - tools.py
 - intake/types.ts
 - tasks
-- UploadedDocument
+- kb/service.py
 - IntakePage.tsx
 - test_handoff.py
 - PipelineState
-- main.py
+- TicketResultRow
 - Credentials
 - taxonomy.py
 - test_submission.py
@@ -90,7 +90,7 @@
 - lib/types.ts
 - test-kb/README.md
 - Plan 3 RAG Drafting Implementation Plan
-- index_deadlines
+- EmbeddingError
 - devDependencies
 - judge-demo.ar.md
 - account_kyc.md
@@ -108,7 +108,7 @@
 - canReview
 - devDependencies
 - devDependencies
-- guardrails.py
+- normalize.py
 - ticket-flow.ts
 - review.py
 - compilerOptions
@@ -118,6 +118,7 @@
 - InvalidEvidence
 - dependencies
 - compilerOptions
+- main.py
 - controller.test.ts
 - test_final_fix_handoff.py
 - ZainCash Support Workspace
@@ -125,53 +126,70 @@
 - scripts
 - scripts
 - compilerOptions
-- fakes.py
+- extract.py
 - dependencies
 - web/tsconfig.json
 - employee-frontend/tsconfig.json
 - exports
-- Customer intake verification — 2026-10-18
+- attachments.py
 - scripts
 - users-frontend/README.md
 - intake/contracts.py
-- TurnContext
+- intake/contracts.py
+- AttachmentStore
 - ar/failed_transfer.md
-- test_gemini.py
-- collapsible.tsx
+- guardrails.py
+- gemini.py
+- response_payload
 - intake/model.py
 - test_llm.py
 - intake.py
-- test_workspace_api.py
+- errors.py
 - KnowledgeService
+- db/models.py
 - Customer Conversation Intake Implementation Plan
-- KnowledgeExecutionError
-- submission.py
+- find_candidates
+- intake/repository.py
 - intake/api.ts
-- test_cli.py
+- fakes.py
+- stage6_draft/model.py
+- FakeJevRunnable
 - test_dbapi_commit_handoff_arbitrates_cancellation
+- resolve_date
 - indexDocument
 - components-ai-thought-chain.tsx
-- json
+- db/repository.py
 - intake/README.md
-- main.py
+- workspace.py
+- test_workspace_api.py
+- test_serialize.py
+- ZainCash support: architecture and ticket flow {#support-overview}
+- Synthetic demo readiness
 - employee-frontend/src/components/theme-provider.tsx
-- test_lookup.py
+- ar/app_bug.md
+- lookup.py
+- ar/bill_payment.md
+- ar/card_issue.md
+- ar/fraud_report.md
 - bill-payment-biller-notice.md
 - api-entrypoint.sh
 - factory.py
+- ar/general_inquiry.md
+- ar/login_access.md
 - build_pipeline
+- ar/refund_request.md
 
 ## God Nodes (most connected - your core abstractions)
 1. `Settings` - 103 edges
 2. `KnowledgeService` - 79 edges
 3. `fact()` - 53 edges
 4. `IntakeController` - 51 edges
-5. `PipelineState` - 50 edges
+5. `PipelineState` - 48 edges
 6. `context()` - 48 edges
-7. `make_output()` - 44 edges
-8. `make_ticket()` - 44 edges
-9. `draft_state()` - 44 edges
-10. `build_pipeline()` - 43 edges
+7. `draft_state()` - 44 edges
+8. `message()` - 43 edges
+9. `build_pipeline()` - 42 edges
+10. `make_ticket()` - 41 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Repeatable local walkthrough` --references--> `Settings`  [INFERRED]
@@ -193,95 +211,95 @@
 - **Drafting Agent Toolset** — backend_app_pipeline_runner_lookup_transaction, backend_app_pipeline_runner_search_transactions, backend_app_pipeline_runner_get_customer_recent_transactions, backend_app_pipeline_runner_get_customer_ticket_history, backend_app_pipeline_runner_check_service_status, backend_app_pipeline_runner_search_knowledge_base, backend_app_pipeline_runner_flag_for_human, backend_app_pipeline_runner_submit_draft [EXTRACTED 1.00]
 - **Ticket Processing Stage Flow** — backend_app_pipeline_runner_prepare, backend_app_pipeline_runner_jev_classify, backend_app_pipeline_runner_gemini_classify, backend_app_pipeline_runner_extract, backend_app_pipeline_runner_lookup, backend_app_pipeline_runner_decide, backend_app_pipeline_runner_draft [EXTRACTED 1.00]
 
-## Communities (151 total, 39 thin omitted)
+## Communities (169 total, 44 thin omitted)
 
 ### Community 0 - "NewBatchPage.tsx"
-Cohesion: 0.14
-Nodes (14): Badge(), badgeVariants, buttonVariants, Tabs(), TabsContent(), TabsList(), tabsListVariants, TabsTrigger() (+6 more)
+Cohesion: 0.12
+Nodes (16): Badge(), badgeVariants, Tabs(), TabsContent(), TabsList(), tabsListVariants, TabsTrigger(), Textarea() (+8 more)
 
 ### Community 1 - "intake/types.ts"
 Cohesion: 0.19
 Nodes (10): IntakeApi, ControllerState, emptyState(), fileIdentity(), Credentials, MessageCommand, PendingOperation, ReviewCommand (+2 more)
 
 ### Community 2 - "pytest"
-Cohesion: 0.21
-Nodes (34): answer(), call(), Checker, draft_state(), script(), submit(), drafter(), events() (+26 more)
+Cohesion: 0.20
+Nodes (37): answer(), call(), draft_state(), Knowledge, script(), submit(), test_real_search_fault_carries_safe_draft_execution_error(), pipeline() (+29 more)
 
 ### Community 3 - "TurnStore"
-Cohesion: 0.13
-Nodes (22): OperationClaim, TurnResult, IntakeAttachmentRow, IntakeMessageRow, RevisionConflict, _attachment(), customer_review(), load_attachments() (+14 more)
+Cohesion: 0.25
+Nodes (6): OperationClaim, RevisionConflict, TurnBusy, _jsonable(), TurnStore, test_recovered_attempt_cannot_publish_stale_output()
 
-### Community 4 - "test_draft_guardrails.py"
-Cohesion: 0.14
-Nodes (26): requests_credentials(), check(), state(), test_aggregation_is_deduplicated_and_has_no_state_side_effects(), test_amount_occurrences_keep_their_own_currency_and_sign(), test_avoid_sharing_warning_does_not_excuse_a_later_request(), test_candidate_prompt_limit_does_not_hide_later_ungrounded_references(), test_candidate_transactions_cannot_authorize_reply_evidence() (+18 more)
+### Community 4 - "investigation.py"
+Cohesion: 0.16
+Nodes (14): TxnRecord, parse_dt(), DraftToolInputError, _datetime(), _days(), _field(), _involves(), _phone() (+6 more)
 
 ### Community 5 - "agent.py"
-Cohesion: 0.16
-Nodes (7): _error_cost(), _ModelUsage, _number(), RagDrafter, DraftContext, DraftExecutionError, test_real_search_fault_carries_safe_draft_execution_error()
+Cohesion: 0.13
+Nodes (6): _error_cost(), _Execution, _ModelUsage, _number(), DraftContext, Task 3: Ticket-scoped investigation and all eight tools
 
 ### Community 6 - "QueuePage.tsx"
-Cohesion: 0.16
-Nodes (49): EmptyState(), ErrorState(), LoadingState(), Metric(), PageHeader(), PriorityBadge(), StatusBadge(), Button() (+41 more)
+Cohesion: 0.15
+Nodes (50): EmptyState(), ErrorState(), LoadingState(), Metric(), PageHeader(), PriorityBadge(), StatusBadge(), Button() (+42 more)
 
 ### Community 7 - "Customer conversation intake for ZainCash support"
 Cohesion: 0.06
 Nodes (31): 10. Verification and acceptance criteria, 11. Delivery and review, 1. Outcome and agreed requirements, 2. Current implementation and integration points, 3. Approach and boundaries, 4. Conversation state and turn flow, 5. Facts, evidence, and readiness, 6. Language and screenshot behavior (+23 more)
 
 ### Community 8 - "trace-facts.ts"
-Cohesion: 0.09
-Nodes (42): 1. Outcome, 2. Scope, 5. Language, 6. How a result becomes the charts, 7. Sentences, 8. Tests, 9. Files, Ticket flow charts (+34 more)
+Cohesion: 0.10
+Nodes (23): Ticket Flow Charts Implementation Plan, 1. Outcome, 2. Scope, 5. Language, 6. How a result becomes the charts, 7. Sentences, 8. Tests, 9. Files (+15 more)
 
 ### Community 9 - "IntakeController"
 Cohesion: 0.20
 Nodes (5): IntakeController, isConflict(), isOffline(), safeMessage(), Language
 
 ### Community 10 - "FakeJevRunnable"
-Cohesion: 0.09
-Nodes (28): CredentialCheck, DegradedCredentialChecker, _finite_nonnegative(), _get(), JevCredentialChecker, FakeJevRunnable, ResponseRunnable, test_bad_usage_cannot_poison_cost() (+20 more)
+Cohesion: 0.10
+Nodes (19): CredentialCheck, DegradedCredentialChecker, _finite_nonnegative(), _get(), JevCredentialChecker, Checker, ResponseRunnable, test_bad_usage_cannot_poison_cost() (+11 more)
 
 ### Community 11 - "test_rag_api.py"
-Cohesion: 0.13
-Nodes (19): client(), evidence_client(), pipeline(), submit(), test_actual_guardrail_failure_is_separate_from_reply(), test_concurrent_index_requests_share_active_work(), test_disabled_or_missing_provider_stores_without_indexing(), test_explicit_retry_tags_search_and_chunk_pagination() (+11 more)
+Cohesion: 0.15
+Nodes (17): client(), evidence_client(), test_actual_guardrail_failure_is_separate_from_reply(), test_concurrent_index_requests_share_active_work(), test_disabled_or_missing_provider_stores_without_indexing(), test_explicit_retry_tags_search_and_chunk_pagination(), test_health_distinguishes_failed_from_empty(), test_health_requires_compatible_nonempty_index() (+9 more)
 
 ### Community 12 - "employee-frontend/package.json"
 Cohesion: 0.06
 Nodes (31): @base-ui/react, class-variance-authority, cn, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh, @fontsource/tajawal (+23 more)
 
 ### Community 14 - "intake/helpers.py"
-Cohesion: 0.24
-Nodes (4): grounded_analysis(), grounded_review(), image_evidence(), ScriptedIntakeModel
+Cohesion: 0.22
+Nodes (6): grounded_analysis(), grounded_review(), ScriptedIntakeModel, HTTP contract (implemented in Tasks 4–5), Task 4: Resumable graph turns, review and customer API, Task 9: End-to-end handoff, live vision evidence and runbook
 
 ### Community 15 - "Support Taxonomy Categories"
-Cohesion: 0.21
-Nodes (22): lookup, Account KYC, Account & Security, Agent Dispute, Agent Network, App Bug, Bill Payment, Card Issue (+14 more)
+Cohesion: 0.22
+Nodes (21): lookup, Account KYC, Account & Security, Agent Dispute, Agent Network, App Bug, Bill Payment, Card Issue (+13 more)
 
 ### Community 16 - "ui/package.json"
 Cohesion: 0.07
 Nodes (29): @turbo/gen, zod, @base-ui/react, class-variance-authority, cn, eslint, @eslint/js, eslint-plugin-react-hooks (+21 more)
 
 ### Community 17 - "employee-frontend/src/App.tsx"
-Cohesion: 0.09
-Nodes (28): App(), EvaluationPage, InsightsPage, KnowledgePage, NewBatchPage, QueuePage, RunDetailPage, RunsPage (+20 more)
+Cohesion: 0.15
+Nodes (20): App(), EvaluationPage, InsightsPage, KnowledgePage, NewBatchPage, QueuePage, RunDetailPage, RunsPage (+12 more)
 
 ### Community 18 - "users-frontend/package.json"
 Cohesion: 0.09
 Nodes (22): turbo, devDependencies, prettier, prettier-plugin-tailwindcss, turbo, typescript, engines, node (+14 more)
 
-### Community 19 - "make_output"
-Cohesion: 0.13
-Nodes (30): build_graph(), PipelineDeps, InMemoryTransactionRepo, load_taxonomy(), tax(), FakeClassifier, make_output(), make_ticket() (+22 more)
+### Community 19 - "make_ticket"
+Cohesion: 0.05
+Nodes (69): build_graph(), PipelineDeps, InMemoryTransactionRepo, requests_credentials(), load_taxonomy(), tax(), FakeClassifier, make_output() (+61 more)
 
-### Community 20 - "knowledge.py"
-Cohesion: 0.11
-Nodes (14): delete_document(), download_document(), index_document(), list_chunks(), list_documents(), _require_provider(), search_knowledge(), upload_document() (+6 more)
+### Community 20 - "TicketRow"
+Cohesion: 0.19
+Nodes (16): get_run(), list_runs(), start_run(), BatchInput, _run_with_db(), RunRow, TicketRow, create_run() (+8 more)
 
 ### Community 21 - "web/package.json"
 Cohesion: 0.07
 Nodes (27): jsdom, @testing-library/jest-dom, @testing-library/react, @testing-library/user-event, @workspace/ui, eslint, @eslint/js, eslint-plugin-react-hooks (+19 more)
 
 ### Community 22 - "test_recovery_regressions.py"
-Cohesion: 0.09
-Nodes (18): _command_settings(), ingest_kb_cmd(), init_db_cmd(), Mode, run_batch_cmd(), _run_in_memory(), seed_db_cmd(), _sessionmaker() (+10 more)
+Cohesion: 0.10
+Nodes (18): _command_settings(), ingest_kb_cmd(), init_db_cmd(), Mode, run_batch_cmd(), _run_in_memory(), seed_db_cmd(), get_settings() (+10 more)
 
 ### Community 23 - "compilerOptions"
 Cohesion: 0.08
@@ -304,40 +322,40 @@ Cohesion: 0.15
 Nodes (13): App(), controller, disableTransitionsTemporarily(), getSystemTheme(), isEditableTarget(), isTheme(), ResolvedTheme, Theme (+5 more)
 
 ### Community 28 - "test_embeddings.py"
-Cohesion: 0.08
-Nodes (40): EmbeddingBatch, EmbeddingError, _nonnegative_number(), OpenRouterEmbedder, _ordered_vectors(), _response_cost(), Embeddings, embedder_for() (+32 more)
+Cohesion: 0.19
+Nodes (18): OpenRouterEmbedder, settings(), test_33_inputs_are_batched_and_each_batch_maps_its_own_indexes(), test_billed_batch_cost_survives_cancellation_without_cross_call_leakage(), test_cancellation_propagates_to_the_callers_deadline(), test_empty_input_returns_empty_batch_without_a_request(), unexpected_request(), test_invalid_rag_settings_are_rejected() (+10 more)
 
 ### Community 29 - "Classify and Extract Prompts"
 Cohesion: 0.31
-Nodes (9): extract, gemini_classify, Pipeline Graph Orchestration, jev_classify, prepare, Gemini Classify Prompt v1, Gemini Extract Prompt v1, GeminiClassifier (+1 more)
+Nodes (8): extract, gemini_classify, Pipeline Graph Orchestration, jev_classify, prepare, Gemini Extract Prompt v1, GeminiClassifier, JevClassifier
 
 ### Community 30 - "test_draft_tools.py"
-Cohesion: 0.11
-Nodes (31): test_contracts_reject_extra_keys(), test_datetimes_must_be_timezone_aware(), api(), ErrorEmbedder, settings(), test_all_eight_tools_and_seven_parallel_calls_execute_only_six(), test_context_copies_input_and_rejects_raising_hard_call_limit(), test_database_faults_remain_distinct_and_record_paid_search_cost() (+23 more)
+Cohesion: 0.13
+Nodes (26): api(), settings(), test_all_eight_tools_and_seven_parallel_calls_execute_only_six(), test_context_copies_input_and_rejects_raising_hard_call_limit(), test_database_faults_remain_distinct_and_record_paid_search_cost(), test_discovered_ref_can_be_inspected_but_not_promoted_to_match(), test_exact_and_fuzzy_queries_are_scoped_and_never_confirm_candidates(), test_exact_reference_still_requires_customer_and_excludes_future() (+18 more)
 
 ### Community 31 - "Pipeline Design Spec"
 Cohesion: 0.25
 Nodes (7): pgvector Postgres Service, pgdata Volume, Support Pipeline Design, Gemini 3.8 Flash, Jev, OpenRouter, ZainCash Support Pipeline
 
 ### Community 32 - "Batch Runner"
-Cohesion: 0.33
-Nodes (6): Plan 1 Part 2, Batch Runner, NullDrafter, Plan 1 Core Pipeline, Live Batch API, NullDrafter
+Cohesion: 0.29
+Nodes (7): Plan 1 Part 2, Batch Runner, NullDrafter, Plan 1 Core Pipeline, Live Batch API, Plan 1 Live Smoke, NullDrafter
 
 ### Community 33 - "Drafting Plan Concepts"
 Cohesion: 0.25
 Nodes (5): check_service_status, decide, draft, Five-Plan Roadmap, Weekly Pattern Report
 
 ### Community 34 - "test_kb_service.py"
-Cohesion: 0.10
-Nodes (30): FakeEmbedder, GatedEmbedder, LateEmbedder, PaidEmbedder, count_chunks(), test_category_filters_include_general_policies_and_validate_tags(), test_claim_locks_source_even_before_index_row_exists(), test_competing_callers_refuse_active_attempt_and_release_transactions() (+22 more)
+Cohesion: 0.12
+Nodes (26): FakeEmbedder, GatedEmbedder, LateEmbedder, PaidEmbedder, count_chunks(), test_category_filters_include_general_policies_and_validate_tags(), test_claim_locks_source_even_before_index_row_exists(), test_competing_callers_refuse_active_attempt_and_release_transactions() (+18 more)
 
 ### Community 36 - "web/components.json"
 Cohesion: 0.10
 Nodes (19): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+11 more)
 
-### Community 38 - "pipeline/contracts.py"
-Cohesion: 0.09
-Nodes (35): Sample, StructuredLLM, Candidates, ClassificationResult, ClassifierOutput, ExtractedField, FieldPick, NormalizedTicket (+27 more)
+### Community 38 - "jev.py"
+Cohesion: 0.24
+Nodes (10): ClassificationResult, build_order_check(), build_questions(), build_state(), category_criteria(), _input_tokens(), JevClassifier, _picks() (+2 more)
 
 ### Community 39 - "ui/components.json"
 Cohesion: 0.10
@@ -345,11 +363,11 @@ Nodes (19): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent 
 
 ### Community 40 - "Settings"
 Cohesion: 0.10
-Nodes (11): Settings, test_blank_intake_model_is_rejected(), test_non_positive_image_limit_is_rejected(), test_relative_upload_directory_is_rooted_in_the_repository(), test_anthropic_model_selects_the_draft_model_only(), test_defaults(), test_drafting_configuration_cannot_bypass_hard_limits(), test_drafting_limits_load_from_environment() (+3 more)
+Nodes (12): Settings, test_blank_intake_model_is_rejected(), test_non_positive_image_limit_is_rejected(), test_relative_upload_directory_is_rooted_in_the_repository(), test_anthropic_model_selects_the_draft_model_only(), test_defaults(), test_drafting_configuration_cannot_bypass_hard_limits(), test_drafting_limits_load_from_environment() (+4 more)
 
 ### Community 41 - "fact"
-Cohesion: 0.21
-Nodes (35): Attachment, EvidenceRef, Fact, merge_analysis(), remove_attachment_evidence(), context(), fact(), message() (+27 more)
+Cohesion: 0.22
+Nodes (30): merge_analysis(), remove_attachment_evidence(), context(), fact(), message(), proposal(), test_additional_issue_is_resolved_in_place_instead_of_appended(), test_ambiguous_or_modified_relative_date_is_not_guessed() (+22 more)
 
 ### Community 43 - "Human Review Gate"
 Cohesion: 0.25
@@ -360,40 +378,40 @@ Cohesion: 0.12
 Nodes (16): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, noEmit, noFallthroughCasesInSwitch (+8 more)
 
 ### Community 46 - "PipelineState"
-Cohesion: 0.10
-Nodes (16): DraftResult, _Nodes, Drafter, NullDrafter, UnavailableDrafter, PipelineState, draft(), draft() (+8 more)
+Cohesion: 0.09
+Nodes (15): KnowledgeExecutionError, DraftResult, _Nodes, RagDrafter, Drafter, DraftExecutionError, NullDrafter, UnavailableDrafter (+7 more)
 
 ### Community 47 - "compilerOptions"
 Cohesion: 0.12
 Nodes (16): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, noEmit, noFallthroughCasesInSwitch (+8 more)
 
 ### Community 48 - "support_test"
-Cohesion: 0.12
-Nodes (19): ingest(), support_test(), Evidence by layer, Known limitations and remaining work, Repeatable local walkthrough, Synthetic demo readiness, Task 3: Ticket-scoped investigation and all eight tools, Task 8: Demo corpus, full verification and readiness record (+11 more)
+Cohesion: 0.11
+Nodes (19): ingest(), index_deadlines(), settings(), support_test(), expire_during_embedding(), Artifacts, servers and remaining concerns, Commands and automated verification — historical Task 8, Corpus and actual retrieval (+11 more)
 
 ### Community 57 - "parse_document"
 Cohesion: 0.10
 Nodes (30): TextChunk, _append_chunks(), _check_extracted_size(), DocumentParseError, parse_document(), _parse_pdf(), make_pdf(), test_arabic_text_and_bom_are_preserved() (+22 more)
 
-### Community 58 - "attachments.py"
-Cohesion: 0.10
-Nodes (33): AttachmentStore, _display_name(), Credentials, IntakeSessionRow, ImageRejected, IntakeError, NotOwned, OperationConflict (+25 more)
+### Community 58 - "test_attachments.py"
+Cohesion: 0.17
+Nodes (17): ImageRejected, IntakeError, NotOwned, OperationConflict, png_bytes(), test_active_turn_rejects_upload(), test_changed_invalid_bytes_conflict_before_decoding_replay(), test_concurrent_uploads_stop_at_the_session_cap() (+9 more)
 
 ### Community 59 - "pipeline/graph.py"
-Cohesion: 0.06
-Nodes (10): TxnRecord, _default_retry(), _retryable(), _as_date(), _iqd_amount(), match_transaction(), TransactionRepo, CredentialChecker (+2 more)
+Cohesion: 0.09
+Nodes (6): ClassifierOutput, Ticket, _default_retry(), _percentile(), _retryable(), CredentialChecker
 
 ### Community 60 - "rules.py"
-Cohesion: 0.19
+Cohesion: 0.21
 Nodes (18): Decision, LookupResult, decide(), empty_ticket_decision(), merge_reasons(), note_for(), _unique(), Category (+10 more)
 
 ### Community 61 - "workspace-ui.tsx"
 Cohesion: 0.16
-Nodes (17): ConfirmDialog(), FilterSelect(), Dialog(), DialogContent(), DialogDescription(), DialogFooter(), DialogHeader(), DialogOverlay() (+9 more)
+Nodes (16): ConfirmDialog(), FilterSelect(), Dialog(), DialogContent(), DialogDescription(), DialogFooter(), DialogHeader(), DialogOverlay() (+8 more)
 
 ### Community 62 - "tools.py"
-Cohesion: 0.05
-Nodes (33): DraftAlreadySubmitted, DraftSubmission, DraftToolInputError, DraftToolLimit, _datetime(), _days(), _field(), _involves() (+25 more)
+Cohesion: 0.07
+Nodes (22): DraftAlreadySubmitted, DraftSubmission, DraftToolLimit, _bounded(), visit(), build_tools(), flag(), guarded() (+14 more)
 
 ### Community 63 - "intake/types.ts"
 Cohesion: 0.12
@@ -403,53 +421,57 @@ Nodes (19): Task 7: Bilingual customer chat, screenshots and reviewed submission
 Cohesion: 0.12
 Nodes (16): dependsOn, inputs, outputs, cache, persistent, dependsOn, dependsOn, $schema (+8 more)
 
-### Community 65 - "UploadedDocument"
-Cohesion: 0.17
-Nodes (14): UploadedDocument, document_filename(), document_view(), DocumentValidationError, store_document(), KnowledgeDocumentIndex, ingest_one(), ingest_paths() (+6 more)
+### Community 65 - "kb/service.py"
+Cohesion: 0.10
+Nodes (25): delete_document(), download_document(), index_document(), list_chunks(), list_documents(), _require_provider(), search_knowledge(), upload_document() (+17 more)
 
 ### Community 66 - "IntakePage.tsx"
 Cohesion: 0.13
 Nodes (15): Global Constraints, Intake Chat UI Implementation Plan, Task 1: Put the summary and receipt in the thread, Task 2: Put screenshots inside the composer, Task 3: Apply the workspace chat styles, Task 4: Check the page in the browser, 1. Outcome, 2. Scope (+7 more)
 
 ### Community 67 - "test_handoff.py"
-Cohesion: 0.19
-Nodes (19): Analysis, test_validation_failure_retains_usage_audit(), ainvoke(), _amount(), analyze(), complete_conversation(), _dated(), _message() (+11 more)
+Cohesion: 0.13
+Nodes (26): Analysis, EvidenceRef, Fact, IntakeModel, image_evidence(), test_reinspection_keeps_current_images_and_new_observations(), again(), initial() (+18 more)
 
 ### Community 68 - "PipelineState"
-Cohesion: 0.11
-Nodes (18): 10. Remaining demo roadmap, 1. Intent and acceptance criteria, 3. Provider and configuration, 4. Knowledge ingestion and persistence, 5. Retrieval and evidence, 6. Bounded investigation agent, 7. Draft guardrails and failure outcomes, 8. Pipeline, API, CLI and UI integration (+10 more)
+Cohesion: 0.12
+Nodes (15): 10. Remaining demo roadmap, 1. Intent and acceptance criteria, 3. Provider and configuration, 4. Knowledge ingestion and persistence, 5. Retrieval and evidence, 7. Draft guardrails and failure outcomes, 8. Pipeline, API, CLI and UI integration, 9. Demo policies and verification (+7 more)
 
-### Community 69 - "main.py"
-Cohesion: 0.07
-Nodes (32): get_session(), get_result(), list_results(), read_intake_attachment(), review_result(), get_run(), list_runs(), start_run() (+24 more)
+### Community 69 - "TicketResultRow"
+Cohesion: 0.10
+Nodes (15): get_session(), get_result(), list_results(), read_intake_attachment(), review_result(), KnowledgeIndexInput, KnowledgeSearchInput, ReviewInput (+7 more)
 
 ### Community 70 - "Credentials"
-Cohesion: 0.19
-Nodes (3): SessionView, IntakeService, make_intake_service()
+Cohesion: 0.26
+Nodes (3): Credentials, SessionView, IntakeService
 
 ### Community 71 - "taxonomy.py"
-Cohesion: 0.19
-Nodes (6): most_urgent(), priority_rank(), TaxonomyError, taxonomy(), test_priority_helpers(), test_rejects_unknown_team()
+Cohesion: 0.23
+Nodes (5): most_urgent(), priority_rank(), TaxonomyError, test_priority_helpers(), test_rejects_unknown_team()
 
 ### Community 72 - "test_submission.py"
 Cohesion: 0.32
 Nodes (4): _payload(), test_concurrent_submit_dispatches_once(), test_second_request_id_reuses_the_approved_review(), test_submission_replay_creates_one_ticket()
 
+### Community 73 - "_DatabaseCall"
+Cohesion: 0.17
+Nodes (3): _check_deadline(), _consume(), _DatabaseCall
+
 ### Community 74 - "lib/types.ts"
-Cohesion: 0.08
-Nodes (37): readReport(), acceptIndexRequest(), canRequestIndex(), PendingIndexes, persistPendingIndexes(), pollKnowledge(), refresh(), stop() (+29 more)
+Cohesion: 0.10
+Nodes (31): acceptIndexRequest(), canRequestIndex(), PendingIndexes, persistPendingIndexes(), pollKnowledge(), refresh(), stop(), PollOptions (+23 more)
 
 ### Community 75 - "test-kb/README.md"
-Cohesion: 0.08
-Nodes (13): Fictional RAG walkthrough inputs, توثيق الحساب — سياسة خيالية للعرض التجريبي, نزاع مع وكيل — سياسة خيالية للعرض التجريبي, أعطال التطبيق — سياسة خيالية للعرض التجريبي, دفع الفواتير — سياسة خيالية للعرض التجريبي, مشاكل البطاقة — سياسة خيالية للعرض التجريبي, تصعيد شبهة الاحتيال — سياسة خيالية للعرض التجريبي, الاستفسار الآمن من الدعم — سياسة خيالية للعرض التجريبي (+5 more)
+Cohesion: 0.15
+Nodes (6): Fictional RAG walkthrough inputs, توثيق الحساب — سياسة خيالية للعرض التجريبي, نزاع مع وكيل — سياسة خيالية للعرض التجريبي, الطلبات غير الواضحة وخارج النطاق — سياسة خيالية للعرض التجريبي, الاستفسار المؤقت للدعم في المهمة ٨ — سياسة خيالية للعرض التجريبي, التحويل لمستلم بالخطأ — سياسة خيالية للعرض التجريبي
 
 ### Community 76 - "Plan 3 RAG Drafting Implementation Plan"
-Cohesion: 0.22
-Nodes (9): Completion and review record — 2026-10-17, Execution handoff, File map and shared interfaces, Global Constraints, Plan 3 RAG Drafting Implementation Plan, Plan self-review, Review Focus, Task 6: API/CLI indexing and persisted citation projection (+1 more)
+Cohesion: 0.20
+Nodes (10): Completion and review record — 2026-10-17, Execution handoff, File map and shared interfaces, Global Constraints, Plan 3 RAG Drafting Implementation Plan, Plan self-review, Review Focus, Task 6: API/CLI indexing and persisted citation projection (+2 more)
 
-### Community 77 - "index_deadlines"
-Cohesion: 0.40
-Nodes (3): index_deadlines(), settings(), expire_during_embedding()
+### Community 77 - "EmbeddingError"
+Cohesion: 0.12
+Nodes (9): EmbeddingBatch, EmbeddingError, _nonnegative_number(), _ordered_vectors(), _response_cost(), Embeddings, ErrorEmbedder, test_lock_serializes_operations_and_submit_waits_for_inflight_search() (+1 more)
 
 ### Community 79 - "devDependencies"
 Cohesion: 0.12
@@ -459,6 +481,10 @@ Nodes (16): devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, esli
 Cohesion: 0.14
 Nodes (13): أعطال التطبيق — سياسة خيالية للعرض التجريبي, استرجاع مبلغ شراء — سياسة خيالية للعرض التجريبي, استعادة الدخول — سياسة خيالية للعرض التجريبي, الاستفسار الآمن من الدعم — سياسة خيالية للعرض التجريبي, الاستفسار المؤقت للدعم في المهمة ٨ — سياسة خيالية للعرض التجريبي, التحويل المعلّق — سياسة خيالية للعرض التجريبي, التحويل لمستلم بالخطأ — سياسة خيالية للعرض التجريبي, الطلبات غير الواضحة وخارج النطاق — سياسة خيالية للعرض التجريبي (+5 more)
 
+### Community 93 - "canReview"
+Cohesion: 0.50
+Nodes (3): Task 8: Employee evidence panel and processing state, canReview(), REVIEWABLE
+
 ### Community 94 - "devDependencies"
 Cohesion: 0.11
 Nodes (19): devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh, globals, jsdom, @tailwindcss/vite (+11 more)
@@ -467,17 +493,17 @@ Nodes (19): devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, esli
 Cohesion: 0.14
 Nodes (14): devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh, globals, tailwindcss, @tailwindcss/vite (+6 more)
 
-### Community 96 - "guardrails.py"
-Cohesion: 0.05
-Nodes (53): load_jsonl(), load_tickets(), _rows(), Candidate, _add(), find_candidates(), normalize_phone(), _overlaps() (+45 more)
+### Community 96 - "normalize.py"
+Cohesion: 0.19
+Nodes (17): sanitize_intake_text(), detect_arabizi(), fold_arabic(), has_latin_mix(), _latin_words(), mask_cards(), normalize(), sanitize_for_storage() (+9 more)
 
 ### Community 97 - "ticket-flow.ts"
-Cohesion: 0.08
-Nodes (55): Task 2: Which step is open, Task 3: Received, produced, and drafting events, Task 4: Mermaid source, Task 5: Draw the charts on the ticket page, buildTicketFlow(), AR, channelName(), checkLines() (+47 more)
+Cohesion: 0.06
+Nodes (81): Global Constraints, Task 1: Sentence catalog, Task 2: Which step is open, Task 3: Received, produced, and drafting events, Task 4: Mermaid source, Task 5: Draw the charts on the ticket page, Confidence(), highlightedText() (+73 more)
 
 ### Community 98 - "review.py"
-Cohesion: 0.21
-Nodes (15): ReviewText, InvalidEvidence, validate(), build_review(), _compact(), _render_value(), _ticket_text(), _tokens() (+7 more)
+Cohesion: 0.32
+Nodes (14): ReviewText, InvalidEvidence, build_review(), _compact(), _render_value(), _ticket_text(), _tokens(), validate_review_numbers() (+6 more)
 
 ### Community 99 - "compilerOptions"
 Cohesion: 0.14
@@ -496,7 +522,7 @@ Cohesion: 0.12
 Nodes (17): dependencies, @base-ui/react, class-variance-authority, cn, @fontsource/tajawal, @fontsource-variable/plus-jakarta-sans, lucide-react, mermaid (+9 more)
 
 ### Community 103 - "InvalidEvidence"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (15): canonical_digits(), normalize_reported_date(), _apply(), _check_reference(), _compact(), checked_update(), _newer_correction(), _normalize_precise() (+7 more)
 
 ### Community 104 - "dependencies"
@@ -507,17 +533,21 @@ Nodes (13): dependencies, @base-ui/react, class-variance-authority, cn, @fontsou
 Cohesion: 0.17
 Nodes (11): compilerOptions, jsx, lib, module, moduleResolution, outDir, skipLibCheck, strict (+3 more)
 
+### Community 106 - "main.py"
+Cohesion: 0.12
+Nodes (11): _safe_dispatch(), upgrade_workspace_schema(), recover(), fail_intake_placeholders(), reconcile_intake_run(), recover_intake_processing(), dispatch_intake(), _submit() (+3 more)
+
 ### Community 107 - "controller.test.ts"
 Cohesion: 0.15
 Nodes (14): Task 6: Customer API client and resumable UI state, emptySession(), fakeApi(), review, attachment, collectingController(), emptySession(), fakeApi() (+6 more)
 
 ### Community 108 - "test_final_fix_handoff.py"
-Cohesion: 0.10
-Nodes (23): Passage, SearchResult, process_batch(), Knowledge, assert_completed_evidence(), faulty_knowledge(), read(), outer_deadlines() (+15 more)
+Cohesion: 0.11
+Nodes (20): Passage, assert_completed_evidence(), faulty_knowledge(), read(), outer_deadlines(), PaidEmbeddings, runner_env(), build() (+12 more)
 
 ### Community 109 - "ZainCash Support Workspace"
-Cohesion: 0.25
-Nodes (8): Current capability boundaries, Data source, Modular file map, Open the right project, Run locally, shadcn conventions, Workflow, ZainCash Support Workspace
+Cohesion: 0.22
+Nodes (9): Current capability boundaries, Data source, Modular file map, Open the right project, Run locally, shadcn conventions, Verification, Workflow (+1 more)
 
 ### Community 111 - "scripts"
 Cohesion: 0.25
@@ -531,9 +561,9 @@ Nodes (8): scripts, build, dev, format, lint, preview, test, typecheck
 Cohesion: 0.29
 Nodes (6): compilerOptions, module, moduleResolution, skipLibCheck, strict, target
 
-### Community 114 - "fakes.py"
-Cohesion: 0.16
-Nodes (12): LLMUnavailable, combine(), merge_picks(), _Execution, test_both_missing_raises(), test_cost_is_summed(), test_degraded_when_jev_missing(), test_disagreement_when_jev_was_partly_confident() (+4 more)
+### Community 114 - "extract.py"
+Cohesion: 0.18
+Nodes (9): LLMUnavailable, Candidates, NormalizedTicket, Classifier, FieldExtractor, _field(), fill_gaps(), _is_weak() (+1 more)
 
 ### Community 115 - "dependencies"
 Cohesion: 0.25
@@ -551,29 +581,41 @@ Nodes (4): compilerOptions, paths, files, references
 Cohesion: 0.40
 Nodes (5): exports, ./components/*, ./globals.css, ./hooks/*, ./lib/*
 
-### Community 119 - "Customer intake verification — 2026-10-18"
-Cohesion: 0.25
-Nodes (6): Browser handoff, Customer intake verification — 2026-10-18, Final automated checks, Live vision and paired review, Repaired gaps and regression evidence, Review decisions and remaining limits
+### Community 119 - "attachments.py"
+Cohesion: 0.14
+Nodes (13): _display_name(), IntakeMessageRow, IntakeSessionRow, assert_same_operation(), new_access_token(), operation_fingerprint(), repo(), test_changed_payload_cannot_reuse_operation_identity() (+5 more)
 
 ### Community 120 - "scripts"
 Cohesion: 0.50
 Nodes (4): scripts, format, lint, typecheck
 
 ### Community 122 - "intake/contracts.py"
+Cohesion: 0.24
+Nodes (17): IntakeState, Question, Readiness, _asked_already(), asks_for_secret(), assess_readiness(), _can_ask(), canonical_category() (+9 more)
+
+### Community 123 - "intake/contracts.py"
+Cohesion: 0.10
+Nodes (13): _aware(), Message, QuestionRecord, ReviewSnapshot, TurnContext, TurnResult, IntakeGraph, _invitation() (+5 more)
+
+### Community 124 - "AttachmentStore"
 Cohesion: 0.13
-Nodes (25): _aware(), CustomerReview, IntakeModel, IntakeState, Message, Question, QuestionRecord, Readiness (+17 more)
+Nodes (6): AttachmentStore, IntakeRepository, make_intake_service(), builder(), repo(), store()
 
-### Community 123 - "TurnContext"
-Cohesion: 0.26
-Nodes (4): TurnContext, IntakeGraph, _invitation(), builder()
+### Community 126 - "guardrails.py"
+Cohesion: 0.23
+Nodes (12): normalize_phone(), parse_amount(), to_ascii_digits(), normalize_value(), check_draft(), _citation_findings(), _exact_amount(), _grounding_findings() (+4 more)
 
-### Community 127 - "test_gemini.py"
-Cohesion: 0.31
-Nodes (12): ExtractedSpan, _Fields, GeminiFields, _a(), _classify(), test_all_samples_failing_raises(), test_extractor_requests_only_named_fields(), test_failed_samples_count_against_confidence() (+4 more)
+### Community 127 - "gemini.py"
+Cohesion: 0.14
+Nodes (10): Sample, StructuredLLM, ExtractedSpan, _Fields, GeminiExtractor, GeminiFields, verified_pick(), render_prompt() (+2 more)
+
+### Community 128 - "response_payload"
+Cohesion: 0.22
+Nodes (16): embedder_for(), item(), response_payload(), respond(), respond(), test_billed_cost_survives_cancellation_during_client_close(), test_billed_response_cost_is_retained_when_its_vectors_are_invalid(), test_cost_uses_one_reported_value_or_configured_token_estimate() (+8 more)
 
 ### Community 129 - "intake/model.py"
 Cohesion: 0.10
-Nodes (27): ImageInput, ModelCall, ModelUnavailable, _analysis_prompt(), _bounded_context(), _guard_size(), ModelBudget, OpenRouterIntakeModel (+19 more)
+Nodes (27): Attachment, ImageInput, ModelCall, _analysis_prompt(), _bounded_context(), _guard_size(), ModelBudget, OpenRouterIntakeModel (+19 more)
 
 ### Community 130 - "test_llm.py"
 Cohesion: 0.13
@@ -583,65 +625,93 @@ Nodes (11): GeminiStructuredLLM, make_gemini_llm(), _llm(), _S, test_draft_model
 Cohesion: 0.17
 Nodes (19): create_session(), _credentials(), _dump(), get_session(), post_message(), read_attachment(), remove_attachment(), request_review() (+11 more)
 
-### Community 132 - "test_workspace_api.py"
-Cohesion: 0.14
-Nodes (16): command(), create(), test_failed_review_retry_cannot_reopen_submitted_session(), test_original_payload_identity_survives_sanitization(), test_publication_failure_is_retryable_without_restart(), fail_once(), test_receipt_reference_is_preserved(), test_stale_attempt_audit_is_retained_once_with_attempt_identity() (+8 more)
+### Community 132 - "errors.py"
+Cohesion: 0.26
+Nodes (11): ModelUnavailable, test_review_after_failed_analysis_still_interprets_the_saved_message(), command(), create(), test_actual_app_restart_reconciles_failed_placeholder(), test_failed_review_retry_cannot_reopen_submitted_session(), test_original_payload_identity_survives_sanitization(), test_publication_failure_is_retryable_without_restart() (+3 more)
 
 ### Community 133 - "KnowledgeService"
-Cohesion: 0.12
-Nodes (10): Embedder, KnowledgeChunk, _abandoned(), _Claim, _consume(), _error_cost(), IndexAttemptLostError, KnowledgeError (+2 more)
+Cohesion: 0.10
+Nodes (14): Embedder, KnowledgeChunk, _abandoned(), _Claim, _error_cost(), IndexAttemptLostError, KnowledgeError, KnowledgeService (+6 more)
 
 ### Community 135 - "Customer Conversation Intake Implementation Plan"
-Cohesion: 0.25
+Cohesion: 0.20
 Nodes (8): Completion audit — 2026-10-18, Customer Conversation Intake Implementation Plan, Execution conventions and repository baseline, File map and dependency order, Global Constraints, Plan review and execution handoff, Review Focus, Spec coverage and acceptance map
 
-### Community 137 - "submission.py"
-Cohesion: 0.26
-Nodes (13): _run_with_db(), upsert_tickets(), Receipt, IntakeOperationRow, IntakeSubmissionRow, StaleReview, current_session_view(), SubmissionResult (+5 more)
+### Community 136 - "find_candidates"
+Cohesion: 0.25
+Nodes (12): Candidate, _add(), find_candidates(), _overlaps(), test_amount_forms(), test_arabic_indic_amount_not_confused_with_phone(), test_dates_absolute_and_weekday(), test_dedupes_repeated_values() (+4 more)
+
+### Community 137 - "intake/repository.py"
+Cohesion: 0.20
+Nodes (18): CustomerReview, Receipt, IntakeAttachmentRow, IntakeOperationRow, IntakeSubmissionRow, StaleReview, _attachment(), customer_review() (+10 more)
 
 ### Community 138 - "intake/api.ts"
 Cohesion: 0.15
 Nodes (13): createIntakeApi(), IntakeRequestError, isRecord(), parseJson(), parseReceipt(), parseSession(), readError(), stringList() (+5 more)
 
-### Community 141 - "test_cli.py"
-Cohesion: 0.18
-Nodes (9): test_config_error_exits_2(), boom(), test_ingest_directory_is_deterministic_and_duplicate_is_free(), test_ingest_disabled_configuration_never_calls_provider(), test_ingest_failure_exit_and_retry_stored(), test_ingest_invalid_source_does_not_stop_other_files(), test_ingest_limits_batch_without_partial_side_effects(), test_retry_stored_indexes_old_uploads_without_recovering_other_process_jobs() (+1 more)
+### Community 139 - "fakes.py"
+Cohesion: 0.33
+Nodes (11): FieldPick, finalize(), FakeExtractor, _setup(), test_fill_gaps_noop_and_failure_tolerant(), test_fill_gaps_only_asks_for_weak_required_fields(), test_gemini_span_not_in_text_is_null(), test_gemini_word_amount_uses_normalized_hint() (+3 more)
+
+### Community 141 - "FakeJevRunnable"
+Cohesion: 0.32
+Nodes (10): FakeJevRunnable, _criteria(), _run(), test_low_top_probability_is_uncertain(), test_one_main_call_with_all_questions(), test_order_check_uses_reversed_options(), test_order_disagreement_is_uncertain(), test_priority_level_maps_to_p_label() (+2 more)
 
 ### Community 142 - "test_dbapi_commit_handoff_arbitrates_cancellation"
-Cohesion: 0.14
-Nodes (9): test_db_deadline_includes_pool_and_checkout_without_late_claim(), checked_in(), test_db_deadline_search_cancellation_is_nonblocking_and_retains_cost(), test_dbapi_commit_handoff_arbitrates_cancellation(), gate(), gate_before_dbapi(), gate_inside_dbapi(), test_deletion_during_embedding_never_resurrects_source() (+1 more)
+Cohesion: 0.15
+Nodes (8): test_db_deadline_includes_pool_and_checkout_without_late_claim(), checked_in(), test_db_deadline_search_cancellation_is_nonblocking_and_retains_cost(), test_dbapi_commit_handoff_arbitrates_cancellation(), gate(), gate_before_dbapi(), gate_inside_dbapi(), test_index_deadline_or_cancellation_preserves_real_adapter_partial_cost()
+
+### Community 143 - "resolve_date"
+Cohesion: 0.36
+Nodes (4): resolve_date(), _safe_date(), test_resolve(), test_unresolvable_is_none()
 
 ### Community 144 - "indexDocument"
 Cohesion: 0.60
 Nodes (5): beginMutation(), deleteDocument(), finishMutation(), indexDocument(), upload()
 
 ### Community 148 - "components-ai-thought-chain.tsx"
+Cohesion: 0.08
+Nodes (25): LanguageToggle(), Status, StatusIcon(), statusStyles, StepContext, StepContextType, ThoughtChain(), ThoughtChainContent() (+17 more)
+
+### Community 149 - "db/repository.py"
 Cohesion: 0.14
-Nodes (15): Status, StatusIcon(), statusStyles, StepContext, StepContextType, ThoughtChain(), ThoughtChainContent(), ThoughtChainItem() (+7 more)
+Nodes (20): TransactionRow, finish_run(), load_incidents(), load_transactions(), save_outcomes(), SqlTransactionRepo, _to_record(), _upsert() (+12 more)
 
-### Community 149 - "json"
-Cohesion: 0.21
-Nodes (11): TicketOutcome, TicketExecution, outcome_from_state(), _percentile(), RunSummary, summarize(), outcome_to_dict(), outcome_to_row() (+3 more)
+### Community 151 - "workspace.py"
+Cohesion: 0.50
+Nodes (4): health(), insights(), workspace(), latest_results_query()
 
-### Community 152 - "main.py"
-Cohesion: 0.07
-Nodes (32): _safe_dispatch(), init_db(), make_engine(), make_sessionmaker(), reset_db(), upgrade_workspace_schema(), create_app(), lifespan() (+24 more)
+### Community 152 - "test_workspace_api.py"
+Cohesion: 0.10
+Nodes (21): _sessionmaker(), init_db(), make_engine(), make_sessionmaker(), reset_db(), create_app(), lifespan(), IndexJobs (+13 more)
+
+### Community 153 - "test_serialize.py"
+Cohesion: 0.60
+Nodes (4): outcome_to_dict(), outcome_to_row(), test_failed_outcome_and_dict_form(), test_full_outcome_is_json_safe()
+
+### Community 154 - "ZainCash support: architecture and ticket flow {#support-overview}"
+Cohesion: 0.50
+Nodes (3): 1 · System architecture {#system-architecture}, 2 · Ticket flow {#ticket-flow}, ZainCash support: architecture and ticket flow {#support-overview}
+
+### Community 155 - "Synthetic demo readiness"
+Cohesion: 0.50
+Nodes (4): Evidence by layer, Known limitations and remaining work, Repeatable local walkthrough, Synthetic demo readiness
 
 ### Community 156 - "employee-frontend/src/components/theme-provider.tsx"
 Cohesion: 0.21
 Nodes (11): disableTransitionsTemporarily(), getSystemTheme(), isEditableTarget(), isTheme(), ResolvedTheme, Theme, THEME_VALUES, ThemeProvider() (+3 more)
 
-### Community 158 - "test_lookup.py"
-Cohesion: 0.35
-Nodes (10): _ex(), _match(), test_ambiguous_then_disambiguated_by_counterpart(), test_amount_and_date_mismatch(), test_no_phone_is_not_found(), test_not_applicable_category(), test_ref_matched(), test_ref_not_found() (+2 more)
+### Community 158 - "lookup.py"
+Cohesion: 0.17
+Nodes (16): ExtractedField, _as_date(), _iqd_amount(), match_transaction(), TransactionRepo, txn_from_dict(), _ex(), _match() (+8 more)
 
 ### Community 164 - "factory.py"
 Cohesion: 0.27
 Nodes (8): make_draft_model(), response_payload(), run_provider_pipeline(), send(), search_response(), test_empty_choices_escalates_and_keeps_paid_response_usage(), test_failed_response_id_is_deduplicated_against_earlier_success(), test_other_conversion_value_errors_remain_unexpected()
 
 ### Community 167 - "build_pipeline"
-Cohesion: 0.12
-Nodes (20): SqlTransactionRepo, build_pipeline(), ConfigError, make_jev_client(), run_batch(), GeminiAnalysis, FakeStructuredLLM, ScriptedChat (+12 more)
+Cohesion: 0.16
+Nodes (17): build_pipeline(), ConfigError, make_jev_client(), run_batch(), ScriptedChat, _settings(), test_builds_jev_pipeline_with_injected_clients(), test_credential_checker_is_independent_of_jev_classification() (+9 more)
 
 ## Ambiguous Edges - Review These
 - `Fraud Report` → `Plan 1 Live Smoke`  [AMBIGUOUS]
@@ -649,22 +719,22 @@ Nodes (20): SqlTransactionRepo, build_pipeline(), ConfigError, make_jev_client()
 
 ## Knowledge Gaps
 - **91 isolated node(s):** `zaincash-support`, `@base-ui/react`, `@fontsource-variable/plus-jakarta-sans`, `@fontsource/tajawal`, `@tailwindcss/vite` (+86 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1023 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **39 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1025 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **44 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `HTTP contract (implemented in Tasks 4–5)` connect `main.py` to `guardrails.py`, `intake/model.py`, `TurnStore`, `Customer Conversation Intake Implementation Plan`, `controller.test.ts`, `attachments.py`, `intake/types.ts`?**
-  _High betweenness centrality (0.100) - this node is a cross-community bridge._
+- **Why does `HTTP contract (implemented in Tasks 4–5)` connect `intake/helpers.py` to `intake/model.py`, `Customer Conversation Intake Implementation Plan`, `controller.test.ts`, `TicketRow`, `test_attachments.py`, `canReview`, `guardrails.py`, `intake/types.ts`?**
+  _High betweenness centrality (0.106) - this node is a cross-community bridge._
 - **Are the 33 inferred relationships involving `Settings` (e.g. with `_command_settings()` and `_run_in_memory()`) actually correct?**
   _`Settings` has 33 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `zaincash-support`, `@base-ui/react`, `@fontsource-variable/plus-jakarta-sans` to the rest of the system?**
   _91 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `NewBatchPage.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.13793103448275862 - nodes in this community are weakly interconnected._
-- **Why does `Settings` connect `Settings` to `intake/model.py`, `test_llm.py`, `pytest`, `test_workspace_api.py`, `KnowledgeService`, `agent.py`, `submission.py`, `test_rag_api.py`, `test_cli.py`, `make_output`, `test_recovery_regressions.py`, `main.py`, `test_embeddings.py`, `test_draft_tools.py`, `test_kb_service.py`, `factory.py`, `build_pipeline`, `fact`, `support_test`, `attachments.py`, `pipeline/graph.py`, `tools.py`, `main.py`, `index_deadlines`, `test_final_fix_handoff.py`?**
-  _High betweenness centrality (0.092) - this node is a cross-community bridge._
+  _Cohesion score 0.12258064516129032 - nodes in this community are weakly interconnected._
+- **Why does `Settings` connect `Settings` to `intake/model.py`, `test_llm.py`, `pytest`, `investigation.py`, `KnowledgeService`, `agent.py`, `intake/repository.py`, `test_rag_api.py`, `make_ticket`, `TicketRow`, `db/repository.py`, `test_recovery_regressions.py`, `test_workspace_api.py`, `Synthetic demo readiness`, `test_embeddings.py`, `test_draft_tools.py`, `test_kb_service.py`, `factory.py`, `build_pipeline`, `fact`, `PipelineState`, `support_test`, `pipeline/graph.py`, `kb/service.py`, `EmbeddingError`, `main.py`, `test_final_fix_handoff.py`, `attachments.py`, `AttachmentStore`?**
+  _High betweenness centrality (0.090) - this node is a cross-community bridge._
 - **Are the 24 inferred relationships involving `KnowledgeService` (e.g. with `Settings` and `UploadedDocument`) actually correct?**
   _`KnowledgeService` has 24 INFERRED edges - model-reasoned connections that need verification._
 

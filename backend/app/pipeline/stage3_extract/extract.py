@@ -18,7 +18,6 @@ from app.pipeline.stage1_normalize.dates import resolve_date
 from app.pipeline.stage2_classify.base import FieldExtractor
 
 _NO_PICK = FieldPick(None, 0.0, "none")
-WEAK_JEV_CONFIDENCE = 0.5
 
 
 def _iso(value: str | None) -> date | None:
@@ -70,9 +69,9 @@ def finalize(picks: dict[str, FieldPick], cands: Candidates,
 
 
 def _is_weak(x: ExtractedField) -> bool:
-    if x.value is None and x.method == "none":
-        return True  # no regex candidates at all; the value may be written in words
-    return x.method == "jev_pick" and x.confidence < WEAK_JEV_CONFIDENCE
+    # A low-confidence Jev pick stays with the ticket and is shown to the reviewer.
+    # Gemini is only asked when the field has no span at all.
+    return x.value is None and x.method == "none"
 
 
 async def fill_gaps(extracted: dict[str, ExtractedField], nt: NormalizedTicket,
