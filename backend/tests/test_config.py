@@ -11,7 +11,6 @@ def test_defaults():
     s = Settings(_env_file=None)
     assert s.taxonomy_path == str(REPO_ROOT / "data" / "taxonomy.yaml")
     assert s.jev_model == "jev-1.13.0"
-    assert s.t_gem == 0.66
     assert s.pipeline_concurrency == 20
 
 

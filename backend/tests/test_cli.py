@@ -17,9 +17,10 @@ runner = CliRunner()
 
 def test_run_batch_no_db_writes_summary_and_out(monkeypatch, tmp_path):
     def fake_build(settings, mode, repo, **kw):
+        assert mode == "jev"
         assert isinstance(repo, InMemoryTransactionRepo)
         tax = load_taxonomy(settings.taxonomy_path)
-        return build_graph(PipelineDeps(mode="jev", taxonomy=tax, txn_repo=repo,
+        return build_graph(PipelineDeps(taxonomy=tax, txn_repo=repo,
                                         jev=FakeClassifier(make_output("general_inquiry", priority="P4"))))
 
     monkeypatch.setattr(factory, "build_pipeline", fake_build)
@@ -28,10 +29,27 @@ def test_run_batch_no_db_writes_summary_and_out(monkeypatch, tmp_path):
         "run-batch", str(FIXTURES / "sample_tickets.jsonl"), "--mode", "jev", "--no-db",
         "--transactions", str(FIXTURES / "sample_transactions.jsonl"), "--out", str(out), "--limit", "3",
     ])
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == 0, (result.output, repr(result.exception))
     assert json.loads(result.output)["total"] == 3
     rows = json.loads(out.read_text(encoding="utf-8"))
     assert [r["external_id"] for r in rows] == ["S-001", "S-002", "S-003"]
+
+
+def test_run_batch_defaults_to_jev(monkeypatch, tmp_path):
+    seen = []
+
+    def fake_build(settings, mode, repo, **kw):
+        seen.append(mode)
+        tax = load_taxonomy(settings.taxonomy_path)
+        return build_graph(PipelineDeps(taxonomy=tax, txn_repo=repo,
+                                        jev=FakeClassifier(make_output("general_inquiry", priority="P4"))))
+
+    monkeypatch.setattr(factory, "build_pipeline", fake_build)
+    tickets = tmp_path / "tickets.jsonl"
+    tickets.write_text('{"external_id":"T-1","text":"شكد العمولة"}\n', encoding="utf-8")
+    result = runner.invoke(cli.app, ["run-batch", str(tickets), "--no-db"])
+    assert result.exit_code == 0, (result.output, repr(result.exception))
+    assert seen == ["jev"]
 
 
 def test_config_error_exits_2(monkeypatch):

@@ -2,7 +2,6 @@ import type {
   ReviewInput,
   Result,
   Run,
-  Mode,
   TicketInput,
   IndexResponse,
   ChunkPage,
@@ -69,10 +68,10 @@ export async function loadQueue(path: string, options: RequestInit = {}) {
 }
 
 export const api = {
-  startRun: (mode: Mode, tickets: TicketInput[]) =>
+  startRun: (tickets: TicketInput[]) =>
     request<Run>("/runs", {
       method: "POST",
-      body: JSON.stringify({ mode, tickets }),
+      body: JSON.stringify({ mode: "jev", tickets }),
     }),
   review: (id: number, review: ReviewInput) =>
     request<Result>(`/results/${id}/reviews`, {

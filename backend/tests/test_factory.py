@@ -12,50 +12,47 @@ def _settings(**kw):
     return Settings(_env_file=None, **({"openrouter_api_key": "", "typesafe_api_key": ""} | kw))
 
 
-def test_missing_keys_raise_config_error():
-    with pytest.raises(ConfigError, match="OPENROUTER_API_KEY"):
-        build_pipeline(_settings(), "gemini", REPO)
-    with pytest.raises(ConfigError):
+def test_missing_jev_key_raises_config_error():
+    with pytest.raises(ConfigError, match="TYPESAFE_API_KEY"):
         build_pipeline(_settings(), "jev", REPO)
 
 
-def test_builds_with_injected_clients():
-    for mode in ("jev", "gemini", "cascade"):
-        graph = build_pipeline(_settings(), mode, REPO, jev_client=FakeJevRunnable(),
-                               llm=FakeStructuredLLM([None]))
-        assert "prepare" in graph.get_graph().nodes
+def test_builds_jev_pipeline_with_injected_clients():
+    graph = build_pipeline(_settings(), "jev", REPO, jev_client=FakeJevRunnable(),
+                           llm=FakeStructuredLLM([None]))
+    assert "prepare" in graph.get_graph().nodes
+    assert "gemini_classify" not in graph.get_graph().nodes
 
 
 def test_model_ids():
     s = _settings()
     rag = {"drafting": "google/gemini-3.8-flash", "embedding": "openai/text-embedding-3-small"}
-    assert model_ids(s, "jev") == {"jev": "jev-1.13.0", "gemini": "google/gemini-3.8-flash", **rag}
-    assert model_ids(s, "gemini") == {"gemini": "google/gemini-3.8-flash", **rag}
+    assert model_ids(s) == {"jev": "jev-1.13.0", "gemini": "google/gemini-3.8-flash", **rag}
     claude = _settings(anthropic_model="anthropic/claude-sonnet-5.5")
-    assert model_ids(claude, "cascade")["drafting"] == "anthropic/claude-sonnet-5.5"
-    assert model_ids(claude, "cascade")["gemini"] == "google/gemini-3.8-flash"
+    assert model_ids(claude)["drafting"] == "anthropic/claude-sonnet-5.5"
+    assert model_ids(claude)["gemini"] == "google/gemini-3.8-flash"
 
 
-def test_openrouter_key_enables_gemini_pipeline():
-    graph = build_pipeline(_settings(openrouter_api_key="test-openrouter-key"), "gemini", REPO)
-    assert "gemini_classify" in graph.get_graph().nodes
+@pytest.mark.parametrize("mode", ["gemini", "cascade"])
+def test_retired_classification_modes_are_rejected(mode):
+    with pytest.raises(ConfigError, match="unknown mode"):
+        build_pipeline(_settings(openrouter_api_key="test-openrouter-key"), mode, REPO,
+                       jev_client=FakeJevRunnable(), llm=FakeStructuredLLM([None]))
 
 
-@pytest.mark.parametrize("mode", ["jev", "gemini", "cascade"])
 @pytest.mark.parametrize("key", ["typesafe-test-key", ""])
-async def test_all_modes_use_credential_checker_independently_of_classifier(mode, key):
+async def test_credential_checker_is_independent_of_jev_classification(key):
     from sqlalchemy.orm import sessionmaker
 
     from app.db.repository import SqlTransactionRepo
     from app.pipeline.graph import run_batch
-    from app.pipeline.stage2_classify.gemini import GeminiAnalysis
     from tests.rag_fakes import REPLY, Knowledge, ScriptedChat, draft_state, script
 
     model = ScriptedChat(steps=script())
-    graph = build_pipeline(_settings(openrouter_api_key="test-key", typesafe_api_key=key), mode,
+    graph = build_pipeline(_settings(openrouter_api_key="test-key", typesafe_api_key=key), "jev",
                            SqlTransactionRepo(sessionmaker()),
                            jev_client=FakeJevRunnable(category="general_inquiry", flags={"requests_credentials": 0.2}),
-                           llm=FakeStructuredLLM([GeminiAnalysis(category="general_inquiry", priority="P4")]),
+                           llm=FakeStructuredLLM([None]),
                            model_factory=lambda: model, knowledge=Knowledge(), investigation=object())
     [outcome], summary = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)
     assert outcome.draft.text == REPLY
@@ -65,19 +62,17 @@ async def test_all_modes_use_credential_checker_independently_of_classifier(mode
     assert ("Credential check degraded" in outcome.decision.note) is (not bool(key))
 
 
-@pytest.mark.parametrize("mode", ["jev", "gemini", "cascade"])
 @pytest.mark.parametrize("inject_model", [False, True])
-async def test_missing_rag_key_escalates_but_retains_classification(mode, inject_model):
+async def test_missing_rag_key_escalates_but_retains_classification(inject_model):
     from sqlalchemy.orm import sessionmaker
 
     from app.db.repository import SqlTransactionRepo
     from app.pipeline.graph import run_batch
-    from app.pipeline.stage2_classify.gemini import GeminiAnalysis
     from tests.rag_fakes import ScriptedChat, draft_state, script
 
-    graph = build_pipeline(_settings(), mode, SqlTransactionRepo(sessionmaker()),
+    graph = build_pipeline(_settings(), "jev", SqlTransactionRepo(sessionmaker()),
                            jev_client=FakeJevRunnable(category="general_inquiry"),
-                           llm=FakeStructuredLLM([GeminiAnalysis(category="general_inquiry", priority="P4")]),
+                           llm=FakeStructuredLLM([None]),
                            model_factory=(lambda: ScriptedChat(steps=script())) if inject_model else None)
     [outcome], _ = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)
     assert outcome.status == "escalated" and outcome.classifier.classification.category == "general_inquiry"
@@ -120,15 +115,15 @@ async def test_explicit_even_falsy_drafter_wins_over_default_wiring():
     assert outcome.draft.text == "رد مخصص"
 
 
-async def test_gemini_mode_builds_real_jev_checker_when_only_key_is_supplied(monkeypatch):
+async def test_jev_mode_builds_real_jev_checker_when_only_key_is_supplied(monkeypatch):
     from app.pipeline import factory
     from app.pipeline.graph import run_batch
-    from app.pipeline.stage2_classify.gemini import GeminiAnalysis
     from tests.rag_fakes import Knowledge, ScriptedChat, draft_state, script
 
-    monkeypatch.setattr(factory, "make_jev_client", lambda settings: FakeJevRunnable(flags={"requests_credentials": 0.9}))
-    graph = build_pipeline(_settings(openrouter_api_key="test", typesafe_api_key="test"), "gemini", REPO,
-                           llm=FakeStructuredLLM([GeminiAnalysis(category="general_inquiry", priority="P4")]),
+    monkeypatch.setattr(factory, "make_jev_client", lambda settings: FakeJevRunnable(
+        category="general_inquiry", flags={"requests_credentials": 0.9}))
+    graph = build_pipeline(_settings(openrouter_api_key="test", typesafe_api_key="test"), "jev", REPO,
+                           llm=FakeStructuredLLM([None]),
                            knowledge=Knowledge(), investigation=object(), model_factory=lambda: ScriptedChat(steps=script()))
     [outcome], summary = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)
     assert outcome.decision.reasons == ("draft_failed_guardrail",)

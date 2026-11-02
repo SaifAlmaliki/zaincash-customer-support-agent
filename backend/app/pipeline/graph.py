@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import math
 from collections import Counter
 from collections.abc import Sequence
@@ -13,13 +12,11 @@ from typing import Any
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import RetryPolicy
 
-from app.llm import LLMUnavailable
 from app.pipeline.contracts import Ticket, TicketOutcome
 from app.pipeline.execution import ticket_execution
 from app.pipeline.stage1_normalize.candidates import find_candidates
 from app.pipeline.stage1_normalize.normalize import normalize
 from app.pipeline.stage2_classify.base import Classifier, FieldExtractor
-from app.pipeline.stage2_classify.cascade import combine
 from app.pipeline.stage3_extract.extract import fill_gaps, finalize
 from app.pipeline.stage4_lookup.lookup import TransactionRepo, match_transaction
 from app.pipeline.stage5_decide.rules import decide, empty_ticket_decision, merge_reasons
@@ -27,8 +24,7 @@ from app.pipeline.stage6_draft.drafting import Drafter, DraftExecutionError, Nul
 from app.pipeline.state import PipelineState
 from app.taxonomy import Taxonomy
 
-logger = logging.getLogger(__name__)
-MODES = ("jev", "gemini", "cascade")
+MODES = ("jev",)
 _NOT_RETRYABLE = (ValueError, TypeError, KeyError, AttributeError, AssertionError)
 
 
@@ -42,23 +38,12 @@ def _default_retry() -> RetryPolicy:
 
 @dataclass
 class PipelineDeps:
-    mode: str
     taxonomy: Taxonomy
     txn_repo: TransactionRepo
-    jev: Classifier | None = None
-    gemini: Classifier | None = None
+    jev: Classifier
     gap_filler: FieldExtractor | None = None
     drafter: Drafter = field(default_factory=NullDrafter)
-    t_gem: float = 0.66
     retry: RetryPolicy = field(default_factory=_default_retry)
-
-    def __post_init__(self) -> None:
-        if self.mode not in MODES:
-            raise ValueError(f"mode must be one of {MODES}, got {self.mode!r}")
-        if self.mode in ("jev", "cascade") and self.jev is None:
-            raise ValueError(f"mode={self.mode} needs a Jev classifier")
-        if self.mode in ("gemini", "cascade") and self.gemini is None:
-            raise ValueError(f"mode={self.mode} needs a Gemini classifier")
 
 
 class _Nodes:
@@ -70,45 +55,18 @@ class _Nodes:
 
     async def prepare(self, state: PipelineState) -> dict[str, Any]:
         nt = normalize(state["ticket"])
-        return {"nt": nt, "cands": find_candidates(nt.match_text), "started_at": perf_counter(),
-                "degraded": False}
+        return {"nt": nt, "cands": find_candidates(nt.match_text), "started_at": perf_counter()}
 
     def route_after_prepare(self, state: PipelineState) -> str:
-        if not state["ticket"].text.strip():
-            return "escalate_empty"
-        return "gemini_classify" if self.d.mode == "gemini" else "jev_classify"
+        return "escalate_empty" if not state["ticket"].text.strip() else "jev_classify"
 
     async def escalate_empty(self, state: PipelineState) -> dict[str, Any]:
         return {"decision": empty_ticket_decision(self.d.taxonomy.get("other")),
                 "finished_at": perf_counter()}
 
     async def jev_classify(self, state: PipelineState) -> dict[str, Any]:
-        try:
-            out = await self.d.jev.classify(state["nt"], state["cands"])
-        except Exception:
-            if self.d.mode != "cascade":
-                raise
-            logger.warning("Jev failed for %s; using Gemini", state["ticket"].external_id,
-                           exc_info=True)
-            return {"jev": None, "degraded": True}
-        update: dict[str, Any] = {"jev": out, "cost_usd": out.cost_usd}
-        if self.d.mode == "jev" or not out.classification.uncertain:
-            update["classifier"] = out
-        return update
-
-    def route_after_jev(self, state: PipelineState) -> str:
-        return "extract" if state.get("classifier") is not None else "gemini_classify"
-
-    async def gemini_classify(self, state: PipelineState) -> dict[str, Any]:
-        jev_out = state.get("jev")
-        try:
-            gem = await self.d.gemini.classify(state["nt"], state["cands"])
-        except LLMUnavailable:
-            if jev_out is None:
-                raise
-            gem = None
-        final = gem if self.d.mode == "gemini" else combine(jev_out, gem, t_gem=self.d.t_gem)
-        return {"classifier": final, "cost_usd": gem.cost_usd if gem else 0.0}
+        out = await self.d.jev.classify(state["nt"], state["cands"])
+        return {"classifier": out, "cost_usd": out.cost_usd}
 
     async def extract(self, state: PipelineState) -> dict[str, Any]:
         nt = state["nt"]
@@ -174,9 +132,7 @@ def build_graph(deps: PipelineDeps):
     b = StateGraph(PipelineState)
     b.add_node("prepare", n.prepare)
     b.add_node("escalate_empty", n.escalate_empty)
-    b.add_node("jev_classify", n.jev_classify,
-               retry_policy=deps.retry if deps.mode == "jev" else None)
-    b.add_node("gemini_classify", n.gemini_classify, retry_policy=deps.retry)
+    b.add_node("jev_classify", n.jev_classify, retry_policy=deps.retry)
     b.add_node("extract", n.extract, retry_policy=deps.retry)
     b.add_node("lookup", n.lookup)
     b.add_node("decide", n.decide)
@@ -184,10 +140,8 @@ def build_graph(deps: PipelineDeps):
     # create a fresh tool budget, buy duplicate calls and lose partial evidence.
     b.add_node("draft", n.draft, retry_policy=RetryPolicy(max_attempts=1))
     b.add_edge(START, "prepare")
-    b.add_conditional_edges("prepare", n.route_after_prepare,
-                            ["escalate_empty", "jev_classify", "gemini_classify"])
-    b.add_conditional_edges("jev_classify", n.route_after_jev, ["extract", "gemini_classify"])
-    b.add_edge("gemini_classify", "extract")
+    b.add_conditional_edges("prepare", n.route_after_prepare, ["escalate_empty", "jev_classify"])
+    b.add_edge("jev_classify", "extract")
     b.add_edge("extract", "lookup")
     b.add_edge("lookup", "decide")
     b.add_edge("decide", "draft")
@@ -247,7 +201,6 @@ def summarize(outcomes: Sequence[TicketOutcome]) -> RunSummary:
     classified = [o for o in ok if o.classifier is not None]
     decided = [o for o in ok if o.decision is not None]
     paths = Counter(o.classifier.path for o in classified)
-    fallback = paths["gemini_fallback"] + paths["disagreement"]
     total_cost = round(sum(o.cost_usd for o in outcomes), 6)
     latencies = [o.latency_ms for o in ok]
     return RunSummary(
@@ -258,7 +211,7 @@ def summarize(outcomes: Sequence[TicketOutcome]) -> RunSummary:
         by_priority=dict(Counter(o.decision.priority for o in decided)),
         escalation_reasons=dict(Counter(r for o in decided for r in o.decision.reasons)),
         classifier_paths=dict(paths),
-        fallback_rate=round(fallback / len(classified), 4) if classified else 0.0,
+        fallback_rate=0.0,
         degraded=any(o.classifier.degraded for o in classified) or any(
             entry.get("kind") == "guardrail" and entry.get("credential_check_degraded") is True
             for outcome in outcomes if outcome.draft for entry in outcome.draft.trace),

@@ -32,9 +32,7 @@ def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, 
     settings = request.app.state.settings
     if not request.app.state.testing_pipeline:
         missing = []
-        if batch.mode in ("gemini", "cascade") and not settings.openrouter_api_key:
-            missing.append("OPENROUTER_API_KEY")
-        if batch.mode in ("jev", "cascade") and not settings.typesafe_api_key:
+        if not settings.typesafe_api_key:
             missing.append("TYPESAFE_API_KEY")
         if missing:
             raise HTTPException(503, f"Configure {' and '.join(missing)} in the backend .env, then restart the API.")
@@ -61,7 +59,7 @@ def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, 
                      customer_phone=row.customer_phone, received_at=row.received_at)
               for ticket in stored for row in [persisted[ticket.id]]]
     run_id = create_run(session, mode=batch.mode, prompt_version=PROMPT_VERSION,
-                        model_ids=model_ids(settings, batch.mode))
+                        model_ids=model_ids(settings))
     run = session.get(RunRow, run_id)
     run.counts = {"expected_total": len(stored)}
     session.commit()

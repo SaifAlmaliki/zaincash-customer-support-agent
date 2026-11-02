@@ -164,6 +164,8 @@ def test_review_to_employee_handoff(intake_client, complete_conversation):
     assert detail["intake"]["attachments"]
     assert detail["ticket"]["external_id"] == response.json()["ticket_reference"]
     assert detail["status"] != "processing"
+    run = intake_client.get(f"/api/runs/{items[0]['run_id']}").json()
+    assert run["mode"] == "jev"
 
 
 def test_english_general_inquiry_asks_no_transaction_questions(intake_client):

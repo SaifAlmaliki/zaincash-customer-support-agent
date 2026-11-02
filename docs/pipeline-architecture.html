@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZainCash support pipeline — models</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #f3f0e8;
+    --ink: #1c2b2a;
+    --muted: #5e6e6c;
+    --teal: #0f766e;
+    --line: #d5e3de;
+    --card: #fffdf8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Source Sans 3", "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 22px 20px 28px; }
+  header.page {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  header.page h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+  header.page p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .toolbar { position: relative; }
+  .toolbar-toggle {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 8px;
+    width: 36px;
+    height: 32px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 18px;
+  }
+  .toolbar-actions { display: none; position: absolute; right: 0; top: 38px; gap: 6px; z-index: 2; }
+  .toolbar.expanded .toolbar-actions { display: flex; }
+  .toolbar-actions button {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  @media print { .toolbar { display: none !important; } }
+  .board { display: grid; grid-template-columns: minmax(0, 1fr) 292px; gap: 14px; align-items: start; }
+  .panel {
+    background: rgba(255, 253, 248, 0.72);
+    border: 1.5px dashed #b7cdc6;
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .panel > h2, aside > h2 {
+    margin: 2px 4px 10px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+  .top {
+    display: grid;
+    grid-template-columns: 1.15fr 1.15fr 0.9fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .card {
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    position: relative;
+  }
+  .card h3 { margin: 0; font-size: 15px; }
+  .card p, .stage p, .side p { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
+  .card.ws { border-color: #93c5fd; background: #f8fbff; }
+  .card.api { border-color: #6ee7b7; background: #f3fbf7; }
+  .pipe {
+    border: 1.5px solid #99d5cc;
+    border-radius: 12px;
+    padding: 10px;
+    background: #f7fffd;
+  }
+  .pipe-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    color: var(--teal);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .stages { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  .stage {
+    background: #fff;
+    border: 1.5px solid #8ecfc6;
+    border-radius: 8px;
+    min-height: 108px;
+    padding: 8px 8px 8px;
+    position: relative;
+  }
+  .stage h3 { margin: 18px 0 0; font-size: 13px; color: #0f5f59; }
+  .stage .role { font-weight: 600; color: var(--ink); }
+  .stage.focus { border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.08); }
+  .badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border-radius: 999px;
+    padding: 1px 2px 1px 1px;
+  }
+  .logo { width: 18px; height: 18px; display: block; }
+  .logo.lg { width: 22px; height: 22px; }
+  .none {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1.5px solid #94a3b8;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    background: #f8fafc;
+  }
+  .model { color: #0f5f59 !important; font-weight: 700; font-size: 11px !important; }
+  .mid {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 230px;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: stretch;
+  }
+  .gem {
+    border: 1.5px dashed #d97706;
+    background: #fffaf3;
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .gem h3 { margin: 0; color: #b45309; font-size: 14px; }
+  .db {
+    border: 1.5px solid #c4b5fd;
+    background: #f6f3ff;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .db h3 { margin: 0; color: #6d28d9; font-size: 15px; }
+  .rag {
+    border: 1.5px solid #0f766e;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .rag h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.05em; color: var(--teal); }
+  .model-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 6px; }
+  .model-row strong { display: block; font-size: 12px; }
+  .model-row span { display: block; color: var(--muted); font-size: 11px; }
+  .human {
+    margin-top: 10px;
+    border: 1.5px solid #fdba74;
+    background: #fff7ed;
+    border-radius: 12px;
+    padding: 10px;
+  }
+  .human h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.04em; color: #c2410c; }
+  .human-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  aside { display: flex; flex-direction: column; gap: 10px; }
+  .side {
+    background: #fffdf8;
+    border: 1.5px solid #fdba74;
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .side h3 { margin: 0; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .side .id { margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px; color: #9a3412; font-weight: 700; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .legend b { color: var(--ink); }
+  .rowhead { display: flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="report-container">
+  <header class="page">
+    <div>
+      <h1>ZainCash support pipeline</h1>
+      <p>Logos mark the model on each step. Lookup and decide stay on rules and SQL.</p>
+    </div>
+    <div class="toolbar">
+      <div class="toolbar-actions">
+        <button onclick="copyAsImage(this)">Copy</button>
+        <button onclick="downloadPNG(this)">PNG</button>
+        <button onclick="downloadPDF(this)">PDF</button>
+      </div>
+      <button class="toolbar-toggle" onclick="this.parentElement.classList.toggle('expanded')" title="Export options" aria-label="Export options">⋯</button>
+    </div>
+  </header>
+
+  <div class="board">
+    <section class="panel">
+      <h2>Local runtime · WSL Ubuntu + uv · Docker database · Python 3.11+</h2>
+      <div class="top">
+        <article class="card ws">
+          <h3>Review workspace</h3>
+          <p>Paste, CSV/JSON + ticket review</p>
+          <p>React 19 / TypeScript / Vite :5173</p>
+        </article>
+        <article class="card api">
+          <h3>FastAPI / REST</h3>
+          <p>Batch jobs, results and review APIs</p>
+          <p>Python / Uvicorn :8000 /api</p>
+        </article>
+        <article class="card">
+          <h3>CLI + configuration</h3>
+          <p>Typer / uv → the same graph</p>
+          <p>jev · gemini · cascade · .env</p>
+        </article>
+      </div>
+
+      <div class="pipe">
+        <div class="pipe-head">
+          <span>Shared Python / LangGraph pipeline · default cascade path</span>
+          <span>LangChain</span>
+        </div>
+        <div class="stages">
+          <article class="stage">
+            <h3>prepare</h3>
+            <p class="role">Normalize text</p>
+            <p>PAN mask / regex</p>
+          </article>
+          <article class="stage">
+            <div class="badge" title="TypeSafe Jev"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#7c3aed"/><path fill="#fff" d="M7 16V8h2.1l2.9 5.1L14.9 8H17v8h-1.7v-5.2L12.6 16h-1.2l-2.7-5.2V16Z"/></svg></div>
+            <h3>jev_classify</h3>
+            <p class="role">Category + flags</p>
+            <p class="model">jev-1.13.0</p>
+          </article>
+          <article class="stage">
+            <div class="badge" title="Gemini fills extraction gaps"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="gem" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1a73e8"/><stop offset=".55" stop-color="#8e75d6"/><stop offset="1" stop-color="#e85d4c"/></linearGradient></defs><path fill="url(#gem)" d="M12 1.2c.7 5 5 9.3 10 10-5 .7-9.3 5-10 10-.7-5-5-9.3-10-10 5-.7 9.3-5 10-10Z"/></svg></div>
+            <h3>extract</h3>
+            <p class="role">Validate fields</p>
+            <p class="model">Gemini gap fill</p>
+          </article>
+          <article class="stage focus">
+            <div class="badge" title="No language model"><span class="none">SQL</span></div>
+            <h3>lookup</h3>
+            <p class="role">Match transaction</p>
+            <p class="model">No LLM · SQLAlchemy</p>
+          </article>
+          <article class="stage focus">
+            <div class="badge" title="No language model"><span class="none">f(x)</span></div>
+            <h3>decide</h3>
+            <p class="role">Team / priority</p>
+            <p class="model">No LLM · taxonomy.yaml</p>
+          </article>
+          <article class="stage focus">
+            <div class="badge" title="Anthropic Claude via OpenRouter"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#D97757" d="M12 1.6 13.35 7.7l5.7-3.9-2.3 6.6 6.65.5-5.85 3.9 3.9 5.8-6.6-2.25L12 22.4l-2.85-5.05-6.6 2.25 3.9-5.8L.6 10.9l6.65-.5L4.95 3.8l5.7 3.9Z"/></svg></div>
+            <h3>draft</h3>
+            <p class="role">RagDrafter</p>
+            <p class="model">claude-sonnet-5.5</p>
+          </article>
+        </div>
+
+        <div class="mid">
+          <article class="gem">
+            <div class="rowhead">
+              <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="url(#gem)" d="M12 1.2c.7 5 5 9.3 10 10-5 .7-9.3 5-10 10-.7-5-5-9.3-10-10 5-.7 9.3-5 10-10Z"/></svg>
+              <h3>gemini_classify</h3>
+            </div>
+            <p>Cascade branch, or the whole path in gemini mode</p>
+            <p class="model">google/gemini-3.8-flash</p>
+            <p>3 samples, 2/3 agreement. Uncertainty still escalates.</p>
+          </article>
+          <article class="db">
+            <h3>PostgreSQL 16 + pgvector</h3>
+            <p>Transactions, tickets, runs, results, reviews, documents</p>
+            <p>SQLAlchemy / psycopg · host :5433 → :5432</p>
+            <p>Lookup reads it. Draft saves the result. Reviews return through FastAPI.</p>
+          </article>
+          <article class="rag">
+            <h3>RAG</h3>
+            <div class="model-row">
+              <svg class="logo lg" viewBox="0 0 24 24" aria-hidden="true"><path fill="#111" d="M22.28 9.82a5.98 5.98 0 0 0-.52-4.91 6.05 6.05 0 0 0-6.51-2.9A6.07 6.07 0 0 0 4.98 4.18a5.98 5.98 0 0 0-4 2.9 6.05 6.05 0 0 0 .74 7.1 5.98 5.98 0 0 0 .51 4.91 6.05 6.05 0 0 0 6.52 2.9A5.98 5.98 0 0 0 13.26 24a6.06 6.06 0 0 0 5.77-4.21 5.99 5.99 0 0 0 4-2.9 6.06 6.06 0 0 0-.75-7.07zm-9.02 12.61a4.48 4.48 0 0 1-2.88-1.04l.14-.08 4.78-2.76a.79.79 0 0 0 .39-.68v-6.74l2.02 1.17a.07.07 0 0 1 .04.05v5.58a4.5 4.5 0 0 1-4.49 4.5zm-9.66-4.13a4.47 4.47 0 0 1-.53-3.01l.14.08 4.78 2.76a.77.77 0 0 0 .78 0l5.84-3.37v2.33a.08.08 0 0 1-.03.06l-4.83 2.79a4.5 4.5 0 0 1-6.14-1.65zM2.34 7.9a4.49 4.49 0 0 1 2.37-1.97V11.6a.77.77 0 0 0 .39.68l5.81 3.35-2.02 1.17a.08.08 0 0 1-.07 0L4.01 14.01A4.5 4.5 0 0 1 2.34 7.87zm16.6 3.86-5.83-3.39 2.02-1.16a.08.08 0 0 1 .07 0l4.83 2.79a4.49 4.49 0 0 1-.68 8.1v-5.68a.79.79 0 0 0-.41-.67zm2.01-3.02-.14-.09-4.77-2.78a.78.78 0 0 0-.79 0L9.41 9.23V6.9a.07.07 0 0 1 .03-.06l4.83-2.79a4.5 4.5 0 0 1 6.68 4.66zM8.31 12.86l-2.02-1.16a.08.08 0 0 1-.04-.06V6.07a4.5 4.5 0 0 1 7.38-3.45l-.14.08-4.78 2.76a.79.79 0 0 0-.39.68zm1.1-2.37 2.6-1.5 2.61 1.5v3l-2.6 1.5-2.61-1.5Z"/></svg>
+              <div>
+                <strong>openai/text-embedding-3-small</strong>
+                <span>Indexes and retrieves policy chunks. 768 dimensions.</span>
+              </div>
+            </div>
+            <div class="model-row">
+              <svg class="logo lg" viewBox="0 0 24 24" aria-hidden="true"><path fill="#D97757" d="M12 1.6 13.35 7.7l5.7-3.9-2.3 6.6 6.65.5-5.85 3.9 3.9 5.8-6.6-2.25L12 22.4l-2.85-5.05-6.6 2.25 3.9-5.8L.6 10.9l6.65-.5L4.95 3.8l5.7 3.9Z"/></svg>
+              <div>
+                <strong>anthropic/claude-sonnet-5.5</strong>
+                <span>Writes the cited reply. Same model as draft.</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="human">
+        <h2>Human review · inspect the ticket, evidence and saved outcome</h2>
+        <div class="human-row">
+          <article class="card"><h3>Support agent</h3><p>Approve / edit / reject / reassign</p></article>
+          <article class="card"><h3>Escalation + audit</h3><p>Reasons and review actions recorded</p></article>
+          <article class="card"><h3>Approved response</h3><p>Manual copy. No send API.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <h2>External model APIs</h2>
+      <article class="side">
+        <h3><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#7c3aed"/><path fill="#fff" d="M7 16V8h2.1l2.9 5.1L14.9 8H17v8h-1.7v-5.2L12.6 16h-1.2l-2.7-5.2V16Z"/></svg> TypeSafe / Jev</h3>
+        <p>Classification and field selection.</p>
+        <p class="id">jev-1.13.0 · HTTPS</p>
+      </article>
+      <article class="side">
+        <h3><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="url(#gem)" d="M12 1.2c.7 5 5 9.3 10 10-5 .7-9.3 5-10 10-.7-5-5-9.3-10-10 5-.7 9.3-5 10-10Z"/></svg> OpenRouter · Gemini</h3>
+        <p>Cascade fallback, gemini-only mode, and extraction gap filling.</p>
+        <p class="id">google/gemini-3.8-flash</p>
+      </article>
+      <article class="side">
+        <h3><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#D97757" d="M12 1.6 13.35 7.7l5.7-3.9-2.3 6.6 6.65.5-5.85 3.9 3.9 5.8-6.6-2.25L12 22.4l-2.85-5.05-6.6 2.25 3.9-5.8L.6 10.9l6.65-.5L4.95 3.8l5.7 3.9Z"/></svg> OpenRouter · Claude</h3>
+        <p>Drafting and the RAG reply. Used because ANTHROPIC_MODEL is set. Empty falls back to Gemini Flash.</p>
+        <p class="id">anthropic/claude-sonnet-5.5</p>
+      </article>
+      <article class="side">
+        <h3><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#10a37f" d="M22.28 9.82a5.98 5.98 0 0 0-.52-4.91 6.05 6.05 0 0 0-6.51-2.9A6.07 6.07 0 0 0 4.98 4.18a5.98 5.98 0 0 0-4 2.9 6.05 6.05 0 0 0 .74 7.1 5.98 5.98 0 0 0 .51 4.91 6.05 6.05 0 0 0 6.52 2.9A5.98 5.98 0 0 0 13.26 24a6.06 6.06 0 0 0 5.77-4.21 5.99 5.99 0 0 0 4-2.9 6.06 6.06 0 0 0-.75-7.07z"/></svg> OpenRouter · embeddings</h3>
+        <p>Knowledge index and query vectors. GEMINI_EMBED_MODEL is not wired into this call.</p>
+        <p class="id">openai/text-embedding-3-small</p>
+      </article>
+      <article class="side">
+        <h3>Execution controls</h3>
+        <p>Concurrency cap 20. Node retries up to 3, except draft, which owns its own deadline. A batch isolates ticket failures.</p>
+      </article>
+    </aside>
+  </div>
+
+  <div class="legend">
+    <span><b>Teal</b> pipeline</span>
+    <span><b>Blue</b> workspace</span>
+    <span><b>Gold dashed</b> Gemini call</span>
+    <span><b>Purple</b> SQL</span>
+    <span><b>SQL / f(x)</b> no model</span>
+    <span><b>Claude</b> draft + RAG reply</span>
+    <span><b>OpenAI knot</b> RAG embeddings</span>
+  </div>
+</div>
+<script>
+  async function copyAsImage(btn) {
+    const orig = btn.textContent;
+    try {
+      const el = document.getElementById('report-container');
+      const r = el.getBoundingClientRect();
+      const pad = 32;
+      const canvas = await html2canvas(document.body, { backgroundColor: '#f3f0e8', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      btn.textContent = 'Copied';
+    } catch (e) { btn.textContent = 'Failed'; }
+    setTimeout(() => btn.textContent = orig, 2000);
+  }
+  async function downloadPNG(btn) {
+    const orig = btn.textContent;
+    btn.textContent = '...';
+    try {
+      const el = document.getElementById('report-container');
+      const r = el.getBoundingClientRect();
+      const pad = 32;
+      const canvas = await html2canvas(document.body, { backgroundColor: '#f3f0e8', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+      const link = document.createElement('a');
+      link.download = 'pipeline-architecture.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      btn.textContent = 'Done';
+    } catch (e) { btn.textContent = 'Failed'; }
+    setTimeout(() => btn.textContent = orig, 2000);
+  }
+  async function downloadPDF(btn) {
+    const orig = btn.textContent;
+    btn.textContent = '...';
+    try {
+      const el = document.getElementById('report-container');
+      const r = el.getBoundingClientRect();
+      const pad = 32;
+      const canvas = await html2canvas(document.body, { backgroundColor: '#f3f0e8', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+      const pdf = new jsPDF({ orientation, unit: 'px', format: [canvas.width, canvas.height], hotfixes: ['px_scaling'] });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save('pipeline-architecture.pdf');
+      btn.textContent = 'Done';
+    } catch (e) { btn.textContent = 'Failed'; }
+    setTimeout(() => btn.textContent = orig, 2000);
+  }
+</script>
+</body>
+</html>

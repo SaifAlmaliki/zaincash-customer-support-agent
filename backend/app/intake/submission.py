@@ -38,10 +38,10 @@ class SubmissionResult:
 
 
 class SubmissionService:
-    def __init__(self, session_factory: sessionmaker, settings: Settings, *, mode: str = "cascade") -> None:
+    def __init__(self, session_factory: sessionmaker, settings: Settings) -> None:
         self._sf = session_factory
         self.settings = settings
-        self.mode = mode
+        self.mode = "jev"
         self.repo = IntakeRepository(session_factory)
 
     def submit(self, credentials: Credentials, request_id: uuid.UUID, expected_revision: int,
@@ -96,7 +96,7 @@ class SubmissionService:
         )
         stored = upsert_tickets(session, [ticket], source="intake")[0]
         run_id = create_run(
-            session, mode=self.mode, prompt_version=PROMPT_VERSION, model_ids=model_ids(self.settings, self.mode)
+            session, mode=self.mode, prompt_version=PROMPT_VERSION, model_ids=model_ids(self.settings)
         )
         placeholder = TicketResultRow(
             run_id=run_id, ticket_id=stored.id, status="processing", category_probs={}, flags={}, extracted={},

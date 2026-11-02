@@ -60,7 +60,7 @@ async def run_provider_pipeline(monkeypatch, tax, *, response, conversion_bug=Fa
     drafter = RagDrafter(settings, model_factory=lambda: make_draft_model(settings),
                          knowledge=Knowledge(), investigation=object(), credential_checker=Checker())
     graph = build_graph(PipelineDeps(
-        mode="jev", txn_repo=InMemoryTransactionRepo([]), taxonomy=tax, drafter=drafter,
+        txn_repo=InMemoryTransactionRepo([]), taxonomy=tax, drafter=drafter,
         jev=FakeClassifier(make_output("general_inquiry", flags={"fraud_suspected": 1})),
     ))
     [outcome], _ = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)

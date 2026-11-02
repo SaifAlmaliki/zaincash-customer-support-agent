@@ -81,7 +81,7 @@ class ClassificationResult:
 class ClassifierOutput:
     classification: ClassificationResult
     picks: dict[str, FieldPick]
-    path: str  # "jev" | "gemini" | "gemini_fallback" | "disagreement"
+    path: str  # "jev"; legacy results may contain "gemini", "gemini_fallback" or "disagreement"
     reasons: tuple[str, ...] = ()
     cost_usd: float = 0.0
     degraded: bool = False

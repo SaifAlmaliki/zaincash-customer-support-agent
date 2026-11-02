@@ -15,9 +15,6 @@ flowchart LR
         A([Support tickets arrive<br/>React intake · employee UI · CLI batch<br/>FastAPI stores one ticket in Postgres])
         B[Clean the text<br/>Python, no model<br/>Arabic digits → 0-9, hide card numbers]
         C[Jev reads the ticket<br/>TypeSafe Jev · 1 of 12 categories<br/>priority P1–P4 · 6 red flags · 4 field picks]
-        D{Is Jev confident?}
-        E[Gemini second opinion<br/>OpenRouter · structured output<br/>asked 3 times]
-        F{Gemini confident<br/>and agrees?}
         G[Look up the transaction<br/>Python matcher · Postgres 16<br/>synthetic demo records]
         H[Route to 1 of 7 teams<br/>Python rules · taxonomy file<br/>raise priority for fraud or stuck money]
         I[Keep escalation reasons<br/>any reason in the list on the right]
@@ -28,11 +25,7 @@ flowchart LR
         Q[Support agent reviews<br/>React employee workspace<br/>Approve · Edit · Reject]
         Z([Agent sends the approved reply<br/>nothing is sent automatically])
 
-        A --> B --> C --> D
-        D -- Yes --> G
-        D -- No --> E --> F
-        F -- Yes --> G
-        F -- No --> X
+        A --> B --> C --> G
         G --> H --> I
         I --> J --> K
         K -- Check failed or earlier flags --> X
@@ -49,7 +42,7 @@ flowchart LR
         PRI["Priorities P1–P4<br/>P1 money at risk now, or fraud<br/>P2 money lost or stuck<br/>P3 service blocked<br/>P4 information question"]
         FLAGS["6 red flags<br/>Fraud suspected<br/>Money lost<br/>More than one issue<br/>Urgent or angry<br/>Names a specific transaction<br/>Asks for a person"]
         FIELDS["4 field picks<br/>Transaction ID<br/>Amount<br/>Phone<br/>Date"]
-        WHY["Escalation reasons<br/>Low confidence<br/>Jev and Gemini disagree<br/>Fraud<br/>Several issues<br/>Asked for a person<br/>Missing details<br/>Transaction not found<br/>Several transactions match<br/>Amount mismatch<br/>Date mismatch<br/>Empty ticket<br/>Drafter unavailable<br/>Draft failed a check<br/>No policy supports a reply"]
+        WHY["Escalation reasons<br/>Low confidence<br/>Fraud<br/>Several issues<br/>Asked for a person<br/>Missing details<br/>Transaction not found<br/>Several transactions match<br/>Amount mismatch<br/>Date mismatch<br/>Empty ticket<br/>Drafter unavailable<br/>Draft failed a check<br/>No policy supports a reply"]
         CAT ~~~ TEAMS ~~~ PRI ~~~ FLAGS ~~~ FIELDS ~~~ WHY
     end
 
@@ -60,8 +53,8 @@ flowchart LR
     classDef note fill:#f6f1e7,stroke:#b9a88a,color:#1a1a1a
 
     class A,Z terminal
-    class D,F,K decision
-    class B,C,E,G,H,I,J,R action
+    class K decision
+    class B,C,G,H,I,J,R action
     class X,Q escalate
     class CAT,TEAMS,PRI,FLAGS,FIELDS,WHY note
 ```
@@ -101,18 +94,17 @@ Priorities, from most urgent to least:
 - **P3** — the customer is blocked from a service.
 - **P4** — an information question.
 
-The team is still assigned when a ticket is escalated. The note tells the reviewer why: low confidence, Jev and Gemini disagree, fraud, more than one issue, the customer asked for a person, a required field is missing, the transaction is missing or ambiguous, the amount or date does not match, the ticket is empty, the drafter was unavailable, the draft failed a check, or no policy supports a reply.
+The team is still assigned when a ticket is escalated. The note tells the reviewer why: low confidence, fraud, more than one issue, the customer asked for a person, a required field is missing, the transaction is missing or ambiguous, the amount or date does not match, the ticket is empty, the drafter was unavailable, the draft failed a check, or no policy supports a reply.
 
 ### Stack on each phase
 
-LangGraph runs this path as one Python 3.11 graph. A model is called only on the phases that name one. Field extraction sits between a confident category and the lookup; the diagram folds that step into the arrow after Jev or Gemini.
+LangGraph runs this path as one Python 3.11 graph. A model is called only on the phases that name one. Field extraction sits between classification and lookup; the diagram folds that step into the arrow after Jev. Uncertain Jev results keep their classification but are escalated for human review.
 
 | Phase | What happens | Stack |
 |---|---|---|
 | Arrive | The customer intake app gathers the report and submits one ticket. An employee can also paste text, upload CSV or JSON, or start a CLI batch. | Intake and employee apps: React 19, Vite, TypeScript, Tailwind. The employee app also uses shadcn and React Router. API: FastAPI on Uvicorn. Intake model: Gemini through OpenRouter. Storage: Postgres 16. |
 | Clean | Arabic-Indic digits become 0–9, card numbers are masked, and regex lists the amounts, dates, phones and transaction IDs a model may choose. | Python, LangGraph node `prepare`. |
 | Classify | Choose the category, priority and red flags, and point at the real amount, date, phone and transaction ID. | Jev (TypeSafe System One) through `langchain-typesafe`. Scores are calibrated, and Jev selects only spans already in the ticket. |
-| Second opinion | Runs when Jev is unsure, when Jev fails during a cascade run, or when the batch is Gemini-only. Three samples have to agree. | Gemini through OpenRouter (`langchain-openrouter`), structured output. Python `combine()` keeps Jev, accepts Gemini, or escalates. |
 | Extract | A picked value is kept when it matches a span of the original text. Gemini may fill one required field when the regex list has nothing usable. | Python span checks, then Gemini for that gap only. |
 | Look up | Categories marked above as needing a transaction are matched on reference, amount and date in the synthetic records. | Python matcher, SQLAlchemy and psycopg, Postgres 16 (`pgvector/pgvector:pg16`). |
 | Route | The team comes from the category table. Priority is raised to that category's floor, and further for fraud or lost money. | Python rules in `stage5_decide/rules.py`. |
@@ -132,9 +124,7 @@ The diagram above is the path a ticket takes. This is the same path as code: the
 | Find refs, phones, amounts, and dates | `prepare` | `stage1_normalize/candidates.py` | `find_candidates()` — recall-tuned regex, the options Jev is allowed to pick |
 | Resolve relative dates | (used in extract) | `stage1_normalize/dates.py` | `resolve_date()` |
 | Jev reads the ticket | `jev_classify` | `stage2_classify/jev.py` | Jev via langchain-typesafe: category, priority, flags, candidate picks (+ reversed-option check) |
-| Gemini second opinion | `gemini_classify` | `stage2_classify/gemini.py` | Gemini structured output, 3 samples |
-| Jev → Gemini → human decision | `gemini_classify` (cascade mode) | `stage2_classify/cascade.py` | `combine()` |
-| Classify and extract prompts | — | `stage2_classify/prompts/gemini_classify_v1.md`, `gemini_extract_v1.md` | prompt files (versioned) |
+| Extraction prompt | — | `stage2_classify/prompts/gemini_extract_v1.md` | Prompt file (versioned) |
 | Extract ref, amount, date, phone | `extract` | `stage3_extract/extract.py` | `finalize()`, `fill_gaps()`, span verification. Gemini fills a field only when regex found nothing or the Jev pick is weak |
 | Look up the transaction | `lookup` | `stage4_lookup/lookup.py` (+ `app/db/repository.py`) | `match_transaction()` |
 | Route to team + red-flag check | `decide` | `stage5_decide/rules.py` | `decide()`, `merge_reasons()` |
@@ -163,7 +153,7 @@ Orchestration, outside any single stage:
 | Build the graph, run a batch, summarize | `pipeline/graph.py` |
 | LangGraph state | `pipeline/state.py` |
 | Shared dataclasses | `pipeline/contracts.py` |
-| Wire real clients (Jev and Gemini) | `pipeline/factory.py` |
+| Wire model clients and pipeline dependencies | `pipeline/factory.py` |
 | Outcome → dict or database row | `pipeline/io/serialize.py` |
 
 ## Models
@@ -171,7 +161,7 @@ Orchestration, outside any single stage:
 | Model | What it does here |
 |---|---|
 | **Jev** (TypeSafe System One) | Fast, cheap classification. Its confidence scores are calibrated, and it picks extracted values directly from the ticket text, so it cannot invent them. |
-| **Gemini 3.8 Flash** (via OpenRouter) | Second opinion, fallback extraction and grounded drafting; selected with `GEMINI_MODEL`. |
+| **Gemini 3.8 Flash** (via OpenRouter) | Fallback extraction and grounded drafting when no Anthropic drafting model is configured; selected with `GEMINI_MODEL`. It is not used for classification. |
 | **text-embedding-3-small** (via OpenRouter) | Knowledge indexing and query embeddings, 768 dimensions. |
 
 ## Design
@@ -237,7 +227,7 @@ The [intake verification record](docs/verification/2026-10-18-customer-intake.md
 ### Show it in the browser
 
 1. **Knowledge base** → upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md) and wait until it says **Indexed**. Upload that one file. Do not also upload the copies in [`data/test-kb/ar/`](data/test-kb/ar/).
-2. **New batch** → upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), keep **Jev → Gemini fallback**, and start processing.
+2. **New batch** → upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl) and start processing with **Jev-only classification**.
 3. Open the four results: a pending transfer matched to `ZC2410000123`, a general question, a P1 fraud escalation, and an out-of-scope question. Edit one reply and choose **Save & approve**. Approval is stored. Nothing is sent.
 
 What each ticket and policy should show is in [`data/demo/README.md`](data/demo/README.md) and [`data/test-kb/README.md`](data/test-kb/README.md).
@@ -251,7 +241,7 @@ uv run pytest -q
 uv run ruff check app tests
 ```
 
-The Postgres tests need the database running and use the separate `support_test` database. A terminal batch, without the UI, is `uv --directory backend run support run-batch tests/fixtures/sample_tickets.jsonl --mode cascade --out out/run.json`. `--mode` is `jev`, `gemini`, or `cascade`.
+The Postgres tests need the database running and use the separate `support_test` database. A terminal batch, without the UI, is `uv --directory backend run support run-batch tests/fixtures/sample_tickets.jsonl --out out/run.json`. New batches always use `jev` mode.
 
 ## Status
 
@@ -277,7 +267,7 @@ Live smoke results on 2026-10-07:
 
 The cascade fixture checks passed: S-001 was `failed_transfer`, matched its transaction and extracted **50,000 IQD**; S-002 escalated for `fraud_suspected` at **P1**; S-005 was `general_inquiry` at **P4**. Per-ticket outputs are saved locally to `out/smoke-{jev,gemini,cascade}.json`.
 
-To repeat the Gemini smoke test, run the in-memory command above with `--mode gemini --out ../out/smoke-gemini.json` and confirm `total: 5` and `failed_ids: []`. These five fixtures are a connectivity and pipeline check; held-out accuracy evaluation comes in Plan 2.
+To repeat the Jev smoke test, run the in-memory command above with `--mode jev --out ../out/smoke-jev.json` and confirm `total: 5` and `failed_ids: []`. These five fixtures are a connectivity and pipeline check; held-out accuracy evaluation comes in Plan 2.
 
 Remaining: **Plan 2 held-out evaluation**; **Plan 5 packaging/CI**, disclosure, data card and broader evidence-backed failure modes; and the **weekly statistical report as stretch work**. The workspace's existing weekly counts and imported evaluation display do not implement those deliverables.
 

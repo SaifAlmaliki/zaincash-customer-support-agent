@@ -55,7 +55,7 @@ def runner_env(monkeypatch, tax):
         classifier = FakeClassifier(make_output(
             "failed_transfer", cost=0.25, flags={"fraud_suspected": 0.9},
             picks={"txn_ref": FieldPick("ZC2410000123", 0.99, "jev_pick")}), delay=classify_delay)
-        graph = build_graph(PipelineDeps(mode="jev", taxonomy=tax, txn_repo=REPO,
+        graph = build_graph(PipelineDeps(taxonomy=tax, txn_repo=REPO,
                                         jev=classifier, drafter=agent))
         app = SimpleNamespace(state=SimpleNamespace(
             settings=settings, session_factory=sessions, pipeline_builder=lambda *args: graph))

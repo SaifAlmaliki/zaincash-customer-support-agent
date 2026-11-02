@@ -50,7 +50,7 @@ def intake_client(tmp_path):
 
     def pipeline(_settings, _mode, _repo):
         return build_graph(PipelineDeps(
-            mode="jev", taxonomy=taxonomy, txn_repo=InMemoryTransactionRepo([]),
+            taxonomy=taxonomy, txn_repo=InMemoryTransactionRepo([]),
             jev=FakeClassifier(make_output("general_inquiry", priority="P4"), fail_for={"fail"}),
         ))
 

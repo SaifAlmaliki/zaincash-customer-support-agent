@@ -7,7 +7,7 @@ from app.services.draft_evidence import draft_evidence
 
 STAGES = [
     {"id": "prepare", "number": 1, "label": "Prepare", "description": "Normalize text and find candidate details", "file": "stage1_normalize/normalize.py"},
-    {"id": "classify", "number": 2, "label": "Classify", "description": "Jev triage with Gemini fallback", "file": "stage2_classify/jev.py"},
+    {"id": "classify", "number": 2, "label": "Classify", "description": "Jev triage with human escalation for uncertain results", "file": "stage2_classify/jev.py"},
     {"id": "extract", "number": 3, "label": "Extract", "description": "Anchor reference, amount and date to the source", "file": "stage3_extract/extract.py"},
     {"id": "lookup", "number": 4, "label": "Investigate", "description": "Find the matching mock transaction", "file": "stage4_lookup/lookup.py"},
     {"id": "decide", "number": 5, "label": "Route", "description": "Apply team, priority and escalation rules", "file": "stage5_decide/rules.py"},

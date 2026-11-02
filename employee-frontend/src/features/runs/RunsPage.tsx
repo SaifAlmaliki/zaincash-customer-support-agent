@@ -215,7 +215,7 @@ export function RunDetailPage() {
             <span style={{ width: `${progress}%` }} />
           </div>
           {run.counts.error && <p className="error-text">{run.counts.error}</p>}
-          {run.degraded && (
+          {run.degraded && run.mode === "cascade" && (
             <p className="field-help">
               Jev was unavailable for part of this run. Gemini fallback is
               recorded in the results.

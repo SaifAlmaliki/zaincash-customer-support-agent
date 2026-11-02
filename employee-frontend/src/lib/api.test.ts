@@ -1,7 +1,10 @@
 import { afterEach, expect, it, vi } from "vitest"
-import { loadQueue } from "./api"
+import { api, loadQueue } from "./api"
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 it("loads subsequent API pages so ticket 501 remains searchable and exportable", async () => {
   const fetch = vi.fn(async (url: string) => {
@@ -36,4 +39,13 @@ it("reports an inconsistent queue snapshot instead of silently dropping rows", a
   await expect(loadQueue("/results?limit=500", {})).rejects.toThrow(
     /queue changed/i
   )
+})
+
+it("starts every new run with Jev classification", async () => {
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }),
+  )
+  await api.startRun([{ text: "شكد العمولة", channel: "app" }])
+  const options = fetchMock.mock.calls[0][1]
+  expect(JSON.parse(String(options?.body)).mode).toBe("jev")
 })

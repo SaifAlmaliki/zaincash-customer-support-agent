@@ -93,10 +93,15 @@ function usedIds(route: Route, stages: FlowStepId[]): FlowStepId[] {
   return ["prepare", "jev_classify", "extract", "lookup", "decide", "draft"]
 }
 
-function unusedReason(id: FlowStepId, route: Route, arabic: boolean): string {
+function unusedReason(id: FlowStepId, result: Result, route: Route, arabic: boolean): string {
   if (route === "empty") return sentence("emptyEnded", arabic)
   if (id === "escalate_empty") return sentence("messageHadText", arabic)
   if (id === "jev_classify") return sentence("askedGeminiDirectly", arabic)
+  if (route === "straight" && result.escalation_reasons.includes("low_confidence")) {
+    return stageNodes(result).includes("gemini_classify")
+      ? sentence("geminiUnavailable", arabic)
+      : sentence("jevOnlyNoGemini", arabic)
+  }
   return sentence("jevWasSure", arabic)
 }
 
@@ -176,9 +181,11 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
     return { received: sentence("emptyReceived", arabic), produced: sentence("emptyProduced", arabic), events: message }
   }
   if (id === "jev_classify") {
-    const produced = route === "straight"
-      ? sentence("jevSure", arabic, { category, confidence, priority })
-      : sentence("jevUnsure", arabic)
+    const produced = route !== "straight"
+      ? sentence("jevUnsure", arabic)
+      : result.escalation_reasons.includes("low_confidence")
+        ? sentence("jevUnsureEscalated", arabic)
+        : sentence("jevSure", arabic, { category, confidence, priority })
     return { received: sentence("cleaned", arabic), produced, events: [...message, ...probabilityLines(result, arabic)] }
   }
   if (id === "gemini_classify") {
@@ -266,7 +273,7 @@ export function buildTicketFlow(result: Result, arabic = isArabicMessage(result.
       : route === "gemini_unknown" && id === "jev_classify"
         ? "unrecorded"
         : used.has(id) ? "used" : "unused"
-    const reason = state === "unused" ? unusedReason(id, route, arabic) : null
+    const reason = state === "unused" ? unusedReason(id, result, route, arabic) : null
     const told = state === "used" ? story(id, result, arabic, route) : null
     const category = result.category ? categoryLabel(result.category) : sentence("noCategory", arabic)
     const confidence = percentage(result.category_confidence)

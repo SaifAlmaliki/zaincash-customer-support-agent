@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.pipeline.stage1_normalize.normalize import sanitize_for_storage
 
-Mode = Literal["jev", "gemini", "cascade"]
+Mode = Literal["jev"]
 
 
 class TicketInput(BaseModel):
@@ -41,7 +41,7 @@ class TicketInput(BaseModel):
 
 
 class BatchInput(BaseModel):
-    mode: Mode = "cascade"
+    mode: Mode = "jev"
     tickets: list[TicketInput] = Field(min_length=1, max_length=500)
 
     @model_validator(mode="after")

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     gemini_model: str = "google/gemini-3.8-flash"
     gemini_strong_model: str = "google/gemini-2.5-pro"
     gemini_embed_model: str = "gemini-embedding-001"
-    # When set, drafting uses this model. Classification stays on gemini_model.
+    # Optional drafting override. Jev classification and other model-backed features are unaffected.
     anthropic_model: str = ""
     rag_enabled: bool = True
     embedding_model: str = "openai/text-embedding-3-small"
@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     jev_model: str = "jev-1.13.0"
 
     t_jev: float = 0.6
-    t_gem: float = 0.66
     jev_min_top_prob: float = 0.60
     pipeline_concurrency: int = 20
     max_state_chars: int = 6000

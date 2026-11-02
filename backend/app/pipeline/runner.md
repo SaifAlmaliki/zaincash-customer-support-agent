@@ -2,7 +2,7 @@
 
 This map lives in the root [README](../../../README.md), in **Where each step lives**. Update that section when a stage, node, or tool moves.
 
-The executed graph is `prepare → jev_classify/gemini_classify → extract → lookup → decide → draft` (classification path depends on mode). Escalation reasons survive drafting; producing a helpful draft does not clear fraud or other flags. Human approval is a separate persisted API action, never an automatic send.
+The executed graph is `prepare → jev_classify → extract → lookup → decide → draft`. Uncertain Jev classifications retain their `low_confidence` reason and escalate during `decide`. Escalation reasons survive drafting; producing a helpful draft does not clear fraud or other flags. Human approval is a separate persisted API action, never an automatic send.
 
 Stage 6 uses `stage6_draft/agent.py`, `model.py`, `context.py`, `tools.py`, `investigation.py`, `guardrails.py`, `credentials.py` and `prompts/draft_v1.md`. The eight tools live in **one `tools.py` file**, not separate tool modules. `drafting.py` retains the drafter interface and explicit skipped/unavailable behavior.
 

@@ -25,7 +25,7 @@ def client():
 
     def pipeline(_settings, _mode, _repo):
         return build_graph(PipelineDeps(
-            mode="jev", taxonomy=load_taxonomy(settings.taxonomy_path),
+            taxonomy=load_taxonomy(settings.taxonomy_path),
             txn_repo=InMemoryTransactionRepo([]),
             jev=FakeClassifier(make_output("general_inquiry", priority="P4"), fail_for={"fail"}),
         ))
@@ -37,7 +37,7 @@ def client():
 
 
 def start_run(client, tickets=None):
-    response = client.post("/api/runs", json={"mode": "jev", "tickets": tickets or [
+    response = client.post("/api/runs", json={"tickets": tickets or [
         {"external_id": "case-1", "text": "شكد عمولة التحويل؟",
          "received_at": datetime.now(UTC).isoformat()},
     ]})
@@ -49,6 +49,7 @@ def test_batch_and_queue_expose_real_results(client):
     run_id = start_run(client)
     run = client.get(f"/api/runs/{run_id}").json()
     assert run["status"] == "completed"
+    assert run["mode"] == "jev"
     assert run["processed"] == run["total"] == 1
     result = client.get("/api/results").json()["items"][0]
     assert result["category"] == "general_inquiry"
@@ -154,24 +155,23 @@ def test_progress_counts_only_durable_results_after_save_failure(client, monkeyp
     assert run["total"] == 2
 
 
-def test_openrouter_credentials_enable_api_modes_without_exposing_keys(client):
+def test_only_jev_mode_is_configured_and_retired_modes_are_rejected(client):
     client.app.state.settings = Settings(_env_file=None, openrouter_api_key="test-router-secret",
                                          typesafe_api_key="test-jev-secret")
     client.app.state.testing_pipeline = False
     health = client.get("/api/health")
-    assert health.json()["configured_modes"] == ["jev", "gemini", "cascade"]
+    assert health.json()["configured_modes"] == ["jev"]
     assert "test-router-secret" not in health.text and "test-jev-secret" not in health.text
     response = client.post("/api/runs", json={"mode": "gemini", "tickets": [
-        {"external_id": "openrouter-case", "text": "شكد عمولة التحويل؟"},
+        {"external_id": "retired-mode", "text": "شكد عمولة التحويل؟"},
     ]})
-    assert response.status_code == 202, response.text
-    assert client.get(f"/api/runs/{response.json()['id']}").json()["status"] == "completed"
+    assert response.status_code == 422
 
 
-def test_api_reports_missing_openrouter_key(client):
+def test_api_reports_missing_typesafe_key(client):
     client.app.state.testing_pipeline = False
-    response = client.post("/api/runs", json={"mode": "gemini", "tickets": [
+    response = client.post("/api/runs", json={"mode": "jev", "tickets": [
         {"external_id": "missing-key", "text": "مرحبا"},
     ]})
     assert response.status_code == 503
-    assert "OPENROUTER_API_KEY" in response.json()["detail"]
+    assert "TYPESAFE_API_KEY" in response.json()["detail"]

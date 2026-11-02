@@ -124,33 +124,21 @@ export function EvaluationPage() {
       <div className="two-column">
         <Card>
           <CardHeader>
-            <CardTitle>Compare the classification strategies</CardTitle>
+            <CardTitle>Classification strategy</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="model-comparison">
-              {["Jev", "Gemini", "Jev → Gemini cascade"].map((name, index) => (
-                <div key={name}>
-                  <span className={`model-logo model-${index}`}>
-                    {index === 0 ? "J" : index === 1 ? "G" : "J+G"}
-                  </span>
-                  <div>
-                    <strong>{name}</strong>
-                    <small>
-                      {
-                        [
-                          "Fast typed classification",
-                          "LLM self-consistency",
-                          "Fast path with a second opinion",
-                        ][index]
-                      }
-                    </small>
-                  </div>
-                  <Badge variant="outline">Awaiting comparison</Badge>
+              <div>
+                <span className="model-logo model-0">J</span>
+                <div>
+                  <strong>Jev</strong>
+                  <small>Typed classification with human escalation</small>
                 </div>
-              ))}
+                <Badge variant="outline">Current classifier</Badge>
+              </div>
             </div>
             <p className="field-help">
-              Compare accuracy, escalation rate, latency and cost on the same
+              Evaluate accuracy, escalation rate, latency and cost on a
               held-out set.
             </p>
           </CardContent>

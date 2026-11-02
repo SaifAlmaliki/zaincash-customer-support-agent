@@ -19,13 +19,7 @@ router = APIRouter(prefix="/api", tags=["Workspace"])
 def health(request: Request, session: SessionDep):
     session.execute(text("SELECT 1"))
     settings = request.app.state.settings
-    modes = []
-    if settings.typesafe_api_key:
-        modes.append("jev")
-    if settings.openrouter_api_key:
-        modes.append("gemini")
-    if len(modes) == 2:
-        modes.append("cascade")
+    modes = ["jev"] if settings.typesafe_api_key else []
     configured = knowledge_configured(settings)
     compatible_chunks = select(KnowledgeChunk.id).where(
         KnowledgeChunk.document_id == KnowledgeDocumentIndex.document_id,

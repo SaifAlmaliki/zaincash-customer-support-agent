@@ -1,6 +1,7 @@
 import { categoryLabel, humanize, percentage } from "@/lib/format"
 import { getCopy, getLocale } from "@/lib/locale"
 import { buildTicketFlow } from "./ticket-flow"
+import { reviewEvidence } from "./review-evidence"
 import { checkLines, reasonName } from "./ticket-flow-copy"
 import type { ExtractedField, Result, TraceEvent } from "@/lib/types"
 
@@ -59,7 +60,13 @@ function classifySentence(result: Partial<Result>) {
   if (result.classifier_path === "gemini_fallback")
     return "Jev was unsure, so Gemini gave a second opinion."
   if (result.classifier_path === "gemini") return "Gemini classified this ticket."
-  if (result.classifier_path === "jev") return "Jev classified this ticket. Gemini was not asked."
+  if (result.classifier_path === "jev") {
+    const geminiUnavailable = result.escalation_reasons?.includes("low_confidence") &&
+      reviewEvidence(result as Result).stages.some((event) => event.node === "gemini_classify")
+    return geminiUnavailable
+      ? "Jev was retained after Gemini was unavailable."
+      : "Jev classified this ticket. Gemini was not asked."
+  }
   return result.category ? "A category was recorded." : "No classification was recorded."
 }
 

@@ -13,7 +13,7 @@ from app.kb.embeddings import OpenRouterEmbedder
 from app.kb.service import KnowledgeService
 from app.llm import GeminiStructuredLLM, StructuredLLM
 from app.pipeline.graph import MODES, PipelineDeps, build_graph
-from app.pipeline.stage2_classify.gemini import GeminiClassifier, GeminiExtractor
+from app.pipeline.stage2_classify.gemini import GeminiExtractor
 from app.pipeline.stage2_classify.jev import JevClassifier
 from app.pipeline.stage4_lookup.lookup import TransactionRepo
 from app.pipeline.stage6_draft.agent import RagDrafter
@@ -44,10 +44,9 @@ def make_gemini_llm(settings: Settings) -> GeminiStructuredLLM:
     )
 
 
-def model_ids(settings: Settings, mode: str) -> dict[str, str]:
-    ids = {"jev": settings.jev_model} if mode != "gemini" else {}
-    return ids | {"gemini": settings.gemini_model, "drafting": settings.draft_model,
-                  "embedding": settings.embedding_model}
+def model_ids(settings: Settings) -> dict[str, str]:
+    return {"jev": settings.jev_model, "gemini": settings.gemini_model,
+            "drafting": settings.draft_model, "embedding": settings.embedding_model}
 
 
 def make_draft_model(settings: Settings) -> BaseChatModel:
@@ -68,7 +67,7 @@ def build_pipeline(settings: Settings, mode: str, txn_repo: TransactionRepo, *,
                    knowledge: KnowledgeService | None = None,
                    investigation: SqlInvestigationRepo | None = None,
                    credential_checker: CredentialChecker | None = None):
-    """Build classifiers and, for SQL repositories, an isolated bounded drafter.
+    """Build the Jev classifier and, for SQL repositories, an isolated bounded drafter.
 
     A supplied drafter wins. SQL defaults use the repository's public session
     factory; alternative repositories may opt into RAG by supplying BOTH adapters.
@@ -79,23 +78,15 @@ def build_pipeline(settings: Settings, mode: str, txn_repo: TransactionRepo, *,
     taxonomy = load_taxonomy(settings.taxonomy_path)
     if llm is None and settings.openrouter_api_key:
         llm = make_gemini_llm(settings)
-    if mode in ("gemini", "cascade") and llm is None:
-        raise ConfigError(f"OPENROUTER_API_KEY is required for mode={mode}")
-    if mode in ("jev", "cascade") and jev_client is None:
+    if jev_client is None:
         if not settings.typesafe_api_key:
-            raise ConfigError(f"TYPESAFE_API_KEY is required for mode={mode}")
+            raise ConfigError("TYPESAFE_API_KEY is required for Jev classification")
         jev_client = make_jev_client(settings)
-    jev = None
-    if mode != "gemini":
-        jev = JevClassifier(
-            jev_client, taxonomy, model_id=settings.jev_model, t_jev=settings.t_jev,
-            min_top_prob=settings.jev_min_top_prob, price_in_per_m=settings.price_jev_in,
-            max_state_chars=settings.max_state_chars,
-        )
-    gemini = None
-    if mode != "jev" and llm is not None:
-        gemini = GeminiClassifier(llm, taxonomy, t_gem=settings.t_gem,
-                                  max_state_chars=settings.max_state_chars)
+    jev = JevClassifier(
+        jev_client, taxonomy, model_id=settings.jev_model, t_jev=settings.t_jev,
+        min_top_prob=settings.jev_min_top_prob, price_in_per_m=settings.price_jev_in,
+        max_state_chars=settings.max_state_chars,
+    )
     if drafter is None:
         database_backed = isinstance(txn_repo, SqlTransactionRepo)
         if not settings.rag_enabled:
@@ -112,16 +103,15 @@ def build_pipeline(settings: Settings, mode: str, txn_repo: TransactionRepo, *,
             if credential_checker is None:
                 if settings.typesafe_api_key:
                     credential_checker = JevCredentialChecker(
-                        jev_client if jev_client is not None else make_jev_client(settings),
-                        price_in_per_m=settings.price_jev_in)
+                        jev_client, price_in_per_m=settings.price_jev_in)
                 else:
                     credential_checker = DegradedCredentialChecker()
             drafter = RagDrafter(settings, model_factory=model_factory or partial(make_draft_model, settings),
                                  knowledge=knowledge, investigation=investigation,
                                  credential_checker=credential_checker)
     deps = PipelineDeps(
-        mode=mode, taxonomy=taxonomy, txn_repo=txn_repo, jev=jev, gemini=gemini,
+        taxonomy=taxonomy, txn_repo=txn_repo, jev=jev,
         gap_filler=GeminiExtractor(llm, max_state_chars=settings.max_state_chars) if llm else None,
-        drafter=drafter, t_gem=settings.t_gem,
+        drafter=drafter,
     )
     return build_graph(deps)

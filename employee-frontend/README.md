@@ -39,7 +39,7 @@ npm run dev -- --port 5173
 
 Open **http://localhost:5173**. Vite proxies `/api` requests to `127.0.0.1:8000`. Interactive API documentation is at **http://localhost:8000/api/docs**. PostgreSQL is exposed on host port **5433**, avoiding the other local project's database on 5432.
 
-The API uses the repository-root `.env`. The current backend configuration requires `TYPESAFE_API_KEY` for Jev and `OPENROUTER_API_KEY` for Gemini through OpenRouter; cascade mode needs both. These keys remain server-side. Restart the API after changing configuration. Use one API worker for the local background-job runner.
+The API uses the repository-root `.env`. New batches use Jev-only classification and require `TYPESAFE_API_KEY`. `OPENROUTER_API_KEY` remains necessary for configured extraction, drafting, intake, and embedding features. These keys remain server-side. Restart the API after changing configuration. Use one API worker for the local background-job runner.
 
 Optional: seed the existing synthetic transaction fixtures before investigating tickets:
 

@@ -18,8 +18,8 @@ REPO = InMemoryTransactionRepo([txn_from_dict({
 FAST_RETRY = RetryPolicy(max_attempts=2, initial_interval=0.01, jitter=False)
 
 
-def _deps(tax, mode="jev", jev=None, gemini=None, drafter=None):
-    return PipelineDeps(mode=mode, taxonomy=tax, txn_repo=REPO, jev=jev, gemini=gemini,
+def _deps(tax, jev=None, drafter=None):
+    return PipelineDeps(taxonomy=tax, txn_repo=REPO, jev=jev,
                         drafter=drafter or NullDrafter(), retry=FAST_RETRY)
 
 
@@ -49,27 +49,16 @@ async def test_empty_ticket_escalates_without_model_calls(tax):
     assert jev.calls == 0
 
 
-async def test_cascade_uncertain_jev_goes_to_gemini(tax):
-    jev = FakeClassifier(make_output(confidence=0.3, uncertain=True, reasons=("low_confidence",)))
-    gem = FakeClassifier(make_output("wrong_recipient", confidence=1.0, source="gemini", path="gemini"))
-    [o], summary = await _run(_deps(tax, "cascade", jev, gem), [make_ticket("غلطت بالرقم")])
-    assert gem.calls == 1
-    assert o.classifier.path == "gemini_fallback"
-    assert o.classifier.classification.category == "wrong_recipient"
-    assert summary.fallback_rate == 1.0
-
-
-async def test_cascade_confident_jev_skips_gemini(tax):
-    jev, gem = FakeClassifier(make_output()), FakeClassifier(make_output(source="gemini"))
-    await _run(_deps(tax, "cascade", jev, gem), [make_ticket("حولت وما وصلت")])
-    assert gem.calls == 0
-
-
-async def test_cascade_degrades_when_jev_fails(tax):
-    jev = FakeClassifier(raises=RuntimeError("jev down"))
-    gem = FakeClassifier(make_output(source="gemini", path="gemini"))
-    [o], summary = await _run(_deps(tax, "cascade", jev, gem), [make_ticket("حولت وما وصلت")])
-    assert o.classifier.degraded and summary.degraded
+async def test_uncertain_jev_escalates_without_second_classification(tax):
+    jev = FakeClassifier(make_output("general_inquiry", confidence=0.3, uncertain=True,
+                                     reasons=("low_confidence",)))
+    graph = build_graph(_deps(tax, jev=jev))
+    assert "gemini_classify" not in graph.get_graph().nodes
+    [o], summary = await run_batch(graph, [make_ticket("غلطت بالرقم")], concurrency=1)
+    assert o.classifier.path == "jev"
+    assert o.classifier.classification.category == "general_inquiry"
+    assert o.status == "escalated" and o.decision.reasons == ("low_confidence",)
+    assert summary.fallback_rate == 0.0
 
 
 async def test_failed_ticket_does_not_stop_batch(tax):
@@ -97,13 +86,6 @@ async def test_drafter_reasons_escalate(tax):
     [o], summary = await _run(_deps(tax, jev=jev, drafter=Guarded()), [make_ticket("شكد العمولة")])
     assert o.status == "escalated" and o.draft.text == "مرحبا"
     assert summary.escalation_reasons == {"draft_failed_guardrail": 1}
-
-
-def test_deps_validate_mode(tax):
-    with pytest.raises(ValueError):
-        PipelineDeps(mode="cascade", taxonomy=tax, txn_repo=REPO, jev=FakeClassifier(make_output()))
-    with pytest.raises(ValueError):
-        PipelineDeps(mode="fast", taxonomy=tax, txn_repo=REPO)
 
 
 async def test_empty_batch(tax):

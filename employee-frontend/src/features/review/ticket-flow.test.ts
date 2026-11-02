@@ -1,7 +1,9 @@
 import { expect, it } from "vitest"
 import type { Result } from "../../lib/types"
 import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, sentence, toolLine } from "./ticket-flow-copy"
+import { getLocale, setLocale } from "../../lib/locale"
 import { buildTicketFlow, detailChart, mermaidText, pipelineChart } from "./ticket-flow"
+import { stageFacts } from "./trace-facts"
 
 it("treats Arabic letters as an Arabic message and a blank message as English", () => {
   expect(isArabicMessage("التحويل لم يصل")).toBe(true)
@@ -103,6 +105,38 @@ it("opens Draft on a straight Jev path and explains the skipped steps", () => {
   expect(step(flow, "gemini_classify")).toMatchObject({ state: "unused", reason: "Jev was already sure." })
   expect(step(flow, "escalate_empty")).toMatchObject({ state: "unused", reason: "The message had text." })
   expect(step(flow, "jev_classify").state).toBe("used")
+})
+
+it("explains that an uncertain Jev-only result goes to human review", () => {
+  const flow = buildTicketFlow(result({ escalated: true, escalation_reasons: ["low_confidence"] }))
+  const detail = detailChart(flow, "jev_classify")
+  expect(detail).toContain("Jev was unsure, so the ticket was flagged for human review.")
+  expect(detail).not.toContain("Gemini")
+  expect(step(flow, "gemini_classify").reason).toBe("This Jev-only run did not use Gemini.")
+})
+
+it("does not call a legacy Gemini-unavailable result Jev-only", () => {
+  const legacy = result({
+    escalated: true,
+    escalation_reasons: ["low_confidence"],
+    agent_trace: [
+      { kind: "stage", node: "jev_classify" },
+      { kind: "stage", node: "gemini_classify" },
+    ],
+  })
+  const flow = buildTicketFlow(legacy)
+  expect(step(flow, "gemini_classify").reason).toBe(
+    "Gemini was asked, but no classification was recorded.",
+  )
+  const locale = getLocale()
+  try {
+    setLocale("en")
+    expect(stageFacts("classify", legacy)[0]).toBe(
+      "Jev was retained after Gemini was unavailable.",
+    )
+  } finally {
+    setLocale(locale)
+  }
 })
 
 it("opens Jev when Gemini gave the second opinion", () => {

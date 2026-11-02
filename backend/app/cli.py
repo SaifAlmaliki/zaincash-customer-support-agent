@@ -35,8 +35,6 @@ app = typer.Typer(no_args_is_help=True, add_completion=False, help="ZainCash sup
 
 class Mode(StrEnum):
     jev = "jev"
-    gemini = "gemini"
-    cascade = "cascade"
 
 
 def _sessionmaker(settings: Settings):
@@ -92,7 +90,7 @@ def _run_with_db(settings: Settings, mode: str, tickets: list[Ticket]):
     with sf() as s:
         tickets = upsert_tickets(s, tickets, source="dataset")
         run_id = create_run(s, mode=mode, prompt_version=PROMPT_VERSION,
-                            model_ids=factory.model_ids(settings, mode))
+                            model_ids=factory.model_ids(settings))
         s.commit()
     outcomes, summary = asyncio.run(
         run_batch(graph, tickets, concurrency=settings.pipeline_concurrency)
@@ -107,7 +105,7 @@ def _run_with_db(settings: Settings, mode: str, tickets: list[Ticket]):
 @app.command("run-batch")
 def run_batch_cmd(
     path: Path = typer.Argument(..., exists=True, dir_okay=False, help=".jsonl, .json or .csv"),
-    mode: Mode = typer.Option(Mode.cascade, "--mode"),
+    mode: Mode = typer.Option(Mode.jev, "--mode"),
     limit: int | None = typer.Option(None, "--limit", min=1),
     out: Path | None = typer.Option(None, "--out", help="write per-ticket results as JSON"),
     no_db: bool = typer.Option(False, "--no-db", help="run without Postgres"),

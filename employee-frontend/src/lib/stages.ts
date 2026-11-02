@@ -22,13 +22,9 @@ export const stages = [
     label: "Classify",
     subtitle: "Understand the issue",
     icon: Tags,
-    files: [
-      "stage2_classify/jev.py",
-      "stage2_classify/gemini.py",
-      "stage2_classify/cascade.py",
-    ],
+    files: ["stage2_classify/jev.py"],
     description:
-      "Jev categorizes the issue and estimates priority. Uncertain classifications get a Gemini second opinion, or a human escalation.",
+      "Jev categorizes the issue and estimates priority. Uncertain classifications are escalated to a person.",
   },
   {
     id: "extract",

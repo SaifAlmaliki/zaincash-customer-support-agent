@@ -47,7 +47,7 @@ npm run dev -- --port 5173 --strictPort
 
 1. Open `http://localhost:5173`, select **Live workspace**, then **Knowledge base**. Confirm each document is actually **Indexed**, not just accepted. Uploads automatically request indexing when configured; duplicates retain the existing source. Index/retry acceptance is HTTP 202 and may still contain an old durable status: poll until a new terminal outcome.
 2. Inspect a passage. Search: `حولت فلوس وانقطعت من رصيدي بس ما وصلت للمستلم والتحويل معلق شنو أسوي؟`. Check source relevance, not just similarity. The file's `Category:` line does **not** set database tags; optional API `category_tags` are explicit. Untagged documents remain eligible for category-filtered retrieval.
-3. Upload `data/demo/rag_tickets.jsonl` in **New batch**, choose cascade, start processing. Fixed timestamps align “yesterday” with the existing pending transfer. Reuse unchanged IDs/content; the API rejects conflicting content for an existing ID.
+3. Upload `data/demo/rag_tickets.jsonl` in **New batch** and start processing with Jev-only classification. Fixed timestamps align “yesterday” with the existing pending transfer. Reuse unchanged IDs/content; the API rejects conflicting content for an existing ID.
 4. Inspect the transfer/general/fraud/unsupported results. General and transfer need grounded Arabic replies, valid citations and no invented financial facts/promises. Fraud must remain P1/escalated. The physics question must not receive a scientific answer; a cited out-of-scope refusal is acceptable and still escalated.
 5. Expand **Agent tools** and **Draft & check events** separately. Verify no more than six executed tools, at most 120 reply words, Arabic alphabetic ratio at least 0.5, and the credential-check status. Similarity is not confidence; a clean check does not prove correctness.
 6. Edit a synthetic reply, enter a reviewer name, **Save & approve**, then reload. Confirm the original draft, final reviewed text and audit entry stay distinct. Approval saves; it never sends.
@@ -57,7 +57,7 @@ CLI batch alternative (paid calls, persisted run):
 
 ```bash
 uv --directory backend run support run-batch ../data/demo/rag_tickets.jsonl \
-  --mode cascade --out ../out/rag-demo.json
+  --mode jev --out ../out/rag-demo.json
 ```
 
 `support ingest-kb --retry-stored` retries awaiting/failed stored sources; inspect the library first because it is not scoped to one source. The live Task 8 run used the API instead, preserving per-source IDs. Scanned PDFs need OCR before ingestion. Keep only one API worker for the local background runner; avoid restarting while a batch/index job is active.
@@ -76,7 +76,7 @@ Final-fix boundary behavior (automated evidence; scoped re-review approved and c
 
 | Follow-up | Still required |
 |---|---|
-| Plan 2 evaluation | 200+ synthetic Iraqi-dialect tickets, dev/test split and protected test hash, evaluator, Jev/Gemini/cascade metrics, confusion analysis and human draft ratings. The four demo tickets and five earlier smoke fixtures are not held-out data. |
+| Plan 2 evaluation | 200+ synthetic Iraqi-dialect tickets, dev/test split and protected test hash, evaluator, Jev metrics, confusion analysis and human draft ratings. The four demo tickets and five earlier smoke fixtures are not held-out data. |
 | Packaging / CI | Backend/frontend Dockerfiles, full Compose application stack and CI. Current Compose primarily supplies the local database. |
 | Disclosure / data card / failure evidence | Formal AI/data disclosures, data card, systematic failure catalogue and evidence beyond these smoke cases. This record contributes observed failure evidence but does not finish those deliverables. |
 | Weekly report — stretch | Statistical spike detection, incident correlation and cited bilingual narrative. Existing weekly counts are not this report. |

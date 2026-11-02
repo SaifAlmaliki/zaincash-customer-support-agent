@@ -23,7 +23,7 @@ import { useWorkspace } from "@/lib/workspace"
 import { useCopy } from "@/lib/locale"
 import { parseTicketFile } from "@/lib/imports"
 import { api } from "@/lib/api"
-import type { Mode, TicketInput } from "@/lib/types"
+import type { TicketInput } from "@/lib/types"
 
 const exampleTickets: TicketInput[] = [
   {
@@ -47,11 +47,10 @@ export function NewBatchPage() {
     [text, setText] = useState("")
   const [channel, setChannel] = useState<TicketInput["channel"]>("app"),
     [phone, setPhone] = useState("")
-  const [mode, setMode] = useState<Mode>("cascade"),
-    [error, setError] = useState("")
+  const [error, setError] = useState("")
   const [busy, setBusy] = useState(false),
     [reading, setReading] = useState(false)
-  const configured = workspace.health?.configured_modes.includes(mode)
+  const configured = workspace.health?.configured_modes.includes("jev")
   const selected =
     tab === "upload"
       ? tickets
@@ -81,7 +80,7 @@ export function NewBatchPage() {
     setBusy(true)
     setError("")
     try {
-      const run = await api.startRun(mode, selected)
+      const run = await api.startRun(selected)
       workspace.refresh()
       workspace.notify(`Batch #${run.id} submitted for processing.`)
       navigate(`/runs/${run.id}`)
@@ -263,34 +262,18 @@ export function NewBatchPage() {
               <CardTitle>Processing setup</CardTitle>
             </CardHeader>
             <CardContent>
-              <label className="field-label">Classification strategy</label>
-              <FilterSelect
-                label="Classification strategy"
-                value={mode}
-                options={[
-                  { value: "cascade", label: "Jev → Gemini fallback" },
-                  { value: "jev", label: "Jev only" },
-                  { value: "gemini", label: "Gemini only" },
-                ]}
-                onChange={(value) => setMode(value as Mode)}
-              />
+              <span className="field-label">Classification</span>
               <p className="muted small setup-description">
-                Jev handles fast triage. Gemini can give a second opinion on
-                uncertain cases. Low-confidence results are flagged for human
-                review.
+                <strong>Jev only.</strong> Low-confidence results are flagged
+                for human review.
               </p>
               {!configured && (
                 <div className="setup-callout">
                   <LockKeyhole size={18} />
                   <strong>Model setup needed</strong>
                   <p>
-                    Set{" "}
-                    {mode === "jev"
-                      ? "TYPESAFE_API_KEY"
-                      : mode === "gemini"
-                        ? "OPENROUTER_API_KEY"
-                        : "OPENROUTER_API_KEY and TYPESAFE_API_KEY"}{" "}
-                    in the backend <code>.env</code>, then restart the API.
+                    Set TYPESAFE_API_KEY in the backend <code>.env</code>,
+                    then restart the API.
                   </p>
                   <Button variant="outline" onClick={workspace.refresh}>
                     Check connection
