@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "7c30a5bf-811f-4b6f-8a06-088df34d19eb",
+  "status": "current",
+  "command": "deliver",
+  "type": "explainer",
+  "input": "/home/cvzmh_saif/dev/zaincash-support/.archify/explainer-support-pipeline-20261102-162407/candidate.archify.md",
+  "output": "/home/cvzmh_saif/dev/zaincash-support/docs/pipeline-architecture.html",
+  "specification": {
+    "sha256": "df5bec5db53666d81d32ecd3c48005b36190501cdfc905e812eda374e9753111",
+    "bytes": 3571
+  },
+  "artifact": {
+    "sha256": "760400f9e29c51e56c838038c1e7d98fd13ca17ca8f7c69f68f6c66b4dd8da6b",
+    "bytes": 1041028
+  },
+  "explainer": {
+    "preparedSha256": "3ebb3df3f9d79b5d860915ff149823436930333f2168fe671ab3b39224afd9ea",
+    "dependencies": [
+      {
+        "kind": "repository",
+        "id": "graph",
+        "path": "backend/app/pipeline/graph.py",
+        "revision": "8f8f6f5dcda6522d1a131a3c02b24a0f0f70835a",
+        "sha256": "1abc1d1d1d97432c224fdb7b01aa7951b0a5d593890034ccfa994a0da3913f3d",
+        "bytes": 10211
+      },
+      {
+        "kind": "repository",
+        "id": "factory",
+        "path": "backend/app/pipeline/factory.py",
+        "revision": "8f8f6f5dcda6522d1a131a3c02b24a0f0f70835a",
+        "sha256": "77ece1f9363edd620a5ccff519ebaf8f78e588e0f1a26a33ca3982e7a72e956f",
+        "bytes": 5574
+      },
+      {
+        "kind": "repository",
+        "id": "rules",
+        "path": "backend/app/pipeline/stage5_decide/rules.py",
+        "revision": "8f8f6f5dcda6522d1a131a3c02b24a0f0f70835a",
+        "sha256": "ba451287a5da09c724e5839ca156584acf7088573484c1d26740fd0a53dde1de",
+        "bytes": 3291
+      },
+      {
+        "kind": "repository",
+        "id": "api",
+        "path": "backend/app/api/runs.py",
+        "revision": "8f8f6f5dcda6522d1a131a3c02b24a0f0f70835a",
+        "sha256": "2d3c90a6ed4ab5311972c67e395264e64242b6c36279308724c9d15067eeffcb",
+        "bytes": 3419
+      },
+      {
+        "kind": "repository",
+        "id": "readme",
+        "path": "README.md",
+        "revision": "8f8f6f5dcda6522d1a131a3c02b24a0f0f70835a",
+        "sha256": "1af0559d0792a2f65af90596e744e3cbac14e0bf2fa11fe35b4ccc206c306b5c",
+        "bytes": 20259
+      },
+      {
+        "kind": "diagram-spec",
+        "id": "system-map",
+        "inline": true,
+        "sha256": "44283bdeeea4afd56f5710567773a42369ef92ff2745be5af2f85bfd8420a619",
+        "bytes": 1245
+      },
+      {
+        "kind": "diagram-spec",
+        "id": "ticket-journey",
+        "inline": true,
+        "sha256": "63fe09bc067fd3d7b85a67ebdbf80a79f62d1127f4eaca8f777bbc9292631124",
+        "bytes": 2010
+      }
+    ]
+  }
+}

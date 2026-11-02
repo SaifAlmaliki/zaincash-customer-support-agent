@@ -1,9 +1,7 @@
 -- Empty application data. Schema, extensions, and the support_test database stay.
--- Run against the application database (the Compose POSTGRES_DB), not support_test.
---
---   docker compose exec -T db sh -c \
---     'psql -v ON_ERROR_STOP=1 -U "$(tr -d "\r\n" < /run/secrets/postgres_user)" -d "$(tr -d "\r\n" < /run/secrets/postgres_db)"' \
---     < docker/db/cleanup.sql
+-- pgAdmin: connect to database "support" (localhost:5433, user support).
+-- Open this file and use Execute Script (F5) so the whole file runs.
+-- Then run seed_demo.sql the same way.
 
 BEGIN;
 

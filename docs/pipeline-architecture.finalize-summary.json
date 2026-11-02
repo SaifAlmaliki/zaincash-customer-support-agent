@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "explainer",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/.archify/explainer-support-pipeline-20261102-162407/candidate.archify.md",
+    "sha256": "df5bec5db53666d81d32ecd3c48005b36190501cdfc905e812eda374e9753111",
+    "bytes": 3571
+  },
+  "artifact": {
+    "path": "/home/cvzmh_saif/dev/zaincash-support/docs/pipeline-architecture.html",
+    "sha256": "760400f9e29c51e56c838038c1e7d98fd13ca17ca8f7c69f68f6c66b4dd8da6b",
+    "bytes": 1041028
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "not-run"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/cvzmh_saif/dev/zaincash-support/docs/pipeline-architecture.finalize.json",
+    "summaryReceipt": "/home/cvzmh_saif/dev/zaincash-support/docs/pipeline-architecture.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 13705,
+  "browserCheck": {
+    "requested": false,
+    "ran": false
+  }
+}

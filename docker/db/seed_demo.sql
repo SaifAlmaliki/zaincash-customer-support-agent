@@ -1,10 +1,8 @@
 -- Synthetic workspace demo. Fictional tickets, transactions, and drafts only.
 -- Does not index the knowledge base (no embeddings). Ingest policy files separately.
--- Expects empty tables. Run docker/db/cleanup.sql first.
---
---   docker compose exec -T db sh -c \
---     'psql -v ON_ERROR_STOP=1 -U "$(tr -d "\r\n" < /run/secrets/postgres_user)" -d "$(tr -d "\r\n" < /run/secrets/postgres_db)"' \
---     < docker/db/seed_demo.sql
+-- Expects empty tables. Run cleanup.sql first.
+-- pgAdmin: same connection as cleanup (database "support"), then Execute Script (F5).
+-- Keep the query tool encoding on UTF-8 so the Arabic text stays intact.
 
 BEGIN;
 
@@ -13,7 +11,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM tickets)
         OR EXISTS (SELECT 1 FROM transactions)
         OR EXISTS (SELECT 1 FROM runs) THEN
-        RAISE EXCEPTION 'Database is not empty. Run docker/db/cleanup.sql first.';
+        RAISE EXCEPTION 'Database is not empty. Run cleanup.sql first.';
     END IF;
 END $$;
 
