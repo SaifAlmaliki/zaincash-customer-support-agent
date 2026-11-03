@@ -4,3 +4,11 @@
 secrets
 .git
 graphify-out
+**/.venv/
+**/node_modules/
+**/dist/
+out/
+.superpowers/
+.playwright-mcp/
+.archify/
+.cursor/

@@ -547,7 +547,7 @@ function InputBar({
               size="icon-sm"
               variant={armed || isStreaming ? "default" : "outline"}
               aria-label={isStreaming ? stopLabel : sendLabel}
-              disabled={!isStreaming && blocked}
+              disabled={isStreaming ? !onStop : blocked}
               onClick={() => {
                 if (isStreaming) onStop?.()
                 else submit()

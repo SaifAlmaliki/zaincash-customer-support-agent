@@ -28,6 +28,19 @@ describe("intake api", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain("secret-token")
   })
 
+  it("rejects non-string create credentials before returning typed state", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        credentials: { session_id: 7, token: "secret-token" },
+        session,
+      }),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const api = createIntakeApi("http://intake.test/api/intake")
+
+    await expect(api.create("en")).rejects.toBeInstanceOf(IntakeRequestError)
+  })
+
   it("uploads with progress and without a manual multipart content type", async () => {
     const sent: { headers: Record<string, string>; body: FormData | null } = { headers: {}, body: null }
     class FakeXHR {

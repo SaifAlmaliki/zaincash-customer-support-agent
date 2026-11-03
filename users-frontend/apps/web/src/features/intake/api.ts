@@ -1,3 +1,11 @@
+import {
+  INTAKE_FALLBACK_MESSAGE as FALLBACK,
+  IntakeRequestError,
+  parseAttachment,
+  parseCredentials,
+  parseReceipt,
+  parseSession,
+} from "./contracts"
 import type {
   Attachment,
   Credentials,
@@ -10,17 +18,7 @@ import type {
   SubmitCommand,
 } from "./types"
 
-export class IntakeRequestError extends Error {
-  readonly status: number
-  readonly code: string
-
-  constructor(message: string, status: number, code: string) {
-    super(message)
-    this.name = "IntakeRequestError"
-    this.status = status
-    this.code = code
-  }
-}
+export { IntakeRequestError, parseReceipt, parseSession } from "./contracts"
 
 export type UploadResult = {
   attachment: Attachment
@@ -45,8 +43,6 @@ export interface IntakeApi {
   remove(credentials: Credentials, attachmentId: string, command: RemoveCommand, signal?: AbortSignal): Promise<SessionView>
   image(credentials: Credentials, attachmentId: string, signal?: AbortSignal): Promise<Blob>
 }
-
-const FALLBACK = "The conversation could not be updated. Try again."
 
 function sessionUrl(baseUrl: string, credentials: Credentials, suffix = "") {
   return `${baseUrl}/sessions/${credentials.session_id}${suffix}`
@@ -78,50 +74,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
 
-function stringList(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string")
-}
-
-function validFact(value: unknown): boolean {
-  return isRecord(value) && typeof value.key === "string" &&
-    ["known", "missing", "unknown", "conflicting", "not_applicable"].includes(String(value.status)) &&
-    (value.value === null || typeof value.value === "string") && Array.isArray(value.evidence)
-}
-
-function validAttachment(value: unknown): boolean {
-  return isRecord(value) && typeof value.id === "string" && typeof value.filename === "string" &&
-    ["image/png", "image/jpeg", "image/webp"].includes(String(value.mime_type)) &&
-    typeof value.size === "number" && typeof value.width === "number" && typeof value.height === "number" &&
-    typeof value.removed === "boolean" && (value.message_id === null || typeof value.message_id === "string")
-}
-
-export function parseSession(value: unknown): SessionView {
-  if (!isRecord(value) || typeof value.id !== "string" || !Number.isInteger(value.revision) || Number(value.revision) < 0 ||
-      !["collecting", "review_ready", "submitted"].includes(String(value.phase)) ||
-      !["ar", "en"].includes(String(value.language)) || !["idle", "processing", "retryable_failure"].includes(String(value.turn_status)) ||
-      !Array.isArray(value.messages) || !value.messages.every((item) => isRecord(item) && typeof item.id === "string" &&
-        typeof item.text === "string" && ["user", "assistant"].includes(String(item.role)) && stringList(item.attachment_ids)) ||
-      !Array.isArray(value.attachments) || !value.attachments.every(validAttachment) ||
-      !isRecord(value.readiness) || !stringList(value.readiness.missing) || !stringList(value.readiness.conflicts) ||
-      (value.review !== null && (!isRecord(value.review) || typeof value.review.id !== "string" ||
-        typeof value.review.text !== "string" || !isRecord(value.review.facts) || !Object.values(value.review.facts).every(validFact) ||
-        !Array.isArray(value.review.additional_issues) || !value.review.additional_issues.every(validFact) ||
-        !stringList(value.review.unknown_keys) || !stringList(value.review.attachment_ids)))) {
-    throw new IntakeRequestError(FALLBACK, 200, "invalid_response")
-  }
-  if (value.receipt !== null) parseReceipt(value.receipt)
-  return value as unknown as SessionView
-}
-
-export function parseReceipt(value: unknown): Receipt {
-  if (!isRecord(value) || typeof value.ticket_reference !== "string" || !value.ticket_reference ||
-      typeof value.submitted_at !== "string" || !Number.isFinite(Date.parse(value.submitted_at)) ||
-      !["processing", "ready_for_employee", "needs_attention"].includes(String(value.processing_status))) {
-    throw new IntakeRequestError(FALLBACK, 200, "invalid_response")
-  }
-  return value as unknown as Receipt
-}
-
 async function parseJson(response: Response): Promise<unknown> {
   if (!response.ok) throw await readError(response)
   try {
@@ -141,10 +93,13 @@ export function createIntakeApi(baseUrl = "/api/intake"): IntakeApi {
         signal,
       })
       const body = await parseJson(response)
-      if (!isRecord(body) || !isRecord(body.credentials)) throw new IntakeRequestError(FALLBACK, response.status, "invalid_response")
-      const credentials = body.credentials as unknown as Credentials
-      if (!credentials.session_id || !credentials.token) throw new IntakeRequestError(FALLBACK, response.status, "invalid_response")
-      return { credentials, session: parseSession(body.session) }
+      if (!isRecord(body)) {
+        throw new IntakeRequestError(FALLBACK, response.status, "invalid_response")
+      }
+      return {
+        credentials: parseCredentials(body.credentials),
+        session: parseSession(body.session),
+      }
     },
     async get(credentials, signal) {
       const response = await fetch(sessionUrl(baseUrl, credentials), { headers: authHeaders(credentials), signal })
@@ -201,8 +156,13 @@ export function createIntakeApi(baseUrl = "/api/intake"): IntakeApi {
           const response = new Response(xhr.responseText, { status: xhr.status })
           void parseJson(response)
             .then((body) => {
-               if (!isRecord(body) || !validAttachment(body.attachment)) throw new IntakeRequestError(FALLBACK, xhr.status, "invalid_response")
-              resolve({ attachment: body.attachment as Attachment, session: parseSession(body.session) })
+              if (!isRecord(body)) {
+                throw new IntakeRequestError(FALLBACK, xhr.status, "invalid_response")
+              }
+              resolve({
+                attachment: parseAttachment(body.attachment),
+                session: parseSession(body.session),
+              })
             })
             .catch(reject)
         }

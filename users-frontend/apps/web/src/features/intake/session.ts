@@ -1,3 +1,4 @@
+import { parseSavedSession } from "./contracts"
 import type { SavedSession } from "./types"
 
 export interface SessionStorage {
@@ -15,9 +16,7 @@ export function browserSessionStorage(storage?: Storage): SessionStorage {
       const raw = currentStorage().getItem(STORAGE_KEY)
       if (!raw) return null
       try {
-        const parsed = JSON.parse(raw) as SavedSession
-        if (!parsed?.credentials?.session_id || !parsed.credentials.token) return null
-        return parsed
+        return parseSavedSession(JSON.parse(raw) as unknown)
       } catch {
         return null
       }

@@ -13,3 +13,4 @@ dist/
 *.log
 out/
 data/intake-uploads/
+graphify-out/cache/

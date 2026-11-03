@@ -6,9 +6,26 @@ import type { IntakeApi } from "./api"
 import { IntakeController } from "./controller"
 import { IntakePage } from "./IntakePage"
 import { memoryStorage } from "./session"
-import { attachment, emptySession, fakeApi, review } from "./test/fixtures"
+import { attachment, emptySession as sharedEmptySession, fakeApi as sharedFakeApi, review } from "./test/fixtures"
 import type { SessionView } from "./types"
 import { ThemeProvider } from "@/components/theme-provider"
+
+function pageReadiness(): SessionView["readiness"] {
+  return { quality: "collecting", missing: [], conflicts: [], reason: "Collecting", next_key: null }
+}
+
+function emptySession(overrides: Partial<SessionView> = {}): SessionView {
+  return sharedEmptySession({ revision: 2, readiness: pageReadiness(), ...overrides })
+}
+
+function fakeApi(overrides: Partial<SessionView> = {}): IntakeApi {
+  const session = emptySession(overrides)
+  return {
+    ...sharedFakeApi(session),
+    upload: vi.fn(async () => ({ attachment, session: emptySession({ ...session, revision: 3, attachments: [attachment] }) })),
+    remove: vi.fn(async () => emptySession({ attachments: [{ ...attachment, removed: true }] })),
+  }
+}
 
 async function readyController(language: "ar" | "en") {
   const api = fakeApi({ phase: "review_ready", language, review })

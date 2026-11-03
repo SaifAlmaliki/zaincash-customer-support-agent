@@ -64,7 +64,7 @@ export class IntakeController {
   private pollGeneration = 0
   private pollAbort: AbortController | null = null
   private language: Language = "ar"
-  private pendingUpload: File | null = null
+  private pendingUpload: { clientId: string; file: File } | null = null
   private pendingRemoval: { attachmentId: string; request_id: string; expected_revision: number } | null = null
   private readonly uploadIds = new Map<string, string>()
 
@@ -135,8 +135,8 @@ export class IntakeController {
     })
   }
 
-  async upload(file: File) {
-    return this.enqueue(() => this.uploadNow(file))
+  async upload(file: File, clientId: string) {
+    return this.enqueue(() => this.uploadNow(file, clientId))
   }
 
   async remove(attachmentId: string) {
@@ -155,14 +155,26 @@ export class IntakeController {
       this.uploadIds.clear()
       this.pendingUpload = null
       this.pendingRemoval = null
+      let resumeFailure: string | null = null
       try {
         this.storage.clear()
       } catch {
-        this.replace({ ...emptyState(), resumeUnavailable: true, error: RESUME_UNAVAILABLE })
+        resumeFailure = RESUME_UNAVAILABLE
       }
-      this.replace(emptyState())
+      this.replace({
+        ...emptyState(),
+        resumeUnavailable: resumeFailure !== null,
+        error: resumeFailure,
+      })
       this.initPromise = null
       await this.boot(language, generation)
+      if (generation === this.generation && resumeFailure) {
+        this.replace({
+          ...this.snapshot,
+          resumeUnavailable: true,
+          error: resumeFailure,
+        })
+      }
     })
   }
 
@@ -220,7 +232,7 @@ export class IntakeController {
     if (!session || session.turn_status === "processing") return
     const generation = this.generation
     const command: MessageCommand = this.pending?.kind === "message"
-      ? (this.pending.payload as MessageCommand)
+      ? this.pending.payload
       : {
           request_id: crypto.randomUUID(),
           expected_revision: session.revision,
@@ -229,7 +241,7 @@ export class IntakeController {
           attachment_ids: attachmentIds,
         }
     if (this.pending?.kind !== "message") {
-      this.pending = { kind: "message", request_id: command.request_id, payload: command }
+      this.pending = { kind: "message", payload: command }
       this.persist()
     }
     await this.dispatch(generation, () => this.api.message(this.credentials!, command, this.nextSignal()))
@@ -240,7 +252,7 @@ export class IntakeController {
     if (!session || session.turn_status === "processing") return
     const generation = this.generation
     const command: ReviewCommand = this.pending?.kind === "review"
-      ? (this.pending.payload as ReviewCommand)
+      ? this.pending.payload
       : {
           request_id: crypto.randomUUID(),
           expected_revision: session.revision,
@@ -248,7 +260,7 @@ export class IntakeController {
           language,
         }
     if (this.pending?.kind !== "review") {
-      this.pending = { kind: "review", request_id: command.request_id, payload: command }
+      this.pending = { kind: "review", payload: command }
       this.persist()
     }
     await this.dispatch(generation, () => this.api.review(this.credentials!, command, this.nextSignal()))
@@ -267,7 +279,7 @@ export class IntakeController {
     }
     const generation = this.generation
     const command: SubmitCommand = this.pending?.kind === "submit"
-      ? (this.pending.payload as SubmitCommand)
+      ? this.pending.payload
       : {
           request_id: crypto.randomUUID(),
           expected_revision: session.revision,
@@ -275,7 +287,7 @@ export class IntakeController {
           confirmed: true,
         }
     if (this.pending?.kind !== "submit") {
-      this.pending = { kind: "submit", request_id: command.request_id, payload: command }
+      this.pending = { kind: "submit", payload: command }
       this.persist()
     }
     this.replace({ ...this.snapshot, busy: true, error: null })
@@ -324,45 +336,56 @@ export class IntakeController {
       return
     }
     if (session?.turn_status === "processing") return
-    if (session?.turn_status === "retryable_failure" && session.active_request_id &&
-        (!this.pending || this.pending.request_id === session.active_request_id)) {
+    if (
+      session?.turn_status === "retryable_failure" &&
+      session.active_request_id &&
+      (!this.pending || this.pending.payload.request_id === session.active_request_id)
+    ) {
       await this.dispatch(generation, () =>
         this.api.retry(this.credentials!, session.active_request_id!, session.revision, this.nextSignal()),
       )
       return
     }
-    if (this.pendingUpload) return this.uploadNow(this.pendingUpload)
+    if (this.pendingUpload) {
+      return this.uploadNow(this.pendingUpload.file, this.pendingUpload.clientId)
+    }
     if (this.pendingRemoval) return this.removeNow(this.pendingRemoval.attachmentId)
     if (this.pending?.kind === "submit") return this.submitNow()
     if (this.pending?.kind === "message") {
-      const command = this.pending.payload as MessageCommand
+      const command = this.pending.payload
       return this.sendNow(command.text, command.language, command.attachment_ids)
     }
     if (this.pending?.kind === "review") {
-      const command = this.pending.payload as ReviewCommand
+      const command = this.pending.payload
       return this.reviewNow(command.allow_partial, command.language)
     }
   }
 
-  private async uploadNow(file: File) {
+  private async uploadNow(file: File, clientId: string) {
     const session = this.requireSession()
     if (!session) return
-    if (this.pending || this.pendingRemoval) { this.unreconciled(); return }
+    if (this.pending || this.pendingRemoval) {
+      this.unreconciled()
+      return
+    }
     const generation = this.generation
     const identity = await fileIdentity(file)
     if (generation !== this.generation) return
-    if (this.pendingUpload && this.pendingUpload !== file) {
-      const prior = await fileIdentity(this.pendingUpload)
-      if (prior !== identity) { this.unreconciled(); return }
+    if (this.pendingUpload && this.pendingUpload.file !== file) {
+      const prior = await fileIdentity(this.pendingUpload.file)
+      if (prior !== identity) {
+        this.unreconciled()
+        return
+      }
     }
     const requestId = this.uploadIds.get(identity) ?? crypto.randomUUID()
     this.uploadIds.set(identity, requestId)
-    this.pendingUpload = file
+    this.pendingUpload = { clientId, file }
     this.replace({
       ...this.snapshot,
       busy: true,
       error: null,
-      uploads: { ...this.snapshot.uploads, [file.name]: 0 },
+      uploads: { ...this.snapshot.uploads, [clientId]: 0 },
     })
     try {
       const result = await this.api.upload(
@@ -372,7 +395,10 @@ export class IntakeController {
         this.snapshot.session?.revision ?? session.revision,
         (fraction) => {
           if (generation !== this.generation) return
-          this.replace({ ...this.snapshot, uploads: { ...this.snapshot.uploads, [file.name]: fraction } })
+          this.replace({
+            ...this.snapshot,
+            uploads: { ...this.snapshot.uploads, [clientId]: fraction },
+          })
         },
         this.nextSignal(),
       )
@@ -380,19 +406,38 @@ export class IntakeController {
       this.uploadIds.delete(identity)
       this.pendingUpload = null
       const uploads = { ...this.snapshot.uploads }
-      delete uploads[file.name]
-      this.replace({ ...this.snapshot, session: result.session, busy: false, error: null, uploads })
+      delete uploads[clientId]
+      this.replace({
+        ...this.snapshot,
+        session: result.session,
+        busy: false,
+        error: null,
+        uploads,
+      })
     } catch (error) {
       if (generation !== this.generation) throw error
-      if (error instanceof IntakeRequestError && error.status < 500 && error.code !== "invalid_response") {
+      if (
+        error instanceof IntakeRequestError &&
+        error.status < 500 &&
+        error.code !== "invalid_response"
+      ) {
         this.pendingUpload = null
         this.uploadIds.delete(identity)
       }
-      try { await this.reload(generation) } catch { /* Retain the uncertain upload for retry. */ }
+      try {
+        await this.reload(generation)
+      } catch {
+        // Retain the uncertain upload for retry.
+      }
       if (generation !== this.generation) return
       const uploads = { ...this.snapshot.uploads }
-      delete uploads[file.name]
-      this.replace({ ...this.snapshot, busy: false, error: safeMessage(error), uploads })
+      delete uploads[clientId]
+      this.replace({
+        ...this.snapshot,
+        busy: false,
+        error: safeMessage(error),
+        uploads,
+      })
       throw error
     }
   }

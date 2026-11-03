@@ -13,9 +13,9 @@ export type EvidenceRef = {
 export type Fact = {
   key: string
   status: "known" | "missing" | "unknown" | "conflicting" | "not_applicable"
-  value?: string | null
+  value: string | null
   normalized?: string | null
-  evidence?: EvidenceRef[]
+  evidence: EvidenceRef[]
   supersedes?: EvidenceRef[]
 }
 
@@ -112,11 +112,10 @@ export type RemoveCommand = {
   expected_revision: number
 }
 
-export type PendingOperation = {
-  kind: "message" | "review" | "submit"
-  request_id: string
-  payload: MessageCommand | ReviewCommand | SubmitCommand
-}
+export type PendingOperation =
+  | { kind: "message"; payload: MessageCommand }
+  | { kind: "review"; payload: ReviewCommand }
+  | { kind: "submit"; payload: SubmitCommand }
 
 export type SavedSession = {
   credentials: Credentials

@@ -15,6 +15,7 @@ import { ReviewPanel } from "./ReviewPanel"
 import { OwnedImage } from "./OwnedImage"
 import { copy } from "./copy"
 import type { IntakeController } from "./controller"
+import { useIntakeUploads } from "./useIntakeUploads"
 import type { Language } from "./types"
 import "./intake.css"
 
@@ -28,11 +29,10 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const locale = selectedLocale ?? session?.language ?? "ar"
   const direction = locale === "ar" ? "rtl" : "ltr"
   const [draft, setDraft] = useState("")
-  const [previews, setPreviews] = useState<{ name: string; url: string }[]>([])
+  const { previews, selectFiles, clearPreviews } = useIntakeUploads(controller)
   const [confirmNew, setConfirmNew] = useState(false)
   const reviewHeading = useRef<HTMLHeadingElement | null>(null)
   const reviewRequest = useRef(false)
-  const previewUrls = useRef(new Set<string>())
   const text = copy[locale]
   const credentials = controller.access()
   const latestAssistant = session?.messages
@@ -55,13 +55,6 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
       reviewRequest.current = false
     }
   }, [session?.review])
-
-  useEffect(() => {
-    const urls = previewUrls.current
-    return () => {
-      for (const url of urls) URL.revokeObjectURL(url)
-    }
-  }, [])
 
   const unsent =
     session?.attachments.filter((item) => !item.removed && !item.message_id) ??
@@ -131,37 +124,8 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     await controller.send(content, locale, attachmentIds)
     if (!controller.getSnapshot().error) {
       setDraft((current) => (current.trim() === content ? "" : current))
-      setPreviews((current) => {
-        for (const preview of current) URL.revokeObjectURL(preview.url)
-        return []
-      })
+      clearPreviews()
       document.getElementById("intake-message")?.focus()
-    }
-  }
-
-  async function selectFiles(files: File[]) {
-    const local = files.map((file) => ({
-      name: file.name,
-      url: URL.createObjectURL(file),
-    }))
-    for (const item of local) previewUrls.current.add(item.url)
-    setPreviews((current) => [...current, ...local])
-    for (const file of files) {
-      try {
-        await controller.upload(file)
-        setPreviews((current) => {
-          const match = current.find((item) => item.name === file.name)
-          if (match) URL.revokeObjectURL(match.url)
-          return current.filter((item) => item.name !== file.name)
-        })
-      } catch {
-        setPreviews((current) => {
-          const match = current.find((item) => item.name === file.name)
-          if (match) URL.revokeObjectURL(match.url)
-          return current.filter((item) => item.name !== file.name)
-        })
-        break
-      }
     }
   }
 
@@ -357,7 +321,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
               removeLabel: text.remove,
               disabled: Boolean(attachingDisabled),
               images: previews.map((preview) => ({
-                id: preview.url,
+                id: preview.id,
                 filename: preview.name,
                 url: preview.url,
               })),
@@ -403,9 +367,9 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                 <>
                   {previews.map((preview) => (
                     <progress
-                      key={preview.url}
+                      key={preview.id}
                       className="intake-progress"
-                      value={snapshot.uploads[preview.name] ?? 0}
+                      value={snapshot.uploads[preview.id] ?? 0}
                       max={1}
                       aria-label={`${text.uploadProgress} ${preview.name}`}
                     />

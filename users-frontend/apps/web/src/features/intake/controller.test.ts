@@ -2,8 +2,21 @@ import { describe, expect, it, vi } from "vitest"
 import { IntakeRequestError, type IntakeApi } from "./api"
 import { IntakeController } from "./controller"
 import { browserSessionStorage, memoryStorage, type SessionStorage } from "./session"
-import { emptySession, fakeApi, review } from "./test/fixtures"
+import { attachment, emptySession, fakeApi as sharedFakeApi, review as sharedReview } from "./test/fixtures"
 import type { SessionView } from "./types"
+
+const review = { ...sharedReview, facts: {} }
+
+function fakeApi(overrides: Partial<SessionView> = {}): IntakeApi {
+  const session = emptySession(overrides)
+  return {
+    ...sharedFakeApi(overrides),
+    create: vi.fn(async () => ({ credentials: { session_id: "session-1", token: "token" }, session })),
+    review: vi.fn(async () => session),
+    upload: vi.fn(async () => ({ attachment, session })),
+    remove: vi.fn(async () => session),
+  }
+}
 
 describe("intake controller", () => {
   it("initializes when the browser denies access to localStorage itself", async () => {
@@ -57,6 +70,40 @@ describe("intake controller", () => {
     expect(storage.load()?.pending).toBeNull()
   })
 
+  it("uses the payload request ID when retrying an accepted failed message", async () => {
+    const payload = {
+      request_id: "message-retry-1",
+      expected_revision: 1,
+      text: "Transfer failed",
+      language: "en" as const,
+      attachment_ids: [] as string[],
+    }
+    const storage = memoryStorage({
+      credentials: { session_id: "session-1", token: "token" },
+      pending: { kind: "message", payload },
+    })
+    const api = fakeApi()
+    vi.mocked(api.get).mockResolvedValue(
+      emptySession({
+        revision: 2,
+        turn_status: "retryable_failure",
+        active_request_id: payload.request_id,
+      }),
+    )
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("en")
+
+    await controller.retry()
+
+    expect(api.retry).toHaveBeenCalledWith(
+      { session_id: "session-1", token: "token" },
+      "message-retry-1",
+      2,
+      expect.any(AbortSignal),
+    )
+    expect(api.message).not.toHaveBeenCalled()
+  })
+
   it("does not replace a new draft with an uncertain prior message", async () => {
     const api = fakeApi()
     const controller = new IntakeController(api, memoryStorage())
@@ -88,9 +135,9 @@ describe("intake controller", () => {
     const controller = new IntakeController(api, memoryStorage())
     await controller.initialize("en")
     const file = new File(["image"], "error.png")
-    await controller.upload(file)
+    await controller.upload(file, "upload-reattach-1")
     await controller.remove("att-1")
-    await controller.upload(file)
+    await controller.upload(file, "upload-reattach-2")
     expect(vi.mocked(api.upload).mock.calls[1]![2]).not.toBe(vi.mocked(api.upload).mock.calls[0]![2])
   })
 
@@ -100,7 +147,7 @@ describe("intake controller", () => {
     await controller.initialize("en")
     vi.mocked(api.upload).mockRejectedValueOnce(new TypeError("offline"))
     const file = new File(["image"], "error.png")
-    await expect(controller.upload(file)).rejects.toThrow()
+    await expect(controller.upload(file, "upload-retry")).rejects.toThrow()
     await controller.retry()
     expect(api.upload).toHaveBeenCalledTimes(2)
     expect(vi.mocked(api.upload).mock.calls[1]![2]).toBe(vi.mocked(api.upload).mock.calls[0]![2])
@@ -128,7 +175,7 @@ describe("intake controller", () => {
     await controller.initialize("en")
     await controller.send("late", "en", [])
     await controller.requestReview(true, "en")
-    await controller.upload(new File(["x"], "x.png"))
+    await controller.upload(new File(["x"], "x.png"), "upload-submitted")
     await controller.remove("att-1")
     expect(api.message).not.toHaveBeenCalled()
     expect(api.review).not.toHaveBeenCalled()
@@ -161,8 +208,12 @@ describe("intake controller", () => {
       credentials: { session_id: "session-1", token: "token" },
       pending: {
         kind: "submit",
-        request_id: "saved-request",
-        payload: { request_id: "saved-request", expected_revision: 2, review_id: "review-1", confirmed: true },
+        payload: {
+          request_id: "saved-request",
+          expected_revision: 2,
+          review_id: "review-1",
+          confirmed: true,
+        },
       },
     })
     const api = fakeApi({ phase: "review_ready", revision: 2, review })
@@ -195,7 +246,7 @@ describe("intake controller", () => {
     }
     const storage = memoryStorage({
       credentials: { session_id: "session-1", token: "token" },
-      pending: { kind: "message", request_id: "message-1", payload },
+      pending: { kind: "message", payload },
     })
     const api = fakeApi()
     const controller = new IntakeController(api, storage)
@@ -216,7 +267,7 @@ describe("intake controller", () => {
     const controller = new IntakeController(api, memoryStorage())
     await controller.initialize("en")
     const file = new File([new Uint8Array([1, 2])], "error.png", { type: "image/png" })
-    const uploaded = controller.upload(file)
+    const uploaded = controller.upload(file, "upload-revision")
     const sent = controller.send("hello", "en", ["att-1"])
     await vi.waitFor(() => expect(api.upload).toHaveBeenCalled())
     release({
@@ -251,6 +302,48 @@ describe("intake controller", () => {
     expect(controller.getSnapshot().session?.id).toBe("session-1")
     expect(controller.getSnapshot().resumeUnavailable).toBe(true)
     expect(controller.getSnapshot().error).not.toMatch(/token/i)
+  })
+
+  it("preserves resume-unavailable state when startNew cannot clear storage", async () => {
+    const storage: SessionStorage = {
+      load: () => null,
+      save: () => undefined,
+      clear: () => {
+        throw new Error("denied")
+      },
+    }
+    const api = fakeApi()
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("en")
+
+    await controller.startNew("en")
+
+    expect(controller.getSnapshot().resumeUnavailable).toBe(true)
+    expect(controller.getSnapshot().error).toBe(
+      "This browser cannot save the conversation for later. It stays open on this screen.",
+    )
+  })
+
+  it("preserves the resume error when reboot also fails after a clear failure", async () => {
+    const storage: SessionStorage = {
+      load: () => null,
+      save: () => undefined,
+      clear: () => {
+        throw new Error("denied token must not leak")
+      },
+    }
+    const api = fakeApi()
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("en")
+    vi.mocked(api.create).mockRejectedValueOnce(new TypeError("offline"))
+
+    await controller.startNew("en")
+
+    expect(controller.getSnapshot().resumeUnavailable).toBe(true)
+    expect(controller.getSnapshot().error).toBe(
+      "This browser cannot save the conversation for later. It stays open on this screen.",
+    )
+    expect(controller.getSnapshot().error).not.toMatch(/token|denied/i)
   })
 
   it("ignores a late reply from the previous report", async () => {

@@ -40,7 +40,7 @@ uv --directory backend run uvicorn app.main:app --host 0.0.0.0 --port 8000
 In another terminal:
 
 ```bash
-cd customer-support-ui
+cd employee-frontend
 npm ci
 npm run dev -- --port 5173 --strictPort
 ```
@@ -77,7 +77,7 @@ Final-fix boundary behavior (automated evidence; scoped re-review approved and c
 | Follow-up | Still required |
 |---|---|
 | Plan 2 evaluation | 200+ synthetic Iraqi-dialect tickets, dev/test split and protected test hash, evaluator, Jev metrics, confusion analysis and human draft ratings. The four demo tickets and five earlier smoke fixtures are not held-out data. |
-| Packaging / CI | Backend/frontend Dockerfiles, full Compose application stack and CI. Current Compose primarily supplies the local database. |
+| Packaging / CI | Frontend Dockerfiles, frontend Compose services and CI. Current Compose starts PostgreSQL and the API. |
 | Disclosure / data card / failure evidence | Formal AI/data disclosures, data card, systematic failure catalogue and evidence beyond these smoke cases. This record contributes observed failure evidence but does not finish those deliverables. |
 | Weekly report — stretch | Statistical spike detection, incident correlation and cited bilingual narrative. Existing weekly counts are not this report. |
 
