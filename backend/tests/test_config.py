@@ -44,8 +44,19 @@ def test_anthropic_model_selects_the_draft_model_only(monkeypatch):
 
 
 def test_draft_token_prices_follow_the_selected_draft_model():
-    assert Settings(_env_file=None).draft_token_prices == (0.75, 3.75)
-    claude = Settings(_env_file=None, anthropic_model="anthropic/claude-sonnet-5.5")
+    prices = {
+        "price_gemini_flash_in": 0.75,
+        "price_gemini_flash_out": 3.75,
+        "price_anthropic_in": 3.0,
+        "price_anthropic_out": 15.0,
+    }
+    gemini = Settings(_env_file=None, anthropic_model="", **prices)
+    assert gemini.draft_token_prices == (0.75, 3.75)
+    claude = Settings(
+        _env_file=None,
+        anthropic_model="anthropic/claude-sonnet-5.5",
+        **prices,
+    )
     assert claude.draft_token_prices == (3.0, 15.0)
 
 

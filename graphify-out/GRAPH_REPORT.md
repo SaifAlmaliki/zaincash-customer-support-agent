@@ -1,7 +1,7 @@
 # Graph Report - zaincash-support  (2026-11-03)
 
 ## Corpus Check
-- 342 files · ~312,005 words
+- 342 files · ~312,012 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 28 file(s) not represented in the graph (top: (none) 17, .jsonl 4, .css 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a4bb9036`
+- Built from commit: `f3ff14f1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -735,7 +735,7 @@ Nodes (4): 6.1 Verification and cleanup, 6.2 Retire the legacy trace/chart clust
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ReviewEditor()` connect `ReviewEditor` to `NewBatchPage.tsx`, `Review Focus`, `useCopy`, `build_tools`, `TicketReviewPage.tsx`, `IntakePage.test.tsx`, `format.ts`, `QueuePage.tsx`, `Maintainability and stale-code refactor — design specification`, `components-ai-thought-chain.tsx`, `Review Focus`, `workspace-ui.tsx`?**
-  _High betweenness centrality (0.088) - this node is a cross-community bridge._
+  _High betweenness centrality (0.087) - this node is a cross-community bridge._
 - **Are the 36 inferred relationships involving `Settings` (e.g. with `_command_settings()` and `_run_in_memory()`) actually correct?**
   _`Settings` has 36 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `zaincash-support`, `@base-ui/react`, `@fontsource-variable/plus-jakarta-sans` to the rest of the system?**
@@ -743,7 +743,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `NewBatchPage.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.14193548387096774 - nodes in this community are weakly interconnected._
 - **Why does `build_tools()` connect `build_tools` to `test_kb_service.py`, `investigation.py`, `agent.py`, `Review Focus`, `test_rag_api.py`, `agent.py`, `DraftSubmission`, `Maintainability and stale-code refactor — design specification`, `Review Focus`, `test_draft_tools.py`, `tools.py`?**
-  _High betweenness centrality (0.085) - this node is a cross-community bridge._
+  _High betweenness centrality (0.086) - this node is a cross-community bridge._
 - **Are the 25 inferred relationships involving `KnowledgeService` (e.g. with `Settings` and `UploadedDocument`) actually correct?**
   _`KnowledgeService` has 25 INFERRED edges - model-reasoned connections that need verification._
 

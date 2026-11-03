@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "backend/tests/test_config.py": {
-    "mtime": 1793648007.7459052,
-    "seen": 1793661526.308773,
-    "ast_hash": "db29b2e20abcad64dc502e3ae5f25800",
+    "mtime": 1793693201.9372146,
+    "seen": 1793693418.5853353,
+    "ast_hash": "e9d24184f4f42bae7b97669052ac3bb8",
     "semantic_hash": ""
   },
   "backend/tests/test_dates.py": {
@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/README.md": {
-    "mtime": 1793653910.943626,
-    "seen": 1793661526.3152037,
-    "ast_hash": "2f429c67f89339aef42828937b02ef34",
+    "mtime": 1793693201.9227133,
+    "seen": 1793693418.59767,
+    "ast_hash": "ee6bc979a2ee76f6a0af1fcc61088e92",
     "semantic_hash": ""
   },
   "employee-frontend/index.html": {
