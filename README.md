@@ -8,7 +8,7 @@ Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation
 
 ## Architecture
 
-![Technical architecture of the local support pipeline](docs/local-support-pipeline.png)
+![Technical architecture of the local support pipeline](./docs/architecture.png)
 
 Two web apps and a CLI send tickets to one API. The API runs a LangGraph pipeline, then holds every result for a person to review.
 
