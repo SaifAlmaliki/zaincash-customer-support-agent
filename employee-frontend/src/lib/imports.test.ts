@@ -8,7 +8,6 @@ describe("ticket uploads", () => {
     expect(parseTicketFile(text, "tickets.csv")[0]).toMatchObject({
       external_id: "T-1",
       text: 'حولت 50,000 دينار، وكتبت "مستعجل"',
-      channel: "app",
     })
   })
   it("supports JSONL and message aliases", () => {

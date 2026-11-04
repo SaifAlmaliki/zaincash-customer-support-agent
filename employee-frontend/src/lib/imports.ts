@@ -75,7 +75,7 @@ export function parseTicketFile(
       external_id: id,
       text: message.trim(),
       channel,
-      ...(row.received_at ? { received_at: row.received_at } : {}),
+      ...(row.received_at ? { received_at: String(row.received_at) } : {}),
       customer_phone: row.customer_phone || null,
     }
   })

@@ -45,7 +45,7 @@ it("starts every new run with Jev classification", async () => {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }),
   )
-  await api.startRun([{ text: "شكد العمولة", channel: "app" }])
+  await api.startRun([{ text: "شكد العمولة" }])
   const options = fetchMock.mock.calls[0][1]
   expect(JSON.parse(String(options?.body)).mode).toBe("jev")
 })

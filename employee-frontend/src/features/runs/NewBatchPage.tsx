@@ -4,13 +4,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  FileJson,
   FileUp,
   FlaskConical,
   LoaderCircle,
-  LockKeyhole,
   Play,
-  ShieldCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FilterSelect, PageHeader } from "@/components/shared/workspace-ui"
 import { useWorkspace } from "@/lib/workspace"
-import { useCopy } from "@/lib/locale"
+import { fill, useCopy } from "@/lib/locale"
 import { parseTicketFile } from "@/lib/imports"
 import { api } from "@/lib/api"
 import type { TicketInput } from "@/lib/types"
@@ -38,13 +35,14 @@ const exampleTickets: TicketInput[] = [
 
 export function NewBatchPage() {
   const copy = useCopy()
+  const text = copy.batch
   const workspace = useWorkspace(),
     navigate = useNavigate(),
     input = useRef<HTMLInputElement>(null)
   const [tab, setTab] = useState("upload"),
     [fileName, setFileName] = useState("")
   const [tickets, setTickets] = useState<TicketInput[]>([]),
-    [text, setText] = useState("")
+    [message, setMessage] = useState("")
   const [channel, setChannel] = useState<TicketInput["channel"]>("app"),
     [phone, setPhone] = useState("")
   const [error, setError] = useState("")
@@ -54,22 +52,27 @@ export function NewBatchPage() {
   const selected =
     tab === "upload"
       ? tickets
-      : text.trim()
-        ? [{ text, channel, customer_phone: phone || null }]
+      : message.trim()
+        ? [{ text: message, channel, customer_phone: phone || null }]
         : []
+  const ready =
+    selected.length === 0
+      ? text.readyNone
+      : selected.length === 1
+        ? text.readyOne
+        : fill(text.readyMany, { count: selected.length })
   async function readFile(file?: File) {
     if (!file) return
     setReading(true)
     setError("")
     setTickets([])
     try {
-      if (file.size > 10 * 1024 * 1024)
-        throw new Error("Choose a file smaller than 10 MB.")
+      if (file.size > 10 * 1024 * 1024) throw new Error(text.fileTooLarge)
       const parsed = parseTicketFile(await file.text(), file.name.toLowerCase())
       setTickets(parsed)
       setFileName(file.name)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not read this file.")
+      setError(e instanceof Error ? e.message : text.readFailed)
     } finally {
       setReading(false)
       if (input.current) input.current.value = ""
@@ -82,10 +85,10 @@ export function NewBatchPage() {
     try {
       const run = await api.startRun(selected)
       workspace.refresh()
-      workspace.notify(`Batch #${run.id} submitted for processing.`)
+      workspace.notify(fill(text.submitted, { id: run.id }))
       navigate(`/runs/${run.id}`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start the batch.")
+      setError(e instanceof Error ? e.message : text.startFailed)
     } finally {
       setBusy(false)
     }
@@ -94,7 +97,7 @@ export function NewBatchPage() {
     <>
       <Link to="/runs" className="back-link">
         <ArrowLeft size={15} />
-        Pipeline runs
+        {text.back}
       </Link>
       <PageHeader
         title={copy.pages.newBatchTitle}
@@ -105,8 +108,8 @@ export function NewBatchPage() {
           <CardHeader>
             <CardTitle className="section-title">
               <FileUp size={18} />
-              Add your tickets
-              <Badge variant="secondary">Up to 500 per batch</Badge>
+              {text.addTickets}
+              <Badge variant="secondary">{text.limit}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -118,8 +121,8 @@ export function NewBatchPage() {
               }}
             >
               <TabsList className="input-tabs">
-                <TabsTrigger value="upload">Upload a file</TabsTrigger>
-                <TabsTrigger value="paste">Paste a ticket</TabsTrigger>
+                <TabsTrigger value="upload">{text.uploadTab}</TabsTrigger>
+                <TabsTrigger value="paste">{text.pasteTab}</TabsTrigger>
               </TabsList>
               <TabsContent value="upload">
                 <div
@@ -133,20 +136,20 @@ export function NewBatchPage() {
                   <div className="upload-symbol">
                     <FileUp size={30} strokeWidth={1.4} />
                   </div>
-                  <h3>Drop your ticket file here</h3>
-                  <p>CSV, JSON or JSONL · up to 10 MB</p>
+                  <h3>{text.dropTitle}</h3>
+                  <p>{text.dropHint}</p>
                   <Button
                     variant="outline"
                     onClick={() => input.current?.click()}
                     disabled={reading}
                   >
-                    {reading ? "Reading file…" : "Choose file"}
+                    {reading ? text.reading : text.chooseFile}
                   </Button>
                   <input
                     ref={input}
                     type="file"
                     accept=".csv,.json,.jsonl"
-                    aria-label="Upload ticket batch"
+                    aria-label={text.uploadLabel}
                     className="sr-only"
                     onChange={(e) => void readFile(e.target.files?.[0])}
                   />
@@ -155,14 +158,13 @@ export function NewBatchPage() {
                   className="example-button"
                   onClick={() => {
                     setTickets(exampleTickets)
-                    setFileName("Illustrative sample tickets")
+                    setFileName(text.sampleName)
                     setError("")
                   }}
                 >
                   <FlaskConical size={16} />
                   <span>
-                    Just trying it out?{" "}
-                    <strong>Load 3 synthetic examples</strong>
+                    {text.trySample} <strong>{text.loadSample}</strong>
                   </span>
                   <ArrowRight size={15} />
                 </button>
@@ -171,7 +173,9 @@ export function NewBatchPage() {
                     <div>
                       <Check size={16} />
                       <strong>{fileName}</strong>
-                      <Badge variant="outline">{tickets.length} tickets</Badge>
+                      <Badge variant="outline">
+                        {fill(text.ticketCount, { count: tickets.length })}
+                      </Badge>
                     </div>
                     {tickets.slice(0, 3).map((ticket, index) => (
                       <p key={index} dir="auto" lang="ar">
@@ -179,14 +183,16 @@ export function NewBatchPage() {
                       </p>
                     ))}
                     {tickets.length > 3 && (
-                      <small>And {tickets.length - 3} more messages</small>
+                      <small>
+                        {fill(text.moreMessages, { count: tickets.length - 3 })}
+                      </small>
                     )}
                   </div>
                 )}
               </TabsContent>
               <TabsContent value="paste">
                 <label className="field-label" htmlFor="ticket-message">
-                  Customer’s message
+                  {text.messageLabel}
                 </label>
                 <Textarea
                   id="ticket-message"
@@ -194,20 +200,20 @@ export function NewBatchPage() {
                   dir="auto"
                   lang="ar"
                   maxLength={6000}
-                  placeholder="الصق رسالة الزبون هنا…"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  placeholder={text.messagePlaceholder}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                 />
                 <div className="two-column">
                   <div>
-                    <span className="field-label">Channel</span>
+                    <span className="field-label">{text.channel}</span>
                     <FilterSelect
-                      label="Ticket channel"
+                      label={text.channelLabel}
                       value={channel}
                       options={[
-                        { value: "app", label: "ZainCash app" },
-                        { value: "whatsapp", label: "WhatsApp" },
-                        { value: "call_note", label: "Call note" },
+                        { value: "app", label: text.channelApp },
+                        { value: "whatsapp", label: text.channelWhatsapp },
+                        { value: "call_note", label: text.channelCall },
                       ]}
                       onChange={(value) =>
                         setChannel(value as TicketInput["channel"])
@@ -215,10 +221,13 @@ export function NewBatchPage() {
                     />
                   </div>
                   <label className="field-label" htmlFor="customer-phone">
-                    Customer phone (optional)
+                    {text.phone}
                     <Input
                       id="customer-phone"
-                      placeholder="07…"
+                      className="phone-field"
+                      dir="ltr"
+                      inputMode="tel"
+                      placeholder={text.phonePlaceholder}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
@@ -232,10 +241,7 @@ export function NewBatchPage() {
               </p>
             )}
             <div className="batch-submit">
-              <span>
-                {selected.length} {selected.length === 1 ? "ticket" : "tickets"}{" "}
-                ready
-              </span>
+              <span>{ready}</span>
               <Button
                 size="lg"
                 disabled={
@@ -251,62 +257,11 @@ export function NewBatchPage() {
                 ) : (
                   <Play size={16} />
                 )}
-                Start processing
+                {text.start}
               </Button>
             </div>
           </CardContent>
         </Card>
-        <aside className="evidence-stack">
-          <Card>
-            <CardHeader>
-              <CardTitle>Processing setup</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <span className="field-label">Classification</span>
-              <p className="muted small setup-description">
-                <strong>Jev only.</strong> Low-confidence results are flagged
-                for human review.
-              </p>
-              {!configured && (
-                <div className="setup-callout">
-                  <LockKeyhole size={18} />
-                  <strong>Model setup needed</strong>
-                  <p>
-                    Set TYPESAFE_API_KEY in the backend <code>.env</code>,
-                    then restart the API.
-                  </p>
-                  <Button variant="outline" onClick={workspace.refresh}>
-                    Check connection
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="section-title">
-                <FileJson size={17} />
-                Expected file format
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="muted small">
-                Each row needs a <code>text</code> or <code>message</code>{" "}
-                field. ID, channel, phone and received date are optional.
-              </p>
-              <pre className="format-example">
-                {'[{\n  "text": "حولت وما وصلت",\n  "channel": "app"\n}]'}
-              </pre>
-            </CardContent>
-          </Card>
-          <div className="human-note">
-            <ShieldCheck size={22} />
-            <p>
-              Use synthetic customer tickets only. The pipeline prepares work
-              for your support team; responses always need human approval.
-            </p>
-          </div>
-        </aside>
       </div>
     </>
   )
