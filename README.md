@@ -6,6 +6,53 @@ Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation
 
 > **People stay in control.** The pipeline never sends replies, moves money, or changes accounts. Uncertain or unsafe outcomes are escalated with a reason.
 
+## Architecture
+
+Two web apps and a CLI send tickets to one API. The API runs a LangGraph pipeline, then holds every result for a person to review.
+
+```mermaid
+flowchart LR
+  intake["Customer intake :5174"]
+  workspace["Employee workspace :5173"]
+  cli["CLI batch"]
+  api["FastAPI :8000"]
+  pipeline["LangGraph pipeline"]
+  jev["Jev via TypeSafe"]
+  models["OpenRouter models"]
+  db[("PostgreSQL + pgvector :5433")]
+  review["Human review"]
+
+  intake --> api
+  workspace --> api
+  cli --> api
+  api --> pipeline
+  pipeline -->|classify| jev
+  pipeline -->|fill a missing field, draft the reply| models
+  pipeline -->|tickets, transactions, policy vectors| db
+  pipeline --> review
+  review -->|approve, edit, reject, reassign| db
+```
+
+Docker Compose runs the API and Postgres. The customer intake app and the employee workspace run separately with npm. Jev is the only classifier. Gemini is called only when a required field has no span. Claude writes the cited reply. Postgres stores tickets, the transaction lookup, and the policy embeddings.
+
+```mermaid
+flowchart TD
+  ticket["Ticket received"] --> prepare["Prepare text"]
+  prepare --> text{"Text present?"}
+  text -->|No| empty["Escalate empty ticket"]
+  text -->|Yes| jev["Jev classifies"]
+  jev --> extract["Verify and fill fields"]
+  extract --> lookup["Match the transaction"]
+  lookup --> decide["Apply routing rules"]
+  decide --> draft["Draft the reply and run guardrails"]
+  draft --> review["Person reviews"]
+  empty --> review
+```
+
+An empty ticket skips classification, lookup, and drafting, and is escalated. Every other ticket follows `prepare → jev_classify → extract → lookup → decide → draft`. The graph stops there. A person approves, edits, rejects, or reassigns. Nothing is sent.
+
+[Open the same diagrams as a standalone page](docs/pipeline-architecture.html).
+
 ## How a ticket flows
 
 | Step | What happens | Model | Code |
@@ -20,8 +67,6 @@ Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation
 | Review | An agent approves, edits, rejects, or reassigns. Nothing is sent. | None | Employee workspace |
 
 The graph is `prepare → jev_classify → extract → lookup → decide → draft`. An empty `ANTHROPIC_MODEL` or `INTAKE_MODEL` uses `GEMINI_MODEL` for that step. `GEMINI_STRONG_MODEL` and `GEMINI_EMBED_MODEL` are not called.
-
-[Explore the architecture and ticket-flow diagrams](docs/pipeline-architecture.html).
 
 ## Quick start
 
