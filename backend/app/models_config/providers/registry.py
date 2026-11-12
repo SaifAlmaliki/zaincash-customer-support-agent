@@ -5,6 +5,7 @@ from collections.abc import Mapping
 
 from app.config import Settings
 from app.models_config.providers.base import Provider
+from app.models_config.providers.ollama import OllamaProvider
 from app.models_config.providers.openrouter import OpenRouterProvider
 from app.models_config.providers.typesafe import TypeSafeProvider
 from app.models_config.types import ProviderStatus
@@ -19,6 +20,7 @@ class ProviderRegistry:
         if providers is None:
             providers = {
                 "openrouter": OpenRouterProvider(settings),
+                "ollama": OllamaProvider(settings),
                 "typesafe": TypeSafeProvider(settings),
             }
         self._providers = dict(providers)
@@ -39,8 +41,10 @@ class ProviderRegistry:
 def provider_errors() -> tuple[type[BaseException], ...]:
     """Errors any chat provider may raise for an unusable model request."""
     import httpx
+    from ollama import ResponseError
     from openrouter.errors import OpenRouterError
 
     from app.llm import LLMUnavailable
 
-    return (httpx.HTTPError, OpenRouterError, LLMUnavailable)
+    # The Ollama client raises the builtin ConnectionError when the server is down.
+    return (httpx.HTTPError, OpenRouterError, ResponseError, ConnectionError, LLMUnavailable)
