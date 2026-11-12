@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from collections.abc import Awaitable, Callable, Mapping
 
@@ -15,6 +16,8 @@ from app.models_config.steps import EMBED_DIMENSIONS, PROVIDERS_FOR_STEP
 from app.models_config.types import ModelChoice, ProbeResult, Step
 
 PROBE_TIMEOUT_S = 60.0
+_URL = re.compile(r"https?://\S+")
+_SECRET = re.compile(r"sk-[A-Za-z0-9_\-]{8,}|Bearer\s+\S+")
 _PIXEL = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8"
           "z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
 
@@ -27,6 +30,11 @@ class _ProbeAnswer(BaseModel):
 def record_number(number: int) -> str:
     """Record the number the user asks you to record."""
     return "recorded"
+
+
+def _scrub(text: str) -> str:
+    """Provider messages can echo URLs and keys; neither may reach the admin API."""
+    return _SECRET.sub("<redacted>", _URL.sub("<url>", text))[:300]
 
 
 def _chat(provider: Provider, choice: ModelChoice):
@@ -43,7 +51,7 @@ async def _structured(provider: Provider, choice: ModelChoice, *, image: bool) -
     if isinstance(result, dict) and result.get("parsed") is not None:
         return None
     reason = result.get("parsing_error") if isinstance(result, dict) else None
-    return f"The model did not return the required JSON ({reason or 'no output'})."
+    return _scrub(f"The model did not return the required JSON ({reason or 'no output'}).")
 
 
 async def _intake(provider: Provider, choice: ModelChoice) -> str | None:
@@ -92,7 +100,7 @@ _CHECKS: dict[Step, Callable[[Provider, ModelChoice], Awaitable[str | None]]] = 
 def _describe(error: BaseException) -> str:
     if isinstance(error, TimeoutError):
         return f"The model did not answer within {PROBE_TIMEOUT_S:g} seconds."
-    return f"{type(error).__name__}: {error}"[:300]
+    return _scrub(f"{type(error).__name__}: {error}")
 
 
 async def probe(step: Step, choice: ModelChoice, registry: ProviderRegistry) -> ProbeResult:

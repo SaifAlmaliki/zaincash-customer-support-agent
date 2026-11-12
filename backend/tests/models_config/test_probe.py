@@ -74,3 +74,27 @@ async def test_probe_times_out(monkeypatch):
 @pytest.mark.parametrize("step", list(Step))
 async def test_every_step_has_a_probe(step):
     assert step in probe_module._CHECKS
+
+
+async def test_probe_errors_keep_urls_and_keys_out():
+    class Exploding(StructuredChat):
+        async def ainvoke(self, messages):
+            raise RuntimeError("failed for url 'http://10.0.0.5:11434/api/chat' with key sk-or-v1-abcdef123456")
+
+    result = await probe(Step.EXTRACT, ModelChoice("openrouter", "m"),
+                         _registry(openrouter=FakeProvider("openrouter", chat=Exploding())))
+    assert not result.ok
+    assert "http://" not in result.error and "sk-or-v1" not in result.error
+    assert "RuntimeError" in result.error and "<url>" in result.error
+
+
+async def test_probe_scrubs_parsing_errors_and_keeps_the_useful_message():
+    class Leaky(StructuredChat):
+        async def ainvoke(self, messages):
+            return {"raw": None, "parsed": None,
+                    "parsing_error": "model 'x' not found at https://api.example.com/v1 Bearer abc.def"}
+
+    result = await probe(Step.EXTRACT, ModelChoice("openrouter", "m"),
+                         _registry(openrouter=FakeProvider("openrouter", chat=Leaky())))
+    assert not result.ok and "model 'x' not found" in result.error
+    assert "example.com" not in result.error and "abc.def" not in result.error
