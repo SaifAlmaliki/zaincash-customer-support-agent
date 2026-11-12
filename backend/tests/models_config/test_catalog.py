@@ -35,6 +35,18 @@ async def test_catalog_errors_stay_per_provider_and_cache_respects_ttl():
     assert ollama.catalog_calls == 3
 
 
+class BrokenStatusProvider(FakeProvider):
+    def status(self):
+        raise RuntimeError("boom")
+
+
+async def test_a_provider_whose_status_check_raises_is_listed_as_unreachable():
+    registry = fake_registry(Settings(_env_file=None), ollama=BrokenStatusProvider("ollama", locality="local"))
+    _, ollama = await step_catalog(Step.DRAFT, registry, CatalogCache(registry))
+    assert ollama["status"] == "unreachable" and ollama["entries"] == []
+    assert ollama["status_detail"] == "Provider status could not be checked."
+
+
 async def test_classify_catalog_only_offers_typesafe():
     registry = fake_registry(Settings(_env_file=None))
     [only] = await step_catalog(Step.CLASSIFY, registry, CatalogCache(registry))

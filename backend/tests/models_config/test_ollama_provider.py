@@ -1,6 +1,7 @@
 import json
 
 import httpx
+import pytest
 
 from app.config import Settings
 from app.models_config.providers.ollama import OllamaProvider
@@ -58,6 +59,12 @@ def test_status_is_cached_and_reports_unreachable():
     now[0] = 16.0
     provider.status()
     assert calls == ["/api/version", "/api/version"]
+
+
+@pytest.mark.parametrize("url", ["not a url", "http://", "http://host:notaport", "://x"])
+def test_malformed_base_url_reports_unreachable_instead_of_raising(url):
+    provider = OllamaProvider(Settings(_env_file=None, ollama_base_url=url))
+    assert provider.status().state == "unreachable"
 
 
 def test_status_ready_when_version_answers():

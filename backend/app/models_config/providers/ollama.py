@@ -47,7 +47,7 @@ class OllamaProvider:
             with httpx.Client(transport=self._transport, timeout=STATUS_TIMEOUT_S) as client:
                 client.get(f"{self._base}/api/version").raise_for_status()
             status = ProviderStatus(self.name, self.locality, "ready")
-        except httpx.HTTPError:
+        except (httpx.HTTPError, httpx.InvalidURL, ValueError):
             status = ProviderStatus(self.name, self.locality, "unreachable",
                                     "Ollama is not reachable. Check OLLAMA_BASE_URL in the backend .env.")
         with self._lock:

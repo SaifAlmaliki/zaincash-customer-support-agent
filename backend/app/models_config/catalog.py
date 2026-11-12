@@ -8,7 +8,7 @@ from typing import Any
 
 from app.models_config.providers.registry import ProviderRegistry
 from app.models_config.steps import CATALOG_KIND, PROVIDERS_FOR_STEP, eligibility
-from app.models_config.types import CatalogEntry, CatalogKind, Step
+from app.models_config.types import CatalogEntry, CatalogKind, ProviderStatus, Step
 
 
 class CatalogCache:
@@ -31,7 +31,11 @@ async def step_catalog(step: Step, registry: ProviderRegistry, cache: CatalogCac
                        refresh: bool = False) -> list[dict[str, Any]]:
     providers = []
     for name in PROVIDERS_FOR_STEP[step]:
-        status = await asyncio.to_thread(registry.status, name)
+        try:
+            status = await asyncio.to_thread(registry.status, name)
+        except Exception:
+            status = ProviderStatus(name, registry.get(name).locality, "unreachable",
+                                    "Provider status could not be checked.")
         item: dict[str, Any] = {"provider": name, "locality": status.locality, "status": status.state,
                                 "status_detail": status.detail, "entries": [], "error": None}
         if status.state == "ready":
