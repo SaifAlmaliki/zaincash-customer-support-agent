@@ -7,6 +7,8 @@ from time import perf_counter
 
 from app.db.models import RunRow
 from app.db.repository import SqlTransactionRepo, save_outcomes
+from app.models_config.resolver import ActiveModels
+from app.models_config.types import Step
 from app.pipeline.contracts import DraftResult, TicketOutcome
 from app.pipeline.execution import TicketExecution, ticket_execution
 from app.pipeline.graph import outcome_from_state, summarize
@@ -14,11 +16,27 @@ from app.services.intake_recovery import fail_intake_placeholders, reconcile_int
 
 logger = logging.getLogger(__name__)
 TICKET_TIMEOUT_S = 180
+LOCAL_TICKET_MARGIN_S = 60
 
 
-async def process_batch(app, run_id, tickets, mode):
+def ticket_timeout_s(models: ActiveModels) -> float:
+    """Cloud tickets keep the fixed budget; local drafts need room for their longer deadline."""
+    if not models.is_local(Step.DRAFT):
+        return TICKET_TIMEOUT_S
+    return max(TICKET_TIMEOUT_S, models.draft_info().timeout_s + LOCAL_TICKET_MARGIN_S)
+
+
+def _current_models(app) -> ActiveModels:
+    store = getattr(app.state, "model_store", None)
+    return store.active() if store is not None else ActiveModels.from_env(app.state.settings)
+
+
+async def process_batch(app, run_id, tickets, mode, models=None):
     sf = app.state.session_factory
-    graph = app.state.pipeline_builder(app.state.settings, mode, SqlTransactionRepo(sf))
+    models = models or _current_models(app)
+    extra = {"models": models} if getattr(app.state, "pipeline_accepts_models", False) else {}
+    graph = app.state.pipeline_builder(app.state.settings, mode, SqlTransactionRepo(sf), **extra)
+    timeout_s = ticket_timeout_s(models)
     limiter = asyncio.Semaphore(max(1, min(app.state.settings.pipeline_concurrency, 20)))
     outcomes = []
 
@@ -26,7 +44,7 @@ async def process_batch(app, run_id, tickets, mode):
         async with limiter:
             trace, state = [], None
             start = perf_counter()
-            execution = TicketExecution(asyncio.timeout(TICKET_TIMEOUT_S))
+            execution = TicketExecution(asyncio.timeout(timeout_s))
             token = ticket_execution.set(execution)
             try:
                 async with execution.timeout:
@@ -81,9 +99,9 @@ async def process_batch(app, run_id, tickets, mode):
         session.commit()
 
 
-def run_job(app, run_id, tickets, mode):
+def run_job(app, run_id, tickets, mode, models=None):
     try:
-        asyncio.run(process_batch(app, run_id, tickets, mode))
+        asyncio.run(process_batch(app, run_id, tickets, mode, models))
     except Exception as exc:
         logger.warning("Batch %s failed: %s", run_id, type(exc).__name__)
         with app.state.session_factory() as session:

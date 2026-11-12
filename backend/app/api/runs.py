@@ -5,8 +5,8 @@ from app.api.dependencies import SessionDep
 from app.api.schemas import BatchInput
 from app.db.models import RunRow, TicketRow
 from app.db.repository import create_run, upsert_tickets
+from app.models_config.types import Step
 from app.pipeline.contracts import Ticket
-from app.pipeline.factory import model_ids
 from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
 from app.services.batch_jobs import run_job
 from app.services.workspace_queries import run_view
@@ -29,10 +29,10 @@ def get_run(run_id: int, session: SessionDep):
 
 @router.post("", status_code=202)
 def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, session: SessionDep):
-    settings = request.app.state.settings
+    models = request.app.state.model_store.active()
     if not request.app.state.testing_pipeline:
         missing = []
-        if not settings.typesafe_api_key:
+        if not models.ready(Step.CLASSIFY):
             missing.append("TYPESAFE_API_KEY")
         if missing:
             raise HTTPException(503, f"Configure {' and '.join(missing)} in the backend .env, then restart the API.")
@@ -59,9 +59,9 @@ def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, 
                      customer_phone=row.customer_phone, received_at=row.received_at)
               for ticket in stored for row in [persisted[ticket.id]]]
     run_id = create_run(session, mode=batch.mode, prompt_version=PROMPT_VERSION,
-                        model_ids=model_ids(settings))
+                        model_ids=models.model_ids())
     run = session.get(RunRow, run_id)
     run.counts = {"expected_total": len(stored)}
     session.commit()
-    background.add_task(run_job, request.app, run_id, stored, batch.mode)
+    background.add_task(run_job, request.app, run_id, stored, batch.mode, models)
     return run_view(session, run)

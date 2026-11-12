@@ -5,6 +5,7 @@ from threading import Lock
 from app.kb.service import KnowledgeService
 from app.models_config.embedder import ConfiguredEmbedder
 from app.models_config.store import ModelSettingsStore
+from app.models_config.types import Step
 
 logger = logging.getLogger(__name__)
 MAX_INDEX_JOBS = 4
@@ -18,8 +19,8 @@ def make_knowledge_service(session_factory, settings, store=None):
     return KnowledgeService(session_factory, settings, ConfiguredEmbedder(store))
 
 
-def knowledge_configured(settings):
-    return settings.rag_enabled and bool(settings.openrouter_api_key)
+def knowledge_configured(settings, models):
+    return settings.rag_enabled and models.ready(Step.EMBED)
 
 
 class IndexJobs:

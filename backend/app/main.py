@@ -17,6 +17,7 @@ from app.db.models import RunRow
 from app.db.session import initialize_database, make_engine, make_sessionmaker
 from app.intake.errors import IntakeError
 from app.intake.submission import SubmissionService
+from app.models_config.store import ModelSettingsStore
 from app.pipeline.factory import build_pipeline
 from app.services.intake_recovery import (
     fail_intake_placeholders,
@@ -28,8 +29,13 @@ from app.services.knowledge_runtime import IndexJobs, make_knowledge_service
 from app.taxonomy import load_taxonomy
 
 
+def _accepts(builder, name: str) -> bool:
+    parameters = signature(builder).parameters
+    return name in parameters or any(p.kind == Parameter.VAR_KEYWORD for p in parameters.values())
+
+
 def create_app(settings=None, *, session_factory=None, pipeline_builder=None, knowledge_builder=None,
-               intake_builder=None, intake_dispatcher=None):
+               intake_builder=None, intake_dispatcher=None, model_registry=None):
     settings = settings or Settings()
 
     @asynccontextmanager
@@ -39,20 +45,23 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
             engine = make_engine(settings.database_url)
             initialize_database(engine)
             app.state.session_factory = make_sessionmaker(engine)
-        intake_service = (intake_builder or make_intake_service)(app.state.session_factory, settings, app.state.taxonomy)
+        model_store = ModelSettingsStore(app.state.session_factory, settings, model_registry)
+        await run_in_threadpool(model_store.load)
+        app.state.model_store = model_store
+        intake_service = (intake_builder or partial(make_intake_service, model_store=model_store))(
+            app.state.session_factory, settings, app.state.taxonomy)
         app.state.intake = intake_service
         app.state.intake_store = intake_service.store
-        app.state.submission = SubmissionService(app.state.session_factory, settings)
+        app.state.submission = SubmissionService(app.state.session_factory, settings, model_store=model_store)
         app.state.intake_dispatcher = intake_dispatcher or dispatch_intake
         try:
-            service = (knowledge_builder or make_knowledge_service)(app.state.session_factory, settings)
+            service = (knowledge_builder or partial(make_knowledge_service, store=model_store))(
+                app.state.session_factory, settings)
             app.state.knowledge = service
             app.state.index_jobs = IndexJobs(service)
             builder = pipeline_builder or build_pipeline
-            parameters = signature(builder).parameters
-            accepts_knowledge = "knowledge" in parameters or any(
-                p.kind == Parameter.VAR_KEYWORD for p in parameters.values())
-            app.state.pipeline_builder = partial(builder, knowledge=service) if accepts_knowledge else builder
+            app.state.pipeline_builder = partial(builder, knowledge=service) if _accepts(builder, "knowledge") else builder
+            app.state.pipeline_accepts_models = _accepts(builder, "models")
 
             def recover():
                 # Startup-only recovery: this local application runs one worker.
@@ -82,11 +91,13 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
     app.state.session_factory = session_factory
     app.state.pipeline_builder = pipeline_builder or build_pipeline
     app.state.testing_pipeline = pipeline_builder is not None
+    app.state.pipeline_accepts_models = False
     app.state.taxonomy = load_taxonomy(settings.taxonomy_path)
     app.add_middleware(CORSMiddleware, allow_origins=[
         "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174",
         "http://localhost:4173",
-    ], allow_methods=["GET", "POST", "DELETE"], allow_headers=["Authorization", "Content-Type"])
+    ], allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Authorization", "Content-Type", "X-Admin-Token"])
 
     @app.exception_handler(OperationalError)
     async def database_unavailable(_request: Request, _error: OperationalError):

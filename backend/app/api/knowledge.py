@@ -49,9 +49,13 @@ async def upload_document(file: UploadFile, background: BackgroundTasks, request
         raise HTTPException(exc.status_code, str(exc)) from None
     value = document_view(session, doc)
     requested = False
-    if knowledge_configured(request.app.state.settings) and value["status"] == "awaiting_indexing":
+    if _configured(request) and value["status"] == "awaiting_indexing":
         requested = request.app.state.index_jobs.submit(background, value)
     return value | {"index_requested": requested}
+
+
+def _configured(request) -> bool:
+    return knowledge_configured(request.app.state.settings, request.app.state.model_store.active())
 
 
 def _validate_categories(request, categories):
@@ -60,7 +64,7 @@ def _validate_categories(request, categories):
 
 
 def _require_provider(request):
-    if not knowledge_configured(request.app.state.settings):
+    if not _configured(request):
         raise HTTPException(503, "Knowledge provider is disabled or unconfigured.")
 
 

@@ -9,6 +9,7 @@ from app.api.dependencies import SessionDep
 from app.db.models import TicketRow
 from app.kb.models import KnowledgeChunk, KnowledgeDocumentIndex
 from app.kb.service import CHUNKING_VERSION
+from app.models_config.types import Step
 from app.services.knowledge_runtime import knowledge_configured
 from app.services.workspace_queries import STAGES, latest_results_query
 
@@ -19,16 +20,18 @@ router = APIRouter(prefix="/api", tags=["Workspace"])
 def health(request: Request, session: SessionDep):
     session.execute(text("SELECT 1"))
     settings = request.app.state.settings
-    modes = ["jev"] if settings.typesafe_api_key else []
-    configured = knowledge_configured(settings)
+    models = request.app.state.model_store.active()
+    embedding_model = models.choice(Step.EMBED).model
+    modes = ["jev"] if models.ready(Step.CLASSIFY) else []
+    configured = knowledge_configured(settings, models)
     compatible_chunks = select(KnowledgeChunk.id).where(
         KnowledgeChunk.document_id == KnowledgeDocumentIndex.document_id,
         KnowledgeChunk.attempt_id == KnowledgeDocumentIndex.attempt_id,
-        KnowledgeChunk.embedding_model == settings.embedding_model,
+        KnowledgeChunk.embedding_model == embedding_model,
     ).exists()
     indexed_count = session.scalar(select(func.count()).select_from(KnowledgeDocumentIndex).where(
         KnowledgeDocumentIndex.status == "indexed",
-        KnowledgeDocumentIndex.embedding_model == settings.embedding_model,
+        KnowledgeDocumentIndex.embedding_model == embedding_model,
         KnowledgeDocumentIndex.embedding_dimensions == settings.embed_dim,
         KnowledgeDocumentIndex.chunking_version == CHUNKING_VERSION,
         KnowledgeDocumentIndex.chunk_count > 0, compatible_chunks,
@@ -42,9 +45,10 @@ def health(request: Request, session: SessionDep):
             "capabilities": {"drafting": ready, "rag_indexing": configured, "evaluation": False},
             "knowledge": {"enabled": settings.rag_enabled, "configured": configured, "ready": ready,
                           "status": status, "indexed_document_count": indexed_count,
-                          "embedding_model": settings.embedding_model, "embedding_dimensions": settings.embed_dim},
+                          "embedding_model": embedding_model, "embedding_dimensions": settings.embed_dim},
             "drafting": {"enabled": settings.rag_enabled, "configured": configured, "ready": ready,
-                         "credential_check_configured": bool(settings.typesafe_api_key)}}
+                         "credential_check_configured": models.ready(Step.CLASSIFY)},
+            "ai": models.summary()}
 
 
 @router.get("/workspace")

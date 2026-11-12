@@ -99,7 +99,7 @@ def ingest_env(monkeypatch):
     embeddings = Embeddings()
     monkeypatch.setattr(cli, "get_settings", lambda: settings)
     monkeypatch.setattr(cli, "_sessionmaker", lambda settings: sf)
-    monkeypatch.setattr(cli, "make_knowledge_service", lambda sf, settings: KnowledgeService(sf, settings, embeddings), raising=False)
+    monkeypatch.setattr(cli, "make_knowledge_service", lambda sf, settings, store=None: KnowledgeService(sf, settings, embeddings), raising=False)
     yield sf, embeddings
     engine.dispose()
 

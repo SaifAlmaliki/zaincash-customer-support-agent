@@ -21,6 +21,7 @@ from app.db.repository import (
 )
 from app.db.session import initialize_database, make_engine, make_sessionmaker
 from app.ingest import load_jsonl, load_tickets
+from app.models_config.store import ModelSettingsStore
 from app.pipeline import factory
 from app.pipeline.contracts import Ticket
 from app.pipeline.graph import run_batch
@@ -86,11 +87,14 @@ def _run_in_memory(settings: Settings, mode: str, tickets: list[Ticket],
 
 def _run_with_db(settings: Settings, mode: str, tickets: list[Ticket]):
     sf = _sessionmaker(settings)
-    graph = factory.build_pipeline(settings, mode, SqlTransactionRepo(sf))  # fail fast before writing
+    store = ModelSettingsStore(sf, settings)
+    store.load()
+    models = store.active()
+    graph = factory.build_pipeline(settings, mode, SqlTransactionRepo(sf), models=models)  # fail fast before writing
     with sf() as s:
         tickets = upsert_tickets(s, tickets, source="dataset")
         run_id = create_run(s, mode=mode, prompt_version=PROMPT_VERSION,
-                            model_ids=factory.model_ids(settings))
+                            model_ids=models.model_ids())
         s.commit()
     outcomes, summary = asyncio.run(
         run_batch(graph, tickets, concurrency=settings.pipeline_concurrency)
@@ -139,16 +143,20 @@ def ingest_kb_cmd(
     if (path is None) == (not retry_stored):
         raise typer.BadParameter("Provide PATH or --retry-stored, exclusively.")
     settings = _command_settings()
-    if not knowledge_configured(settings):
-        typer.echo("Knowledge provider is disabled or unconfigured.", err=True)
-        raise typer.Exit(2)
     try:
         paths = ingest_paths(path) if path is not None else None
         sf = _sessionmaker(settings)
-        service = make_knowledge_service(sf, settings)
+        store = ModelSettingsStore(sf, settings)
+        store.load()
+        if not knowledge_configured(settings, store.active()):
+            typer.echo("Knowledge provider is disabled or unconfigured.", err=True)
+            raise typer.Exit(2)
+        service = make_knowledge_service(sf, settings, store)
         sources = paths if paths is not None else retry_ids(sf)
         if len(sources) > MAX_INGEST_DOCUMENTS:
             raise ValueError("Too many pending sources.")
+    except typer.Exit:
+        raise
     except Exception:
         typer.echo("Unable to prepare ingestion; check source, database and the 100-document limit.", err=True)
         raise typer.Exit(2) from None

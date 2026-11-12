@@ -248,8 +248,12 @@ def test_progress_counts_only_durable_results_after_save_failure(client, monkeyp
 
 
 def test_only_jev_mode_is_configured_and_retired_modes_are_rejected(client):
+    from app.models_config.store import ModelSettingsStore
+
     client.app.state.settings = Settings(_env_file=None, openrouter_api_key="test-router-secret",
                                          typesafe_api_key="test-jev-secret")
+    client.app.state.model_store = ModelSettingsStore(client.app.state.session_factory, client.app.state.settings)
+    client.app.state.model_store.load()
     client.app.state.testing_pipeline = False
     health = client.get("/api/health")
     assert health.json()["configured_modes"] == ["jev"]
@@ -267,3 +271,31 @@ def test_api_reports_missing_typesafe_key(client):
     ]})
     assert response.status_code == 503
     assert "TYPESAFE_API_KEY" in response.json()["detail"]
+
+
+def test_health_reports_ai_locality_and_runs_record_provider_refs():
+    from app.models_config.types import ModelChoice, Step
+    from tests.models_config_fakes import fake_registry
+
+    settings = Settings(_env_file=None, openrouter_api_key="k", typesafe_api_key="t")
+    engine = make_engine(settings.test_database_url)
+    reset_db(engine)
+
+    def pipeline(_settings, _mode, _repo):
+        return build_graph(PipelineDeps(
+            taxonomy=load_taxonomy(settings.taxonomy_path), txn_repo=InMemoryTransactionRepo([]),
+            jev=FakeClassifier(make_output("general_inquiry", priority="P4")),
+        ))
+
+    app = create_app(settings, session_factory=make_sessionmaker(engine), pipeline_builder=pipeline,
+                     model_registry=fake_registry(settings))
+    with TestClient(app) as client:
+        assert client.get("/api/health").json()["ai"]["locality"] == "cloud"
+        app.state.model_store.save(Step.DRAFT, ModelChoice("ollama", "qwen3:4b"), changed_by="t", latency_ms=1)
+        health = client.get("/api/health").json()
+        assert health["ai"]["locality"] == "mixed"
+        assert health["ai"]["steps"]["draft"] == {"provider": "ollama", "model": "qwen3:4b",
+                                                  "locality": "local", "status": "ready"}
+        run_id = start_run(client)
+        assert client.get(f"/api/runs/{run_id}").json()["model_ids"]["draft"] == "ollama:qwen3:4b"
+    engine.dispose()
