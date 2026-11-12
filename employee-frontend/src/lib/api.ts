@@ -6,7 +6,25 @@ import type {
   IndexResponse,
   ChunkPage,
   KnowledgeSearchResult,
+  AuditEntry,
+  CatalogProvider,
+  EmbeddingSwitch,
+  ModelChoiceInput,
+  ModelStep,
+  ProbeResult,
+  StepModel,
 } from "./types"
+import { getAdminSession, setAdminSession } from "./admin-session"
+
+export class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+  }
+}
 
 export async function request<T>(
   path: string,
@@ -31,7 +49,7 @@ export async function request<T>(
     } catch {
       /* Proxies may return HTML when the API is offline. */
     }
-    throw new Error(message)
+    throw new ApiError(message, response.status)
   }
   if (response.status === 204) return undefined as T
   try {
@@ -95,4 +113,49 @@ export const api = {
     }),
   deleteDocument: (id: number, signal?: AbortSignal) =>
     request<void>(`/knowledge/${id}`, { method: "DELETE", signal }),
+}
+
+export async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  try {
+    return await request<T>(`/admin${path}`, {
+      ...options,
+      headers: {
+        ...(options.headers as Record<string, string> | undefined),
+        "X-Admin-Token": getAdminSession()?.token ?? "",
+      },
+    })
+  } catch (error) {
+    // A changed or disabled token must return the page to its locked state.
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403))
+      setAdminSession(null)
+    throw error
+  }
+}
+
+export const adminApi = {
+  verify: (token: string) =>
+    request<void>("/admin/session", { method: "POST", headers: { "X-Admin-Token": token } }),
+  models: (options?: RequestInit) => adminRequest<{ steps: StepModel[] }>("/models", options),
+  catalog: (step: ModelStep, refresh = false) =>
+    adminRequest<{ step: ModelStep; providers: CatalogProvider[] }>(
+      `/models/catalog?step=${step}&refresh=${refresh}`,
+    ),
+  test: (step: ModelStep, choice: ModelChoiceInput) =>
+    adminRequest<ProbeResult>("/models/test", {
+      method: "POST",
+      body: JSON.stringify({ step, ...choice }),
+    }),
+  save: (step: ModelStep, choice: ModelChoiceInput, changedBy: string) =>
+    adminRequest<StepModel>(`/models/${step}`, {
+      method: "PUT",
+      body: JSON.stringify({ ...choice, changed_by: changedBy }),
+    }),
+  startEmbeddingSwitch: (choice: ModelChoiceInput, changedBy: string) =>
+    adminRequest<EmbeddingSwitch>("/models/embed/switch", {
+      method: "POST",
+      body: JSON.stringify({ ...choice, changed_by: changedBy }),
+    }),
+  embeddingSwitch: (options?: RequestInit) =>
+    adminRequest<EmbeddingSwitch | null>("/models/embed/switch", options),
+  audit: (options?: RequestInit) => adminRequest<{ items: AuditEntry[] }>("/models/audit?limit=50", options),
 }

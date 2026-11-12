@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest"
-import { api, loadQueue } from "./api"
+import { ApiError, adminApi, api, loadQueue } from "./api"
+import { getAdminSession, setAdminSession } from "./admin-session"
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -48,4 +49,46 @@ it("starts every new run with Jev classification", async () => {
   await api.startRun([{ text: "شكد العمولة" }])
   const options = fetchMock.mock.calls[0][1]
   expect(JSON.parse(String(options?.body)).mode).toBe("jev")
+})
+
+it("sends the admin token and locks the session when it is rejected", async () => {
+  setAdminSession({ token: "secret", name: "Sara" })
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response(JSON.stringify({ detail: "invalid_admin_token" }), { status: 401 }),
+  )
+  await expect(adminApi.models()).rejects.toMatchObject({ status: 401, message: "invalid_admin_token" })
+  const [url, options] = fetchMock.mock.calls[0]
+  expect(url).toBe("/api/admin/models")
+  expect((options?.headers as Record<string, string>)["X-Admin-Token"]).toBe("secret")
+  expect(getAdminSession()).toBeNull()
+})
+
+it("keeps the admin session on other errors and reports the status", async () => {
+  setAdminSession({ token: "secret", name: "Sara" })
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response(JSON.stringify({ detail: "Model test failed: no tool call" }), { status: 422 }),
+  )
+  const error = await adminApi
+    .save("draft", { provider: "ollama", model: "qwen3:4b", options: {} }, "Sara")
+    .catch((e: unknown) => e)
+  expect(error).toBeInstanceOf(ApiError)
+  expect((error as ApiError).status).toBe(422)
+  expect((error as ApiError).message).toBe("Model test failed: no tool call")
+  expect(getAdminSession()).not.toBeNull()
+  setAdminSession(null)
+})
+
+it("saves with the admin name and sends model options", async () => {
+  setAdminSession({ token: "secret", name: "Sara" })
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }),
+  )
+  await adminApi.save("draft", { provider: "ollama", model: "qwen3:4b", options: { think: false } }, "Sara")
+  const [url, options] = fetchMock.mock.calls[0]
+  expect(url).toBe("/api/admin/models/draft")
+  expect(options?.method).toBe("PUT")
+  expect(JSON.parse(String(options?.body))).toEqual({
+    provider: "ollama", model: "qwen3:4b", options: { think: false }, changed_by: "Sara",
+  })
+  setAdminSession(null)
 })

@@ -109,6 +109,7 @@ export type Run = {
   processed: number
   degraded: boolean
   total_cost_usd: number
+  model_ids?: Record<string, string>
   counts: {
     by_status?: Record<string, number>
     by_category?: Record<string, number>
@@ -142,6 +143,7 @@ export type Health = {
     ready: boolean
     credential_check_configured: boolean
   }
+  ai?: AiSummary
 }
 export type KnowledgeDocument = {
   id: number
@@ -198,4 +200,76 @@ export type EvaluationReport = {
   classification_accuracy: number
   extraction_accuracy: number
   confusion_cases: string[]
+}
+export type ModelStep = "intake" | "classify" | "extract" | "draft" | "embed"
+export type ModelLocality = "local" | "cloud"
+export type ProviderState = "ready" | "missing_key" | "unreachable"
+export type ModelCapability =
+  | "structured_output"
+  | "tools"
+  | "vision"
+  | "embedding"
+  | "thinking"
+  | "classifier"
+export type ModelOptions = { temperature?: number; think?: boolean }
+export type ModelChoiceInput = { provider: string; model: string; options: ModelOptions }
+export type StepModel = {
+  step: ModelStep
+  provider: string
+  model: string
+  options: ModelOptions
+  source: "env" | "admin"
+  updated_at: string | null
+  updated_by: string | null
+  locality: ModelLocality
+  status: ProviderState
+  status_detail: string | null
+  requirements: ModelCapability[]
+  providers: string[]
+}
+export type CatalogModel = {
+  id: string
+  name: string
+  capabilities: ModelCapability[] | null
+  price_in_per_m: number | null
+  price_out_per_m: number | null
+  context_length: number | null
+  eligibility: "eligible" | "unknown"
+}
+export type CatalogProvider = {
+  provider: string
+  locality: ModelLocality
+  status: ProviderState
+  status_detail: string | null
+  entries: CatalogModel[]
+  error: string | null
+}
+export type ProbeResult = { ok: boolean; latency_ms: number; error: string | null }
+export type AuditEntry = {
+  id: number
+  step: ModelStep
+  previous: ModelChoiceInput | null
+  current: ModelChoiceInput
+  changed_by: string
+  changed_at: string
+  test_latency_ms: number
+}
+export type EmbeddingSwitch = {
+  id: number
+  status: "running" | "completed" | "completed_with_errors" | "failed"
+  total: number
+  done: number
+  failed_document_ids: number[]
+  error: string | null
+  target: ModelChoiceInput
+  previous: ModelChoiceInput
+  started_by: string
+  started_at: string
+  finished_at: string | null
+}
+export type AiSummary = {
+  locality: ModelLocality | "mixed"
+  steps: Partial<
+    Record<ModelStep, { provider: string; model: string; locality: ModelLocality; status: ProviderState }>
+  >
 }
