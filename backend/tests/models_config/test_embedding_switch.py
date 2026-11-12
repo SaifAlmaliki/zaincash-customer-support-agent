@@ -89,6 +89,26 @@ def test_start_updates_the_cache_without_reloading_from_the_database(env, monkey
         assert entry["source"] == "admin" and entry["updated_by"] == "Sara"
 
 
+def test_run_start_locks_the_switch_table_before_its_first_write(env):
+    from sqlalchemy import event
+
+    settings, sf = env
+    statements = []
+    engine = sf.kw["bind"]
+
+    @event.listens_for(engine, "before_cursor_execute")
+    def record(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement.strip().split("\n")[0])
+
+    with _client(settings, sf) as client:
+        statements.clear()
+        response = client.post("/api/runs", json={"tickets": [{"external_id": "x", "text": "شكد العمولة"}]})
+        assert response.status_code == 202, response.text
+    lock = next(i for i, sql in enumerate(statements) if sql.startswith("LOCK TABLE embedding_switch IN SHARE MODE"))
+    first_write = next(i for i, sql in enumerate(statements) if sql.startswith(("INSERT", "UPDATE")))
+    assert lock < first_write
+
+
 def test_switch_is_refused_while_a_run_is_running(env):
     settings, sf = env
     with _client(settings, sf) as client:

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.api.dependencies import SessionDep
 from app.api.schemas import BatchInput
 from app.db.models import RunRow, TicketRow
 from app.db.repository import create_run, upsert_tickets
+from app.models_config.db_models import EmbeddingSwitchRow
 from app.models_config.types import Step
 from app.pipeline.contracts import Ticket
 from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
@@ -29,9 +30,13 @@ def get_run(run_id: int, session: SessionDep):
 
 @router.post("", status_code=202)
 def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, session: SessionDep):
-    switches = getattr(request.app.state, "embedding_switches", None)
-    if switches is not None and switches.running():
-        raise HTTPException(409, "knowledge_switch_in_progress")
+    if getattr(request.app.state, "embedding_switches", None) is not None:
+        # SHARE mode is held until this request's transaction ends. A switch start takes
+        # EXCLUSIVE on this table, so it waits for this run to commit and then sees it running
+        # (run_in_progress); a switch already running is seen here (409) before any write.
+        session.execute(text("LOCK TABLE embedding_switch IN SHARE MODE"))
+        if session.scalar(select(EmbeddingSwitchRow.id).where(EmbeddingSwitchRow.status == "running").limit(1)) is not None:
+            raise HTTPException(409, "knowledge_switch_in_progress")
     models = request.app.state.model_store.active()
     if not request.app.state.testing_pipeline:
         missing = []
