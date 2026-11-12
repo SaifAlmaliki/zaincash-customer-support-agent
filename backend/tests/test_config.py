@@ -83,8 +83,16 @@ def test_local_num_ctx_defaults_and_loads_decimal_strings_from_environment(monke
     assert Settings(_env_file=None).local_num_ctx == 8192
 
 
-@pytest.mark.parametrize("values", [{"local_num_ctx": 1024}, {"local_num_ctx": 131073}, {"local_num_ctx": True}])
-def test_local_num_ctx_is_bounded(values):
+def test_local_pipeline_concurrency_defaults_and_loads_decimal_strings_from_environment(monkeypatch):
+    assert Settings(_env_file=None).local_pipeline_concurrency == 2
+    monkeypatch.setenv("LOCAL_PIPELINE_CONCURRENCY", "3")
+    assert Settings(_env_file=None).local_pipeline_concurrency == 3
+
+
+@pytest.mark.parametrize("values", [{"local_num_ctx": 1024}, {"local_num_ctx": 131073}, {"local_num_ctx": True},
+                                    {"local_pipeline_concurrency": 0}, {"local_pipeline_concurrency": 21},
+                                    {"local_pipeline_concurrency": 1.5}])
+def test_local_model_limits_are_bounded(values):
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):

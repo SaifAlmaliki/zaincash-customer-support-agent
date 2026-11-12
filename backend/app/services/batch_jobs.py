@@ -19,11 +19,23 @@ TICKET_TIMEOUT_S = 180
 LOCAL_TICKET_MARGIN_S = 60
 
 
+def _local_pipeline(models: ActiveModels) -> bool:
+    return models.is_local(Step.EXTRACT) or models.is_local(Step.DRAFT)
+
+
 def ticket_timeout_s(models: ActiveModels) -> float:
-    """Cloud tickets keep the fixed budget; local drafts need room for their longer deadline."""
-    if not models.is_local(Step.DRAFT):
+    """Cloud tickets keep the fixed budget; local extract or draft need room for their longer deadline."""
+    if not _local_pipeline(models):
         return TICKET_TIMEOUT_S
-    return max(TICKET_TIMEOUT_S, models.draft_info().timeout_s + LOCAL_TICKET_MARGIN_S)
+    return max(TICKET_TIMEOUT_S, models.settings.local_agent_timeout_s + LOCAL_TICKET_MARGIN_S)
+
+
+def batch_concurrency(settings, models: ActiveModels) -> int:
+    """Local models serve few requests at once; more parallel tickets would only queue and time out."""
+    limit = min(settings.pipeline_concurrency, 20)
+    if _local_pipeline(models):
+        limit = min(limit, settings.local_pipeline_concurrency)
+    return max(1, limit)
 
 
 def _current_models(app) -> ActiveModels:
@@ -37,7 +49,7 @@ async def process_batch(app, run_id, tickets, mode, models=None):
     extra = {"models": models} if getattr(app.state, "pipeline_accepts_models", False) else {}
     graph = app.state.pipeline_builder(app.state.settings, mode, SqlTransactionRepo(sf), **extra)
     timeout_s = ticket_timeout_s(models)
-    limiter = asyncio.Semaphore(max(1, min(app.state.settings.pipeline_concurrency, 20)))
+    limiter = asyncio.Semaphore(batch_concurrency(app.state.settings, models))
     outcomes = []
 
     async def process(ticket):
