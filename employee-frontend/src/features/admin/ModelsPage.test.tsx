@@ -57,6 +57,20 @@ it("disables the embed change button while a switch runs", () => {
   expect(html).toMatch(/<button[^>]*disabled/)
 })
 
+it("shows a saved model that was removed from Ollama as not installed", () => {
+  const missing: StepModel = {
+    ...embed, status: "model_missing", status_detail: "The model is not installed in Ollama.",
+  }
+  setLocale("en")
+  const html = renderToStaticMarkup(<ModelStepCard value={missing} disabled={false} onChange={() => {}} />)
+  expect(html).toContain("status-model_missing")
+  expect(html).toContain("Model not installed")
+  setLocale("ar")
+  expect(renderToStaticMarkup(<ModelStepCard value={missing} disabled={false} onChange={() => {}} />)).toContain(
+    "النموذج غير مثبّت",
+  )
+})
+
 it("shows switch progress and failed documents", () => {
   setLocale("ar")
   const value: EmbeddingSwitch = {

@@ -6,7 +6,7 @@ from enum import StrEnum
 from typing import Any, Literal
 
 Locality = Literal["local", "cloud"]
-ProviderState = Literal["ready", "missing_key", "unreachable"]
+ProviderState = Literal["ready", "missing_key", "unreachable", "model_missing"]
 CatalogKind = Literal["chat", "embedding"]
 
 

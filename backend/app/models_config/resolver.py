@@ -12,7 +12,7 @@ from app.models_config.steps import (
     draft_timeout_s,
     env_defaults,
 )
-from app.models_config.types import Locality, ModelChoice, Step
+from app.models_config.types import Locality, ModelChoice, ProviderStatus, Step
 from app.pipeline.stage6_draft.model_info import DraftModelInfo
 
 EXTRACT_TIMEOUT_S = 60.0
@@ -38,8 +38,19 @@ class ActiveModels:
     def is_local(self, step: Step) -> bool:
         return self.locality(step) == "local"
 
+    def step_status(self, step: Step) -> ProviderStatus:
+        """Provider status, downgraded when the chosen model has been removed from a ready provider."""
+        choice = self.choice(step)
+        status = self.registry.status(choice.provider)
+        if status.state == "ready":
+            has_model = getattr(self.registry.get(choice.provider), "has_model", None)
+            if has_model is not None and has_model(choice.model) is False:
+                return ProviderStatus(status.name, status.locality, "model_missing",
+                                      "The model is not installed in Ollama.")
+        return status
+
     def ready(self, step: Step) -> bool:
-        return self.registry.status(self.choice(step).provider).state == "ready"
+        return self.step_status(step).state == "ready"
 
     def overall_locality(self) -> Literal["local", "cloud", "mixed"]:
         values = {self.locality(step) for step in Step}
@@ -105,7 +116,7 @@ class ActiveModels:
         steps = {}
         for step in Step:
             choice = self.choice(step)
-            status = self.registry.status(choice.provider)
+            status = self.step_status(step)
             steps[step.value] = {"provider": choice.provider, "model": choice.model,
                                  "locality": status.locality, "status": status.state}
         return {"locality": self.overall_locality(), "steps": steps}

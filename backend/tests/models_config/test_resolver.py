@@ -48,6 +48,37 @@ def test_default_temperature_and_cloud_prices():
     assert models.token_prices(Step.CLASSIFY) == (settings.price_jev_in, 0.0)
 
 
+def test_a_saved_model_removed_from_the_provider_is_missing_and_not_ready():
+    settings = _settings()
+    ollama = FakeProvider("ollama", locality="local", installed={"qwen3:4b"})
+    registry = fake_registry(settings, ollama=ollama)
+    models = ActiveModels(settings, {Step.DRAFT: ModelChoice("ollama", "qwen3:4b"),
+                                     Step.EXTRACT: ModelChoice("ollama", "gone:1b")}, registry)
+    assert models.ready(Step.DRAFT) and not models.ready(Step.EXTRACT)
+    missing = models.step_status(Step.EXTRACT)
+    assert (missing.state, missing.detail) == ("model_missing", "The model is not installed in Ollama.")
+    assert missing.locality == "local" and missing.name == "ollama"
+    assert models.step_status(Step.DRAFT).state == "ready"
+    steps = models.summary()["steps"]
+    assert steps["extract"]["status"] == "model_missing" and steps["draft"]["status"] == "ready"
+
+
+def test_unknown_model_availability_does_not_block_a_ready_provider():
+    settings = _settings()
+    registry = fake_registry(settings, ollama=FakeProvider("ollama", locality="local"))
+    registry.get("ollama").has_model = lambda model: None
+    models = ActiveModels(settings, {Step.DRAFT: ModelChoice("ollama", "qwen3:4b")}, registry)
+    assert models.ready(Step.DRAFT)
+
+
+def test_unreachable_provider_keeps_its_own_status_over_model_checks():
+    settings = _settings()
+    ollama = FakeProvider("ollama", locality="local", state="unreachable", installed=set())
+    models = ActiveModels(settings, {Step.DRAFT: ModelChoice("ollama", "qwen3:4b")},
+                          fake_registry(settings, ollama=ollama))
+    assert models.step_status(Step.DRAFT).state == "unreachable"
+
+
 def test_ready_and_summary_follow_provider_status():
     settings = _settings()
     registry = fake_registry(settings, ollama=FakeProvider("ollama", locality="local", state="unreachable"))

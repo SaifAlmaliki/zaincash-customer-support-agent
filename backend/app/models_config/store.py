@@ -71,7 +71,7 @@ class ModelSettingsStore:
         described = []
         for step in Step:
             choice, entry = active.choice(step), rows.get(step)
-            status = self.registry.status(choice.provider)
+            status = active.step_status(step)
             described.append({
                 "step": step.value, "provider": choice.provider, "model": choice.model,
                 "options": dict(choice.options), "source": "admin" if entry else "env",

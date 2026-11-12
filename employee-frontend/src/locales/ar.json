@@ -519,7 +519,7 @@
       "embed": "يحوّل مستندات المعرفة والأسئلة إلى متجهات من 768 رقماً للبحث."
     },
     "locality": { "local": "محلي", "cloud": "سحابي" },
-    "status": { "ready": "جاهز", "missing_key": "مفتاح الواجهة مفقود", "unreachable": "تعذّر الوصول" },
+    "status": { "ready": "جاهز", "missing_key": "مفتاح الواجهة مفقود", "unreachable": "تعذّر الوصول", "model_missing": "النموذج غير مثبّت" },
     "providers": { "openrouter": "OpenRouter · سحابي", "ollama": "Ollama · محلي", "typesafe": "TypeSafe · سحابي" },
     "capabilities": {
       "structured_output": "مخرجات منظمة",

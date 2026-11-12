@@ -67,6 +67,47 @@ def test_malformed_base_url_reports_unreachable_instead_of_raising(url):
     assert provider.status().state == "unreachable"
 
 
+def _tags_handler(*names, calls=None):
+    def handler(request):
+        if calls is not None:
+            calls.append(request.url.path)
+        return httpx.Response(200, json={"models": [{"name": name, "model": name} for name in names]})
+
+    return handler
+
+
+def test_has_model_matches_exact_and_latest_names():
+    provider = _provider(_tags_handler("qwen3:4b", "nomic-embed-text:latest", "plain"))
+    assert provider.has_model("qwen3:4b") is True
+    assert provider.has_model("nomic-embed-text") is True
+    assert provider.has_model("nomic-embed-text:latest") is True
+    assert provider.has_model("plain:latest") is True
+    assert provider.has_model("qwen3:8b") is False
+    assert provider.has_model("qwen3") is False
+
+
+def test_has_model_is_unknown_when_ollama_is_unreachable_or_unusable():
+    def down(request):
+        raise httpx.ConnectError("refused", request=request)
+
+    assert _provider(down).has_model("qwen3:4b") is None
+    assert _provider(lambda r: httpx.Response(200, text="not json")).has_model("qwen3:4b") is None
+    assert _provider(lambda r: httpx.Response(200, json={"unexpected": 1})).has_model("qwen3:4b") is None
+    assert _provider(lambda r: httpx.Response(500)).has_model("qwen3:4b") is None
+    assert OllamaProvider(Settings(_env_file=None, ollama_base_url="http://host:notaport")).has_model("x") is None
+
+
+def test_has_model_listing_is_cached_for_the_status_ttl():
+    calls, now = [], [0.0]
+    provider = _provider(_tags_handler("qwen3:4b", calls=calls), clock=lambda: now[0])
+    provider.has_model("qwen3:4b")
+    provider.has_model("other")
+    assert calls == ["/api/tags"]
+    now[0] = 16.0
+    provider.has_model("qwen3:4b")
+    assert calls == ["/api/tags", "/api/tags"]
+
+
 def test_status_ready_when_version_answers():
     provider = _provider(lambda request: httpx.Response(200, json={"version": "0.35.1"}))
     assert provider.status().state == "ready"

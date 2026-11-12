@@ -10,7 +10,7 @@ from app.intake.db_models import IntakeSessionRow
 from app.models_config.db_models import ModelSettingRow
 from app.models_config.store import ModelSettingsStore
 from app.models_config.types import ModelChoice, Step
-from tests.models_config_fakes import fake_registry
+from tests.models_config_fakes import FakeProvider, fake_registry
 
 pytestmark = pytest.mark.integration
 
@@ -53,6 +53,19 @@ def test_save_updates_cache_database_and_audit(env):
     assert entry["current"] == choice.to_json() and entry["test_latency_ms"] == 1200
     draft = next(item for item in store.describe() if item["step"] == "draft")
     assert draft["source"] == "admin" and draft["locality"] == "local" and draft["updated_by"] == "Sara"
+
+
+def test_describe_reports_a_saved_model_that_is_no_longer_installed(env):
+    settings, sf = env
+    ollama = FakeProvider("ollama", locality="local", installed={"present:1b"})
+    store = ModelSettingsStore(sf, settings, fake_registry(settings, ollama=ollama))
+    store.load()
+    store.save(Step.DRAFT, ModelChoice("ollama", "gone:1b"), changed_by="Sara", latency_ms=1)
+    store.save(Step.EXTRACT, ModelChoice("ollama", "present:1b"), changed_by="Sara", latency_ms=1)
+    steps = {item["step"]: item for item in store.describe()}
+    assert steps["draft"]["status"] == "model_missing"
+    assert steps["draft"]["status_detail"] == "The model is not installed in Ollama."
+    assert steps["extract"]["status"] == "ready" and steps["extract"]["status_detail"] is None
 
 
 def test_rows_for_unknown_providers_are_ignored(env):

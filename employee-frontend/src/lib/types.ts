@@ -203,7 +203,7 @@ export type EvaluationReport = {
 }
 export type ModelStep = "intake" | "classify" | "extract" | "draft" | "embed"
 export type ModelLocality = "local" | "cloud"
-export type ProviderState = "ready" | "missing_key" | "unreachable"
+export type ProviderState = "ready" | "missing_key" | "unreachable" | "model_missing"
 export type ModelCapability =
   | "structured_output"
   | "tools"

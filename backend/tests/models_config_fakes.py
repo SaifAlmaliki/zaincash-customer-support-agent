@@ -23,8 +23,10 @@ class NamedEmbedder:
 
 class FakeProvider:
     def __init__(self, name, *, locality="cloud", state="ready", chat=None, entries=(),
-                 catalog_error=None, classifier=None, embed_fail_for=()):
+                 catalog_error=None, classifier=None, embed_fail_for=(), installed=None):
         self.name, self.locality, self.state = name, locality, state
+        if installed is not None:
+            self.has_model = lambda model: model in installed
         self.chat, self.entries, self.catalog_error = chat, list(entries), catalog_error
         self.classifier_obj, self.embed_fail_for = classifier, embed_fail_for
         self.chat_calls, self.catalog_calls, self.embedders = [], 0, []

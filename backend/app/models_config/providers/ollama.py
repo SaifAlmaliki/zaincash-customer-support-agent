@@ -38,6 +38,7 @@ class OllamaProvider:
         self._clock = clock
         self._lock = threading.Lock()
         self._cached: tuple[float, ProviderStatus] | None = None
+        self._installed: tuple[float, frozenset[str] | None] | None = None
 
     def status(self) -> ProviderStatus:
         with self._lock:
@@ -53,6 +54,37 @@ class OllamaProvider:
         with self._lock:
             self._cached = (self._clock(), status)
         return status
+
+    def has_model(self, model: str) -> bool | None:
+        """Whether Ollama has the model installed; None when that cannot be determined."""
+        with self._lock:
+            cached = self._installed
+        if cached is None or self._clock() - cached[0] >= STATUS_TTL_S:
+            cached = (self._clock(), self._installed_names())
+            with self._lock:
+                self._installed = cached
+        names = cached[1]
+        if names is None:
+            return None
+        alternate = model.removesuffix(":latest") if model.endswith(":latest") else f"{model}:latest"
+        return model in names or alternate in names
+
+    def _installed_names(self) -> frozenset[str] | None:
+        try:
+            with httpx.Client(transport=self._transport, timeout=STATUS_TIMEOUT_S) as client:
+                response = client.get(f"{self._base}/api/tags")
+                response.raise_for_status()
+                models = response.json().get("models")
+        except (httpx.HTTPError, httpx.InvalidURL, ValueError, AttributeError):
+            return None
+        if not isinstance(models, list):
+            return None
+        names = set()
+        for item in models:
+            name = (item.get("model") or item.get("name")) if isinstance(item, dict) else None
+            if isinstance(name, str) and name:
+                names.add(name)
+        return frozenset(names)
 
     async def catalog(self, kind: CatalogKind) -> list[CatalogEntry]:
         async with httpx.AsyncClient(transport=self._transport, timeout=CATALOG_TIMEOUT_S) as client:

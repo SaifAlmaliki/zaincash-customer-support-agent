@@ -2801,7 +2801,8 @@ html[dir="rtl"] .workspace-toast {
   color: var(--green);
 }
 .model-status.status-missing_key,
-.model-status.status-unreachable {
+.model-status.status-unreachable,
+.model-status.status-model_missing {
   color: var(--destructive);
 }
 .admin-unlock {

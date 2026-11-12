@@ -519,7 +519,7 @@
       "embed": "Turns knowledge documents and questions into 768-number vectors for search."
     },
     "locality": { "local": "Local", "cloud": "Cloud" },
-    "status": { "ready": "Ready", "missing_key": "API key missing", "unreachable": "Not reachable" },
+    "status": { "ready": "Ready", "missing_key": "API key missing", "unreachable": "Not reachable", "model_missing": "Model not installed" },
     "providers": { "openrouter": "OpenRouter · cloud", "ollama": "Ollama · local", "typesafe": "TypeSafe · cloud" },
     "capabilities": {
       "structured_output": "Structured output",
