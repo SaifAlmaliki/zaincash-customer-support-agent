@@ -24,6 +24,7 @@ class IntakeSessionRow(Base):
     review: Mapped[dict | None] = mapped_column(JSONB)
     active_request_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True))
     error_code: Mapped[str | None] = mapped_column(String(64))
+    model_choice: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

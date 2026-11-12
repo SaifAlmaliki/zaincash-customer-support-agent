@@ -9,6 +9,9 @@ from app.intake import (
     db_models as intake_db_models,  # noqa: F401 -- register before create_all/drop_all
 )
 from app.kb import models as kb_models  # noqa: F401 -- register before create_all/drop_all
+from app.models_config import (
+    db_models as model_config_db_models,  # noqa: F401 -- register before create_all/drop_all
+)
 
 
 def make_engine(url: str) -> Engine:
