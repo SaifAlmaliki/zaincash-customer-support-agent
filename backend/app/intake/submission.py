@@ -22,8 +22,8 @@ from app.intake.repository import (
     operation_fingerprint,
     processing_status,
 )
+from app.models_config.resolver import ActiveModels
 from app.pipeline.contracts import Ticket
-from app.pipeline.factory import model_ids
 from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
 
 
@@ -37,9 +37,10 @@ class SubmissionResult:
 
 
 class SubmissionService:
-    def __init__(self, session_factory: sessionmaker, settings: Settings) -> None:
+    def __init__(self, session_factory: sessionmaker, settings: Settings, *, model_store=None) -> None:
         self._sf = session_factory
         self.settings = settings
+        self.model_store = model_store
         self.mode = "jev"
         self.repo = IntakeRepository(session_factory)
 
@@ -95,7 +96,9 @@ class SubmissionService:
         )
         stored = upsert_tickets(session, [ticket], source="intake")[0]
         run_id = create_run(
-            session, mode=self.mode, prompt_version=PROMPT_VERSION, model_ids=model_ids(self.settings)
+            session, mode=self.mode, prompt_version=PROMPT_VERSION,
+            model_ids=(self.model_store.active() if self.model_store
+                       else ActiveModels.from_env(self.settings)).model_ids()
         )
         placeholder = TicketResultRow(
             run_id=run_id, ticket_id=stored.id, status="processing", category_probs={}, flags={}, extracted={},

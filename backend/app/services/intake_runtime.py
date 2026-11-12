@@ -5,7 +5,7 @@ import logging
 
 from app.intake.attachments import AttachmentStore
 from app.intake.graph import IntakeGraph
-from app.intake.model import OpenRouterIntakeModel
+from app.intake.model import IntakeModel
 from app.intake.repository import IntakeRepository
 from app.intake.service import IntakeService
 from app.intake.turns import TurnStore
@@ -14,10 +14,11 @@ from app.services.batch_jobs import run_job
 logger = logging.getLogger(__name__)
 
 
-def make_intake_service(session_factory, settings, taxonomy) -> IntakeService:
+def make_intake_service(session_factory, settings, taxonomy, *, model_store=None) -> IntakeService:
     store = AttachmentStore(settings, session_factory)
-    model = OpenRouterIntakeModel(settings)
-    graph = IntakeGraph(model, taxonomy, store, settings)
+    model = IntakeModel(settings, registry=model_store.registry if model_store else None)
+    graph = IntakeGraph(model, taxonomy, store, settings,
+                        choice_for=model_store.intake_pin if model_store else None)
     repo = IntakeRepository(session_factory)
     turns = TurnStore(session_factory, max_images_per_message=settings.intake_max_images_per_message)
     service = IntakeService(repo, turns, graph, store)

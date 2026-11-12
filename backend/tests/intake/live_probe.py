@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from app.config import Settings
 from app.intake.contracts import Attachment, ImageInput
 from app.intake.evidence import merge_analysis
-from app.intake.model import ModelBudget, OpenRouterIntakeModel, _analysis_prompt
+from app.intake.model import IntakeModel, ModelBudget, _analysis_prompt
 from app.intake.policy import assess_readiness, choose_question
 from app.intake.review import build_review
 from app.taxonomy import load_taxonomy
@@ -23,7 +23,7 @@ from tests.intake.helpers import context, message
 
 async def main():
     settings = Settings()
-    model = OpenRouterIntakeModel(settings)
+    model = IntakeModel(settings)
     for readable in (True, False):
         image = Image.new("RGB", (900, 340), "white")
         draw = ImageDraw.Draw(image)

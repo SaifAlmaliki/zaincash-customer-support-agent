@@ -1,8 +1,9 @@
-"""Bounded multimodal intake adapter. It does not bind transaction or knowledge tools."""
+"""Bounded multimodal intake adapter over the configured provider. No transaction or knowledge tools."""
 from __future__ import annotations
 
 import asyncio
 import base64
+import json
 import time
 from pathlib import Path
 
@@ -22,6 +23,9 @@ from app.intake.errors import InvalidEvidence, ModelUnavailable
 from app.intake.evidence import merge_analysis
 from app.intake.policy import material_keys
 from app.intake.review import validate_review_numbers
+from app.models_config.providers.registry import ProviderRegistry
+from app.models_config.steps import env_defaults, intake_timeout_s
+from app.models_config.types import ModelChoice, Step
 
 _PROMPTS = Path(__file__).with_name("prompts")
 _INTAKE_PROMPT = (_PROMPTS / "intake_v1.md").read_text(encoding="utf-8")
@@ -30,11 +34,12 @@ _PROMPT_LIMIT = 24_000
 
 
 class ModelBudget:
-    def __init__(self, timeout_s: float, max_requests: int) -> None:
+    def __init__(self, timeout_s: float, max_requests: int, choice: ModelChoice | None = None) -> None:
         self.max_requests = max_requests
         self.deadline = time.monotonic() + timeout_s
         self.used = 0
         self.trace: list[dict] = []
+        self.choice = choice
 
     def remaining_s(self) -> float:
         return self.deadline - time.monotonic()
@@ -45,11 +50,13 @@ class ModelBudget:
         self.used += 1
 
 
-class OpenRouterIntakeModel:
-    def __init__(self, settings: Settings, *, runnable_factory=None) -> None:
+class IntakeModel:
+    def __init__(self, settings: Settings, *, registry: ProviderRegistry | None = None,
+                 runnable_factory=None) -> None:
         self.settings = settings
+        self._registry = registry or ProviderRegistry(settings)
         self._runnable_factory = runnable_factory
-        self._cache: dict[type, object] = {}
+        self._cache: dict[tuple, object] = {}
 
     async def analyze(self, context: TurnContext, images: list[ImageInput], budget: ModelBudget) -> ModelCall:
         system, blocks = _analysis_prompt(context, images)
@@ -64,21 +71,21 @@ class OpenRouterIntakeModel:
                 raise InvalidEvidence("Include all required_fact_keys, even when their values are unknown.")
         return await self._invoke(ReviewText, system, blocks, budget, validate=validate)
 
-    def _runnable(self, schema: type):
+    def _choice(self, budget: ModelBudget) -> ModelChoice:
+        return budget.choice or env_defaults(self.settings)[Step.INTAKE]
+
+    def _runnable(self, schema: type, budget: ModelBudget):
         if self._runnable_factory is not None:
             return self._runnable_factory(schema)
-        if schema not in self._cache:
-            from langchain_openrouter import ChatOpenRouter
-
-            chat = ChatOpenRouter(
-                model=self.settings.intake_model or self.settings.gemini_model,
-                api_key=self.settings.openrouter_api_key,
-                timeout=int(self.settings.intake_timeout_s * 1000),
-                max_retries=0,
-                model_kwargs={"retries": None},
-            )
-            self._cache[schema] = chat.with_structured_output(schema, method="json_schema", include_raw=True)
-        return self._cache[schema]
+        choice = self._choice(budget)
+        key = (schema, choice.provider, choice.model, json.dumps(choice.options, sort_keys=True))
+        if key not in self._cache:
+            provider = self._registry.get(choice.provider)
+            chat = provider.chat_model(choice.model, temperature=choice.options.get("temperature"),
+                                       timeout_s=intake_timeout_s(self.settings, provider.locality),
+                                       options=choice.options)
+            self._cache[key] = chat.with_structured_output(schema, method="json_schema", include_raw=True)
+        return self._cache[key]
 
     async def _invoke(self, schema: type, system: str, blocks: list[dict], budget: ModelBudget, *, validate=None) -> ModelCall:
         repaired = False
@@ -88,17 +95,17 @@ class OpenRouterIntakeModel:
             started = time.monotonic()
             try:
                 async with asyncio.timeout(budget.remaining_s()):
-                    result = await self._runnable(schema).ainvoke([
+                    result = await self._runnable(schema, budget).ainvoke([
                         SystemMessage(content=system), HumanMessage(content=blocks),
                     ])
             except ModelUnavailable:
                 raise
             except Exception as exc:
-                _record(budget, self._model_name(), exc, None, started)
+                _record(budget, self._model_name(budget), exc, None, started)
                 if _transient(exc) and budget.used < budget.max_requests and budget.remaining_s() > 0:
                     continue
                 raise ModelUnavailable("The assistant is temporarily unavailable.", trace=budget.trace) from exc
-            _record(budget, self._model_name(), None, result, started)
+            _record(budget, self._model_name(budget), None, result, started)
             parsed = result.get("parsed") if isinstance(result, dict) else None
             try:
                 if not isinstance(parsed, schema):
@@ -117,8 +124,8 @@ class OpenRouterIntakeModel:
                 raise ModelUnavailable("The assistant returned an unusable response.", trace=budget.trace) from exc
             return ModelCall(parsed, list(budget.trace[trace_start:]))
 
-    def _model_name(self) -> str:
-        return self.settings.intake_model or self.settings.gemini_model
+    def _model_name(self, budget: ModelBudget) -> str:
+        return self._choice(budget).model
 
 
 def _transient(exc: Exception) -> bool:

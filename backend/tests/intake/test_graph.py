@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage
 
 from app.intake.contracts import Analysis, EvidenceRef, Fact
 from app.intake.errors import ModelUnavailable
-from app.intake.model import OpenRouterIntakeModel
+from app.intake.model import IntakeModel
 from tests.intake.helpers import fact
 from tests.intake.test_attachments import png_bytes
 
@@ -33,7 +33,7 @@ def test_validation_failure_retains_usage_audit(intake_client):
             )}
 
     app = intake_client.app
-    app.state.intake.graph.model = OpenRouterIntakeModel(app.state.settings, runnable_factory=lambda schema: Ungrounded())
+    app.state.intake.graph.model = IntakeModel(app.state.settings, runnable_factory=lambda schema: Ungrounded())
     owner, view = app.state.intake.repo.create("en")
     response = intake_client.post(f"/api/intake/sessions/{owner.session_id}/messages", headers={"Authorization": f"Bearer {owner.token}"}, json={
         "request_id": str(uuid4()), "expected_revision": view.revision, "text": "Help", "language": "en", "attachment_ids": [],

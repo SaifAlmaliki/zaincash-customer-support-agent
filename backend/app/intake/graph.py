@@ -1,25 +1,30 @@
 """One customer turn: interpret, merge evidence, then ask or prepare a review."""
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable
 from dataclasses import replace
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from langgraph.graph import END, StateGraph
 
 from app.intake.contracts import QuestionRecord, TurnContext, TurnResult
-from app.intake.errors import IntakeError, InvalidEvidence
+from app.intake.errors import IntakeError, InvalidEvidence, ModelUnavailable
 from app.intake.evidence import merge_analysis
 from app.intake.model import ModelBudget
 from app.intake.policy import assess_readiness, choose_question
 from app.intake.review import build_review
+from app.models_config.types import ModelChoice
 
 
 class IntakeGraph:
-    def __init__(self, model, taxonomy, store, settings) -> None:
+    def __init__(self, model, taxonomy, store, settings, *,
+                 choice_for: Callable[[UUID], tuple[ModelChoice, float]] | None = None) -> None:
         self.model = model
         self.taxonomy = taxonomy
         self.store = store
         self.settings = settings
+        self.choice_for = choice_for
         graph = StateGraph(dict)
         graph.add_node("analyze", self._analyze)
         graph.add_node("merge", self._merge)
@@ -33,7 +38,7 @@ class IntakeGraph:
         self._compiled = graph.compile()
 
     async def advance(self, context: TurnContext) -> TurnResult:
-        budget = self._budget()
+        budget = await self._budget(context)
         try:
             outcome = await self._compiled.ainvoke({
                 "context": context,
@@ -47,7 +52,7 @@ class IntakeGraph:
         return TurnResult(outcome["state"], outcome.get("assistant_text"), outcome.get("review"), outcome.get("trace", []))
 
     async def review(self, context: TurnContext, *, allow_partial: bool, language: str) -> TurnResult:
-        budget = self._budget()
+        budget = await self._budget(context)
         try:
             return await self._review_current(context, allow_partial=allow_partial, language=language, budget=budget)
         except IntakeError as exc:
@@ -78,8 +83,15 @@ class IntakeGraph:
         )
         return TurnResult(state, _invitation(language), snapshot, [*trace, *call.trace])
 
-    def _budget(self) -> ModelBudget:
-        return ModelBudget(self.settings.intake_timeout_s, self.settings.intake_max_model_requests)
+    async def _budget(self, context: TurnContext) -> ModelBudget:
+        timeout, choice = self.settings.intake_timeout_s, None
+        if self.choice_for is not None:
+            try:
+                choice, timeout = await asyncio.to_thread(self.choice_for, context.session_id)
+            except Exception as exc:
+                # Never fall back to a different provider for a customer conversation.
+                raise ModelUnavailable("The assistant is temporarily unavailable.", trace=[]) from exc
+        return ModelBudget(timeout, self.settings.intake_max_model_requests, choice=choice)
 
     def _images(self, context: TurnContext, messages: list):
         wanted = {attachment_id for message in messages for attachment_id in message.attachment_ids}
