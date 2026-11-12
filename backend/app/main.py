@@ -11,12 +11,13 @@ from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from starlette.concurrency import run_in_threadpool
 
-from app.api import intake, knowledge, results, runs, workspace
+from app.api import admin, intake, knowledge, results, runs, workspace
 from app.config import Settings
 from app.db.models import RunRow
 from app.db.session import initialize_database, make_engine, make_sessionmaker
 from app.intake.errors import IntakeError
 from app.intake.submission import SubmissionService
+from app.models_config.catalog import CatalogCache
 from app.models_config.store import ModelSettingsStore
 from app.pipeline.factory import build_pipeline
 from app.services.intake_recovery import (
@@ -48,6 +49,7 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
         model_store = ModelSettingsStore(app.state.session_factory, settings, model_registry)
         await run_in_threadpool(model_store.load)
         app.state.model_store = model_store
+        app.state.catalog = CatalogCache(model_store.registry)
         intake_service = (intake_builder or partial(make_intake_service, model_store=model_store))(
             app.state.session_factory, settings, app.state.taxonomy)
         app.state.intake = intake_service
@@ -111,7 +113,7 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
         }.get(error.code, 400)
         return JSONResponse(status_code=status, content={"detail": {"code": error.code, "message": error.message}})
 
-    for router in (workspace.router, results.router, runs.router, knowledge.router, intake.router):
+    for router in (workspace.router, results.router, runs.router, knowledge.router, intake.router, admin.router):
         app.include_router(router)
     return app
 
