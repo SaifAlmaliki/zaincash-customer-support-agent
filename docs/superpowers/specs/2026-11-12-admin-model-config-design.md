@@ -1,7 +1,7 @@
 # Admin-managed, model-agnostic pipeline configuration — design specification
 
 - **Date:** 2026-11-12
-- **Status:** Design approved in conversation on 2026-11-12; written specification awaiting user review
+- **Status:** Written specification approved by the user on 2026-11-12. Revised the same day during planning: the embedding switch became a short guarded pause (section 4.8), with user approval, because the KB schema holds one index per document.
 - **Repository state at design:** `e173dfb` on `main`
 - **Scope:** Backend model/provider layer, admin API, employee-frontend admin page, local model (Ollama) support, setup documentation
 
@@ -14,7 +14,7 @@ Success means:
 1. An admin can change the provider and model of every pipeline step — intake, classify (Jev), extract, draft, embed — from the employee workspace, without restarting the API.
 2. OpenRouter and Ollama are both supported for chat steps and embeddings. Adding another provider later means adding one adapter, not touching pipeline code.
 3. The admin only sees models that can perform each step, and a model cannot be saved unless a live test of that step passes on the server.
-4. Changing the embedding model never leaves knowledge search empty: documents are re-indexed with the new model before the switch takes effect.
+4. Changing the embedding model never lets a workspace batch draft against a half-built index: the switch re-indexes every document, and workspace batch starts are blocked until it finishes.
 5. A run or intake session uses one consistent set of models from start to finish, and each run records which provider and model each step used.
 6. When a configured provider is unavailable, the step fails visibly. The system never silently falls back to a different (for example, cloud) provider.
 7. With no admin changes saved, behavior is identical to today (all values come from `.env`).
@@ -29,6 +29,8 @@ Findings from the code at `e173dfb`:
   - `backend/app/pipeline/factory.py` → `stage6_draft/model.py` (`DraftChatOpenRouter`, RAG drafting agent with eight tools),
   - `backend/app/intake/model.py` (`OpenRouterIntakeModel`, multimodal structured output).
 - Embeddings are a raw `httpx` POST to a hardcoded OpenRouter URL (`backend/app/kb/embeddings.py`). The vector column is fixed at 768 dimensions (`kb/models.py`). Each chunk and document index already stores `embedding_model`, and search filters by it.
+- `kb_document_indexes` holds **one row per document** (primary key `document_id`), and publishing an index deletes all of that document's chunks first (`kb/service.py` `_publish`). Chunk IDs and the `(document_id, chunk_index)` unique constraint do not include the model. Two embedding models' indexes of the same document therefore cannot coexist.
+- `KnowledgeService._metadata` requires `embedder.model == settings.embedding_model`, and `api/workspace.py` health counts indexed documents by `settings.embedding_model`.
 - Jev classification uses `langchain_typesafe.TypeSafeClassifier`. TypeSafe exposes no model-listing endpoint.
 - Model IDs come only from `Settings` (`backend/app/config.py`) and are fixed at API start. `RunRow.model_ids` records models per run.
 - OpenRouter-specific behavior is spread across the code: `model_kwargs={"retries": None}`, the private `_create_usage_metadata` import, `OpenRouterError` handling in `stage6_draft/agent.py`, cost from `response_metadata["cost"]`, prices chosen by whether `anthropic_model` is set, and feature availability derived from `bool(settings.openrouter_api_key)` (`factory.py`, `services/knowledge_runtime.py`).
@@ -126,8 +128,10 @@ New SQLAlchemy models registered before `create_all`:
 | --- | --- | --- |
 | `id` | bigint primary key | |
 | `target` | JSONB | The new embedding `ModelChoice` |
-| `status` | string | `running`, `completed`, `failed`, `cancelled` |
+| `previous` | JSONB | The embedding `ModelChoice` before the switch |
+| `status` | string | `running`, `completed`, `completed_with_errors`, `failed` |
 | `total`, `done` | integer | Documents |
+| `failed_document_ids` | JSONB list of integers | |
 | `error` | text, nullable | |
 | `started_by`, `started_at`, `finished_at` | | |
 
@@ -166,16 +170,26 @@ Tests have a 60-second ceiling and use the same construction path as production 
 
 `agent_timeout_s` keeps its 30-second cap for cloud providers. A new setting `local_agent_timeout_s` (default 180, maximum 600) applies when the draft provider is local. `intake_timeout_s` gets a matching `local_intake_timeout_s`. The admin page shows a warning that local models are slower.
 
-### 4.8 Staged embedding switch
+### 4.8 Embedding switch (short pause)
+
+The KB schema allows one index per document (section 2), so the switch is a short, guarded pause rather than a shadow index. The KB tables are not changed.
 
 1. The admin picks a new embedding model; it must pass the embed test.
-2. `POST /api/admin/models/embed/switch` creates an `embedding_switch` row and starts a background task.
-3. The task re-indexes every knowledge document with the new embedder, writing chunks tagged with the new `embedding_model`. Search keeps using the current model.
-4. When all documents succeed, `model_settings` for `embed` is updated in the same transaction that marks the job `completed`, and an audit row is written.
-5. On failure the job is marked `failed` with the error, and the active model is unchanged. Chunks from the new model stay in the database and are reused if the switch is retried.
-6. Chunks from models that are no longer active are not deleted automatically (this keeps switching back cheap).
+2. `POST /api/admin/models/embed/switch` is refused with `409` if any run has status `running` or another switch is `running`.
+3. Otherwise, in one transaction: create an `embedding_switch` row (`running`, `total` = number of knowledge documents), update `model_settings` for `embed`, and write an audit row. From this point the KB embedder (4.9) uses the new model.
+4. A background task re-indexes every document sequentially through the existing `KnowledgeService.index_document`, incrementing `done` after each one and recording failed document IDs.
+5. When every document has been attempted, the job becomes `completed`, or `completed_with_errors` with `failed_document_ids`. Failed documents can be re-indexed from the existing Knowledge page.
+6. While a switch is `running`, `POST /api/runs` returns `409 {"detail": "knowledge_switch_in_progress"}`. Intake-dispatched runs are **not** blocked, so customers notice nothing; their drafts get no KB results during the window and route to human review with the existing `no_kb_support` reason.
+7. There is no cancel. Switching back is another switch.
+8. On API startup, a switch left `running` is marked `failed` with "API restarted during switch; run the switch again" (the setting already points to the new model, so re-running re-indexes the remaining documents).
 
-Documents uploaded while a switch is running are indexed with both models.
+### 4.9 Runtime embedder
+
+`KnowledgeService` is long-lived (`app.state.knowledge`), so it receives a `ConfiguredEmbedder` that implements the existing `Embedder` interface and, on every call, resolves the current `embed` choice through the store and delegates to that provider's embedder. Its `model` property returns the current model ID.
+
+- `KnowledgeService._metadata` checks `embedder.dimensions == 768` and returns `(embedder.model, embedder.dimensions)`; it no longer compares against `settings.embedding_model`.
+- `api/workspace.py` health and the draft trace's `embedding_model` use the current embed choice instead of `settings.embedding_model`.
+- The existing "embedding model changed during indexing/search" checks remain and protect against a switch landing mid-operation.
 
 ## 5. Admin API
 
@@ -190,9 +204,8 @@ All routes live under `/api/admin`, in a new router `backend/app/api/admin.py`.
 | `GET /api/admin/models/catalog?step=<step>&refresh=<bool>` | For each provider: status and the entries that meet the step's requirements, plus "unknown" entries |
 | `POST /api/admin/models/test` | Body `{step, provider, model, options}` → `{ok, latency_ms, error?}` |
 | `PUT /api/admin/models/{step}` | Body `{provider, model, options, changed_by}`. Runs the live test on the server; saves and audits only on success. Returns `422` with the test error otherwise. Not allowed for `embed` (use the switch). |
-| `POST /api/admin/models/embed/switch` | Body `{provider, model, options, changed_by}` → the `embedding_switch` row (`409` if one is already running) |
-| `GET /api/admin/models/embed/switch` | Current or most recent switch job |
-| `DELETE /api/admin/models/embed/switch` | Cancels a running switch |
+| `POST /api/admin/models/embed/switch` | Body `{provider, model, options, changed_by}`. Runs the live test, then starts the switch (4.8) and returns the `embedding_switch` row. `409` if a run or another switch is running; `422` if the test fails. |
+| `GET /api/admin/models/embed/switch` | Current or most recent switch job, or `null` |
 | `GET /api/admin/models/audit?limit=50` | Recent audit rows |
 
 `GET /api/health` (public) gains `ai: {locality: "local" | "cloud" | "mixed", steps: {<step>: {provider, model, locality, status}}}`. Model IDs are not secret; keys and URLs are never included.
@@ -220,7 +233,9 @@ Below the cards, `AuditList.tsx` shows recent changes.
 2. A searchable list of eligible models, with capability chips (tools, vision, thinking, embedding), price per million tokens, and "unknown capabilities" marking where applicable. Classify shows a text field for the Jev version instead.
 3. Options: temperature, and thinking on/off when supported.
 4. **Test** shows pass/fail, latency, and the error. **Save** is enabled only after a passing test of the exact current selection; any change to provider, model, or options requires a new test.
-5. For embed, the action is **Re-index and switch**. The card then shows progress (`done/total`), polling the switch endpoint every 2 seconds, with a Cancel button.
+5. For embed, the action is **Re-index and switch**, behind a confirmation that explains: knowledge search pauses for the duration, new workspace batches are blocked until it finishes, and it cannot start while a batch is running. The card then shows progress (`done/total`), polling the switch endpoint every 2 seconds, and the final status with any failed documents.
+
+`NewBatchPage` shows the `knowledge_switch_in_progress` error from `POST /api/runs` as a readable message.
 
 ### 6.4 Visible to all employees
 
@@ -243,6 +258,9 @@ All new strings go in `src/locales/en.json` and `src/locales/ar.json`. Layout wo
 | Catalog fetch fails | That provider's tab shows the error; other providers still work |
 | Live test fails on save | `422` with the provider error; nothing is saved |
 | Two admins save the same step | Last write wins; both are audited |
+| Workspace batch started during an embedding switch | `409 knowledge_switch_in_progress`; the page explains why |
+| Embedding switch requested while a run is running | `409`; nothing changes |
+| Some documents fail to re-index during a switch | Job ends `completed_with_errors` listing them; the rest use the new model |
 
 No step ever switches to another provider automatically.
 
@@ -265,7 +283,7 @@ Note: Jev (TypeSafe) always runs in the cloud, so "fully offline" is not possibl
 - `test_resolver.py`: snapshot behavior; `model_ids` format; provider errors and cost come from the right adapter.
 - `test_probe.py`: each step's test passes and fails correctly with fake chat models (`tests/rag_fakes.py` `ScriptedChat`, `tests/fakes.py`).
 - `tests/api/test_admin.py`: `403` when disabled, `401` on a bad token, test-before-save, `422` on failed test, `PUT embed` rejected, audit listing.
-- `test_embedding_switch.py` (marked `integration`, Postgres): staged switch completes and flips the setting; failure leaves the active model unchanged; search uses the old model while running.
+- `test_embedding_switch.py` (marked `integration`, Postgres): refused while a run is running; setting flips and every document is re-indexed with the new model; a failing document yields `completed_with_errors` with its ID; `POST /api/runs` returns `409` while running; startup marks a leftover `running` switch `failed`.
 - Existing tests in `test_factory.py`, `test_llm.py`, `test_draft_model.py`, `test_rag_drafter.py`, `tests/intake/test_model.py` are updated to the new construction path and keep their assertions on OpenRouter request shape.
 - `tests/test_health.py` (or the existing health test): `ai.locality` values.
 
@@ -290,4 +308,5 @@ Note: Jev (TypeSafe) always runs in the cloud, so "fully offline" is not possibl
 - Providers other than OpenRouter, Ollama, and TypeSafe (the adapter protocol allows them later).
 - Editing Jev thresholds (`T_JEV`, `JEV_MIN_TOP_PROB`) in the UI.
 - Fully offline classification.
-- Automatic deletion of chunks from inactive embedding models.
+- Zero-downtime embedding switches (would require one KB index per document per model).
+- Cancelling an embedding switch.
