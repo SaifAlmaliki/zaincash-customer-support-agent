@@ -74,6 +74,7 @@ export function ChangeModelDialog({
     options: buildOptions(tunable ? temperature : "", thinking ? think : null),
   }
   const temperatureOk = isValidTemperature(temperature)
+  const savable = canSave(choice, tested, tunable ? temperature : "")
   const visible = useMemo(() => filterModels(current?.entries ?? [], query), [current, query])
   const result = tested && tested.key === choiceKey(choice) ? tested.result : null
 
@@ -92,7 +93,7 @@ export function ChangeModelDialog({
   }
 
   async function save() {
-    if (!canSave(choice, tested) || busy) return
+    if (!savable || busy) return
     setBusy("save")
     setError("")
     try {
@@ -200,7 +201,7 @@ export function ChangeModelDialog({
           </Button>
           <Button
             onClick={() => (step.step === "embed" ? setConfirm(true) : void save())}
-            disabled={!canSave(choice, tested) || busy !== null}
+            disabled={!savable || busy !== null}
           >
             {busy === "save" ? text.saving : step.step === "embed" ? text.reindex : text.save}
           </Button>

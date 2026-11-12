@@ -22,13 +22,20 @@ const provider = (over: Partial<CatalogProvider> = {}): CatalogProvider => ({
 
 it("enables saving only after a passing test of the exact selection", () => {
   const tested = { key: choiceKey(choice), result: { ok: true, latency_ms: 900, error: null } }
-  expect(canSave(choice, tested)).toBe(true)
-  expect(canSave({ ...choice, options: { think: true } }, tested)).toBe(false)
-  expect(canSave({ ...choice, options: { think: false, temperature: 0.2 } }, tested)).toBe(false)
-  expect(canSave({ ...choice, model: "qwen3:8b" }, tested)).toBe(false)
-  expect(canSave(choice, { ...tested, result: { ok: false, latency_ms: 5, error: "x" } })).toBe(false)
-  expect(canSave(choice, null)).toBe(false)
-  expect(canSave({ ...choice, model: "  " }, { ...tested, key: choiceKey({ ...choice, model: "  " }) })).toBe(false)
+  expect(canSave(choice, tested, "")).toBe(true)
+  expect(canSave({ ...choice, options: { think: true } }, tested, "")).toBe(false)
+  expect(canSave({ ...choice, options: { think: false, temperature: 0.2 } }, tested, "0.2")).toBe(false)
+  expect(canSave({ ...choice, model: "qwen3:8b" }, tested, "")).toBe(false)
+  expect(canSave(choice, { ...tested, result: { ok: false, latency_ms: 5, error: "x" } }, "")).toBe(false)
+  expect(canSave(choice, null, "")).toBe(false)
+  expect(canSave({ ...choice, model: "  " }, { ...tested, key: choiceKey({ ...choice, model: "  " }) }, "")).toBe(false)
+})
+
+it("blocks saving while the temperature field is invalid", () => {
+  const tested = { key: choiceKey(choice), result: { ok: true, latency_ms: 900, error: null } }
+  expect(canSave(choice, tested, "")).toBe(true)
+  expect(canSave(choice, tested, "5")).toBe(false)
+  expect(canSave(choice, tested, "abc")).toBe(false)
 })
 
 it("builds options from form values and validates temperature", () => {

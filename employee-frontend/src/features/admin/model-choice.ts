@@ -25,8 +25,14 @@ export function buildOptions(temperature: string, think: boolean | null): ModelO
   return options
 }
 
-export function canSave(choice: ModelChoiceInput, tested: TestedChoice | null) {
-  return choice.model.trim() !== "" && tested !== null && tested.result.ok && tested.key === choiceKey(choice)
+export function canSave(choice: ModelChoiceInput, tested: TestedChoice | null, temperature: string) {
+  return (
+    choice.model.trim() !== "" &&
+    isValidTemperature(temperature) &&
+    tested !== null &&
+    tested.result.ok &&
+    tested.key === choiceKey(choice)
+  )
 }
 
 export function filterModels(entries: CatalogModel[], query: string) {
