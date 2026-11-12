@@ -40,6 +40,11 @@ const EvaluationPage = lazy(() =>
     default: module.EvaluationPage,
   }))
 )
+const ModelsPage = lazy(() =>
+  import("@/features/admin/ModelsPage").then((module) => ({
+    default: module.ModelsPage,
+  }))
+)
 
 export default function App() {
   return (
@@ -56,6 +61,7 @@ export default function App() {
               <Route path="knowledge" element={<KnowledgePage />} />
               <Route path="insights" element={<InsightsPage />} />
               <Route path="evaluation" element={<EvaluationPage />} />
+              <Route path="admin/models" element={<ModelsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

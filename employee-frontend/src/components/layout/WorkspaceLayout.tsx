@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   CircleHelp,
   ArrowUpRight,
+  SlidersHorizontal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -36,13 +37,15 @@ const navigation = [
   { to: "/evaluation", key: "evaluation", icon: FlaskConical },
 ] as const
 
+const adminNavigation = [{ to: "/admin/models", key: "models", icon: SlidersHorizontal }] as const
+
 export function WorkspaceLayout() {
   const workspace = useWorkspace()
   const copy = useCopy()
   const [menu, setMenu] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const current = navigation.find(
+  const current = [...navigation, ...adminNavigation].find(
     (item) => item.to !== "/" && location.pathname.startsWith(item.to)
   )
   const section = current ? copy.nav[current.key] : copy.nav.queue
@@ -98,6 +101,20 @@ export function WorkspaceLayout() {
               className={({ isActive }) =>
                 `nav-item ${isActive ? "nav-active" : ""}`
               }
+            >
+              <item.icon size={18} strokeWidth={1.7} />
+              <span>{copy.nav[item.key]}</span>
+            </NavLink>
+          ))}
+        </nav>
+        <div className="nav-section-label">{copy.layout.adminSection}</div>
+        <nav aria-label={copy.layout.adminSection}>
+          {adminNavigation.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setMenu(false)}
+              className={({ isActive }) => `nav-item ${isActive ? "nav-active" : ""}`}
             >
               <item.icon size={18} strokeWidth={1.7} />
               <span>{copy.nav[item.key]}</span>

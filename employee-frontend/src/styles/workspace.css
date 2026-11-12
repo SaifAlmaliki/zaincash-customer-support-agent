@@ -2781,3 +2781,51 @@ html[dir="rtl"] .workspace-toast {
   color: var(--green);
   font-size: 13px;
 }
+
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.model-current {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0;
+}
+.model-status {
+  font-size: 12px;
+}
+.model-status.status-ready {
+  color: var(--green);
+}
+.model-status.status-missing_key,
+.model-status.status-unreachable {
+  color: var(--destructive);
+}
+.admin-unlock {
+  max-width: 460px;
+}
+.admin-unlock-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.switch-card,
+.audit-card {
+  margin-bottom: 20px;
+}
+.audit-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.audit-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+}
