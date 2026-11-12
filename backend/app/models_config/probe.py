@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from app.models_config.providers.base import Provider
 from app.models_config.providers.registry import ProviderRegistry
-from app.models_config.steps import EMBED_DIMENSIONS, PROVIDERS_FOR_STEP
+from app.models_config.steps import DEFAULT_TEMPERATURE, EMBED_DIMENSIONS, PROVIDERS_FOR_STEP
 from app.models_config.types import ModelChoice, ProbeResult, Step
 
 PROBE_TIMEOUT_S = 60.0
@@ -37,13 +37,14 @@ def _scrub(text: str) -> str:
     return _SECRET.sub("<redacted>", _URL.sub("<url>", text))[:300]
 
 
-def _chat(provider: Provider, choice: ModelChoice):
-    return provider.chat_model(choice.model, temperature=choice.options.get("temperature"),
+def _chat(provider: Provider, choice: ModelChoice, step: Step):
+    temperature = choice.options.get("temperature", DEFAULT_TEMPERATURE.get(step))
+    return provider.chat_model(choice.model, temperature=temperature,
                                timeout_s=PROBE_TIMEOUT_S, options=choice.options)
 
 
-async def _structured(provider: Provider, choice: ModelChoice, *, image: bool) -> str | None:
-    runnable = _chat(provider, choice).with_structured_output(_ProbeAnswer, method="json_schema", include_raw=True)
+async def _structured(provider: Provider, choice: ModelChoice, step: Step, *, image: bool) -> str | None:
+    runnable = _chat(provider, choice, step).with_structured_output(_ProbeAnswer, method="json_schema", include_raw=True)
     content: list[dict] = [{"type": "text", "text": 'Return JSON with the field "word" set to "ok".'}]
     if image:
         content.append({"type": "image_url", "image_url": {"url": _PIXEL}})
@@ -55,15 +56,15 @@ async def _structured(provider: Provider, choice: ModelChoice, *, image: bool) -
 
 
 async def _intake(provider: Provider, choice: ModelChoice) -> str | None:
-    return await _structured(provider, choice, image=True)
+    return await _structured(provider, choice, Step.INTAKE, image=True)
 
 
 async def _extract(provider: Provider, choice: ModelChoice) -> str | None:
-    return await _structured(provider, choice, image=False)
+    return await _structured(provider, choice, Step.EXTRACT, image=False)
 
 
 async def _draft(provider: Provider, choice: ModelChoice) -> str | None:
-    chat = _chat(provider, choice).bind_tools([record_number])
+    chat = _chat(provider, choice, Step.DRAFT).bind_tools([record_number])
     message = await chat.ainvoke([HumanMessage(
         content="Call the record_number tool with number 7. Do not answer in text.")])
     for item in getattr(message, "tool_calls", None) or []:

@@ -38,6 +38,19 @@ async def test_draft_probe_requires_a_correct_tool_call():
     assert not result.ok and "tool" in result.error
 
 
+async def test_probes_use_the_production_default_temperature_unless_overridden():
+    draft = FakeProvider("ollama", locality="local",
+                         chat=ScriptedChat(steps=[answer(call("record_number", number=7))] * 2))
+    await probe(Step.DRAFT, ModelChoice("ollama", "qwen3:4b"), _registry(ollama=draft))
+    await probe(Step.DRAFT, ModelChoice("ollama", "qwen3:4b", {"temperature": 0.5}), _registry(ollama=draft))
+    assert [call_["temperature"] for call_ in draft.chat_calls] == [0.1, 0.5]
+    extract = FakeProvider("openrouter", chat=StructuredChat())
+    await probe(Step.EXTRACT, ModelChoice("openrouter", "m"), _registry(openrouter=extract))
+    intake = FakeProvider("openrouter", chat=StructuredChat())
+    await probe(Step.INTAKE, ModelChoice("openrouter", "m"), _registry(openrouter=intake))
+    assert extract.chat_calls[0]["temperature"] == 0.0 and intake.chat_calls[0]["temperature"] is None
+
+
 async def test_intake_probe_sends_an_image_and_needs_parsed_output():
     chat = StructuredChat()
     result = await probe(Step.INTAKE, ModelChoice("openrouter", "m"), _registry(openrouter=FakeProvider("openrouter", chat=chat)))
