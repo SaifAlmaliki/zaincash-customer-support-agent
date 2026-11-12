@@ -72,7 +72,12 @@ New package `backend/app/models_config/`:
 | `probe.py` | Per-step live tests (see 4.5) |
 | `catalog.py` | Per-provider catalog cache (5 minutes, manual refresh) and filtering by step requirements |
 
-The pipeline and intake depend only on `ActiveModels`. No code outside `providers/` imports `langchain_openrouter`, `openrouter`, `langchain_ollama`, or `langchain_typesafe`.
+The pipeline and intake depend only on `ActiveModels`. No code outside `providers/` imports `langchain_openrouter`, `openrouter`, or `langchain_ollama`, and only `providers/` constructs provider clients. The classify stage (`jev.py`, `credentials.py`) and the classify probe keep importing `langchain_typesafe` question types (`Noul`, `Choice`, `Score`), because the classify step is TypeSafe-only.
+
+Implementation notes fixed during planning:
+- Ollama embeddings use Ollama's OpenAI-compatible `/v1/embeddings` endpoint through the existing validated embedder (generalized as `OpenAICompatibleEmbedder`), not `OllamaEmbeddings`. Behavior is the same and the existing vector validation is reused.
+- Cost keeps coming from `response_metadata["cost"]` when a provider reports it (OpenRouter) and otherwise from `ActiveModels.token_prices(step)` (zero for local providers), so the protocol needs no `response_cost` method.
+- Every model picker also accepts a typed model ID, gated by the same live test. This covers Jev (no catalog) and OpenRouter embeddings if its listing is unavailable.
 
 ### 4.2 Provider protocol
 
