@@ -4,6 +4,7 @@ import json
 
 import httpx
 import pytest
+from ollama import ResponseError
 
 from app.config import Settings
 from app.kb.embeddings import EmbeddingError
@@ -131,6 +132,22 @@ async def test_search_failure_cost_is_owned_by_tools_only(error):
     result = await agent.draft(draft_state())
     assert result.reasons == ("kb_unavailable",)
     assert result.cost_usd == pytest.approx(0.03)
+
+
+async def test_transient_ollama_error_is_retried_then_draft_succeeds():
+    agent, model = drafter([ResponseError("unavailable", 503), *script()])
+    result = await agent.draft(draft_state())
+    assert result.text == REPLY and result.reasons == ()
+    assert model.calls == 3
+
+
+@pytest.mark.parametrize("error", [ResponseError("model not found", 404), ConnectionError("refused")],
+                         ids=["ollama-404", "connection-refused"])
+async def test_permanent_provider_errors_are_not_retried(error):
+    agent, model = drafter([error])
+    result = await agent.draft(draft_state())
+    assert "llm_unavailable" in result.reasons
+    assert model.calls == 1
 
 
 async def test_model_failure_retains_earlier_response_cost_and_sources():
