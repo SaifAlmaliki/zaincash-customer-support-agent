@@ -29,6 +29,9 @@ def get_run(run_id: int, session: SessionDep):
 
 @router.post("", status_code=202)
 def start_run(batch: BatchInput, background: BackgroundTasks, request: Request, session: SessionDep):
+    switches = getattr(request.app.state, "embedding_switches", None)
+    if switches is not None and switches.running():
+        raise HTTPException(409, "knowledge_switch_in_progress")
     models = request.app.state.model_store.active()
     if not request.app.state.testing_pipeline:
         missing = []

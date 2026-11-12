@@ -4,11 +4,21 @@ from __future__ import annotations
 import hmac
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.concurrency import run_in_threadpool
 
 from app.models_config.catalog import step_catalog
+from app.models_config.embedding_switch import SwitchConflict
 from app.models_config.probe import probe
 from app.models_config.steps import PROVIDERS_FOR_STEP
 from app.models_config.types import ModelChoice, Step
@@ -102,6 +112,26 @@ async def save_model(request: Request, step: Step, body: SaveInput):
                                                latency_ms=result.latency_ms))
     described = await run_in_threadpool(store.describe)
     return next(item for item in described if item["step"] == step.value)
+
+
+@router.post("/models/embed/switch", status_code=202)
+async def start_embedding_switch(request: Request, body: SaveInput, background: BackgroundTasks):
+    switches = request.app.state.embedding_switches
+    if await run_in_threadpool(switches.running):
+        raise HTTPException(409, "switch_in_progress")
+    choice, result = await _tested(request, Step.EMBED, body)
+    try:
+        view = await run_in_threadpool(lambda: switches.start(
+            choice, changed_by=body.changed_by.strip(), latency_ms=result.latency_ms))
+    except SwitchConflict as exc:
+        raise HTTPException(409, exc.code) from None
+    background.add_task(switches.run, view["id"])
+    return view
+
+
+@router.get("/models/embed/switch")
+async def embedding_switch(request: Request):
+    return await run_in_threadpool(request.app.state.embedding_switches.current)
 
 
 @router.get("/models/audit")

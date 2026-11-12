@@ -18,6 +18,7 @@ from app.db.session import initialize_database, make_engine, make_sessionmaker
 from app.intake.errors import IntakeError
 from app.intake.submission import SubmissionService
 from app.models_config.catalog import CatalogCache
+from app.models_config.embedding_switch import EmbeddingSwitches
 from app.models_config.store import ModelSettingsStore
 from app.pipeline.factory import build_pipeline
 from app.services.intake_recovery import (
@@ -61,11 +62,14 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
                 app.state.session_factory, settings)
             app.state.knowledge = service
             app.state.index_jobs = IndexJobs(service)
+            app.state.embedding_switches = EmbeddingSwitches(app.state.session_factory, model_store, service)
             builder = pipeline_builder or build_pipeline
             app.state.pipeline_builder = partial(builder, knowledge=service) if _accepts(builder, "knowledge") else builder
             app.state.pipeline_accepts_models = _accepts(builder, "models")
 
             def recover():
+                if getattr(app.state, "recover_embedding_switches", True):
+                    app.state.embedding_switches.recover_interrupted()
                 # Startup-only recovery: this local application runs one worker.
                 service.recover_interrupted()
                 with app.state.session_factory() as session:
