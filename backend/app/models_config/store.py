@@ -46,6 +46,8 @@ class ModelSettingsStore:
             try:
                 step = Step(row.step)
                 self.registry.get(row.provider)
+                if row.provider not in PROVIDERS_FOR_STEP[step]:
+                    raise ValueError(f"{row.provider} is not allowed for {step.value}")
             except (ValueError, UnknownProvider):
                 logger.warning("Ignoring stored model setting %s=%s:%s", row.step, row.provider, row.model)
                 continue
@@ -124,12 +126,14 @@ class ModelSettingsStore:
                             .values(model_choice=current.to_json()))
             stored = session.scalar(select(IntakeSessionRow.model_choice)
                                     .where(IntakeSessionRow.id == session_id))
-        choice = current
-        if stored:
-            try:
-                candidate = ModelChoice.from_json(stored)
-                self.registry.get(candidate.provider)
-                choice = candidate
-            except (ValueError, UnknownProvider):
-                logger.warning("Intake session %s has an unusable pinned model", session_id)
+            choice = current
+            if stored is not None:
+                try:
+                    candidate = ModelChoice.from_json(stored)
+                    self.registry.get(candidate.provider)
+                    choice = candidate
+                except (ValueError, UnknownProvider):
+                    logger.warning("Intake session %s has an unusable pinned model; re-pinning", session_id)
+                    session.execute(update(IntakeSessionRow).where(IntakeSessionRow.id == session_id)
+                                    .values(model_choice=current.to_json()))
         return choice, intake_timeout_s(self.settings, self.registry.get(choice.provider).locality)

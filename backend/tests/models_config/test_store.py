@@ -62,8 +62,11 @@ def test_rows_for_unknown_providers_are_ignored(env):
                                     updated_at=datetime.now(UTC), updated_by="old"))
         session.add(ModelSettingRow(step="no-such-step", provider="ollama", model="x", options={},
                                     updated_at=datetime.now(UTC), updated_by="old"))
+        session.add(ModelSettingRow(step="classify", provider="openrouter", model="x", options={},
+                                    updated_at=datetime.now(UTC), updated_by="old"))
     store = _store(settings, sf)
     assert store.choice(Step.DRAFT).provider == "openrouter"
+    assert store.choice(Step.CLASSIFY).provider == "typesafe"
     assert len(store.describe()) == 5
 
 
@@ -79,3 +82,19 @@ def test_intake_pin_keeps_the_first_model_for_a_session(env):
     store.save(Step.INTAKE, ModelChoice("openrouter", "google/gemini-2.5-flash"), changed_by="Sara", latency_ms=1)
     assert store.intake_pin(session_id)[0] == first
     assert store.intake_pin(uuid.uuid4())[0] == ModelChoice("openrouter", "google/gemini-2.5-flash")
+
+
+def test_unusable_intake_pin_is_replaced_with_the_current_choice(env, caplog):
+    settings, sf = env
+    store = _store(settings, sf)
+    session_id = uuid.uuid4()
+    with sf.begin() as session:
+        session.add(IntakeSessionRow(id=session_id, token_hash="h" * 64, state={},
+                                     model_choice={"provider": "retired", "model": "x", "options": {}}))
+    choice, _timeout = store.intake_pin(session_id)
+    current = store.choice(Step.INTAKE)
+    assert choice == current
+    with sf() as session:
+        assert session.get(IntakeSessionRow, session_id).model_choice == current.to_json()
+    store.intake_pin(session_id)
+    assert len([r for r in caplog.records if "unusable pinned model" in r.getMessage()]) == 1
