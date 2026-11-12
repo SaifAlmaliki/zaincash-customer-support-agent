@@ -23,6 +23,7 @@ from app.config import Settings
 from app.kb.embeddings import EmbeddingError
 from app.kb.service import KnowledgeError, KnowledgeExecutionError, KnowledgeService
 from app.llm import LLMUnavailable
+from app.models_config.providers.openrouter_chat import DraftProviderResponseError
 from app.pipeline.contracts import DraftResult
 from app.pipeline.execution import ticket_execution
 from app.pipeline.stage6_draft.context import DraftContext, DraftToolInputError, DraftToolLimit
@@ -30,7 +31,6 @@ from app.pipeline.stage6_draft.credentials import CredentialChecker
 from app.pipeline.stage6_draft.drafting import DraftExecutionError
 from app.pipeline.stage6_draft.guardrails import check_draft
 from app.pipeline.stage6_draft.investigation import SqlInvestigationRepo
-from app.pipeline.stage6_draft.model import DraftProviderResponseError
 from app.pipeline.stage6_draft.tools import _bounded, _json, build_tools
 from app.pipeline.state import PipelineState
 

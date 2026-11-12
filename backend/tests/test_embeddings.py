@@ -395,3 +395,23 @@ def test_rag_defaults_and_environment_overrides(monkeypatch):
     assert configured.embedding_model == "provider/other" and configured.embed_dim == 768
     assert configured.kb_top_k == 10 and configured.kb_min_similarity == -1
     assert configured.price_embedding_in == 0.5
+
+async def test_keyless_compatible_embedder_omits_auth_and_dimensions():
+    from app.kb.embeddings import OpenAICompatibleEmbedder
+
+    seen = []
+
+    def respond(request):
+        seen.append(request)
+        return httpx.Response(200, json=response_payload([item(0)]))
+
+    embedder = OpenAICompatibleEmbedder(
+        model="nomic-embed-text", dimensions=768, url="http://ollama:11434/v1/embeddings",
+        send_dimensions=False, transport=httpx.MockTransport(respond),
+    )
+    batch = await embedder.embed(["سياسة"])
+    assert len(batch.vectors[0]) == 768 and batch.cost_usd == 0.0
+    assert "authorization" not in seen[0].headers
+    assert json.loads(seen[0].content) == {
+        "input": ["سياسة"], "model": "nomic-embed-text", "encoding_format": "float",
+    }

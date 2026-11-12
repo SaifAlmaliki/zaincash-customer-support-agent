@@ -50,14 +50,14 @@ def model_ids(settings: Settings) -> dict[str, str]:
 
 
 def make_draft_model(settings: Settings) -> BaseChatModel:
-    from app.pipeline.stage6_draft.model import DraftChatOpenRouter
+    from app.models_config.providers.openrouter_chat import OpenRouterChat
 
     # Same provider conventions as llm.py. The agent retries individual transient
     # requests, inside its overall deadline; the SDK must never retry on its own.
-    return DraftChatOpenRouter(model=settings.draft_model, temperature=0.1,
-                               api_key=settings.openrouter_api_key,
-                               timeout=int(settings.agent_timeout_s * 1000), max_retries=0,
-                               model_kwargs={"retries": None})
+    return OpenRouterChat(model=settings.draft_model, temperature=0.1,
+                          api_key=settings.openrouter_api_key,
+                          timeout=int(settings.agent_timeout_s * 1000), max_retries=0,
+                          model_kwargs={"retries": None})
 
 
 def build_pipeline(settings: Settings, mode: str, txn_repo: TransactionRepo, *,

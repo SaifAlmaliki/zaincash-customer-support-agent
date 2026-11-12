@@ -28,7 +28,7 @@ class DraftProviderResponseError(LLMUnavailable):
         }
 
 
-class DraftChatOpenRouter(ChatOpenRouter):
+class OpenRouterChat(ChatOpenRouter):
     """Keep the SDK/LC request path; normalize only known unusable wire shapes."""
 
     def _create_chat_result(self, response: Any) -> ChatResult:

@@ -1,4 +1,4 @@
-"""Injectable OpenRouter embeddings with validated, input-ordered immutable results."""
+"""Injectable OpenAI-compatible embeddings with validated, input-ordered immutable results."""
 from __future__ import annotations
 
 import asyncio
@@ -82,12 +82,13 @@ def _ordered_vectors(payload: dict, count: int, dimensions: int) -> list[tuple[f
     return [indexed[index] for index in range(count)]
 
 
-class OpenRouterEmbedder:
-    """Implements Embedder; owns one context-managed HTTP client per embed call.
+class OpenAICompatibleEmbedder:
+    """Implements Embedder for any OpenAI-compatible /embeddings endpoint.
 
-    A transport may be injected for offline tests. Requests are sequential, batched
-    at 32 texts, have a 20s elapsed request deadline plus HTTP timeouts, and are
-    never automatically retried. The request deadline includes the full body read.
+    Owns one context-managed HTTP client per embed call. A transport may be
+    injected for offline tests. Requests are sequential, batched at 32 texts,
+    have a 20s elapsed request deadline plus HTTP timeouts, and are never
+    automatically retried. The request deadline includes the full body read.
     Caller cancellation propagates with this call's measured cost_usd attached to
     the original CancelledError. An outer asyncio.timeout retains it as the raised
     TimeoutError's __cause__. Consumers record that cost once on failure, instead
@@ -95,12 +96,16 @@ class OpenRouterEmbedder:
     """
 
     def __init__(
-        self, settings: Settings, *, transport: httpx.AsyncBaseTransport | None = None,
+        self, *, model: str, dimensions: int, url: str, api_key: str = "",
+        price_per_m: float = 0.0, send_dimensions: bool = True,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
-        self.model = settings.embedding_model
-        self.dimensions = settings.embed_dim
-        self._api_key = settings.openrouter_api_key
-        self._price_per_m = settings.price_embedding_in
+        self.model = model
+        self.dimensions = dimensions
+        self._url = url
+        self._api_key = api_key
+        self._price_per_m = price_per_m
+        self._send_dimensions = send_dimensions
         self._transport = transport
 
     async def embed(self, texts: list[str]) -> EmbeddingBatch:
@@ -110,10 +115,10 @@ class OpenRouterEmbedder:
             raise EmbeddingError("Embedding input must contain non-empty text strings.")
         vectors: list[tuple[float, ...]] = []
         cost_usd = 0.0
+        headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
         try:
             async with httpx.AsyncClient(
-                transport=self._transport, timeout=EMBEDDING_TIMEOUT_S,
-                headers={"Authorization": f"Bearer {self._api_key}"},
+                transport=self._transport, timeout=EMBEDDING_TIMEOUT_S, headers=headers,
             ) as client:
                 for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
                     batch = texts[start:start + EMBEDDING_BATCH_SIZE]
@@ -129,12 +134,12 @@ class OpenRouterEmbedder:
         return EmbeddingBatch(tuple(vectors), cost_usd)
 
     async def _request(self, client: httpx.AsyncClient, texts: list[str]) -> dict:
+        body: dict[str, Any] = {"input": texts, "model": self.model, "encoding_format": "float"}
+        if self._send_dimensions:
+            body["dimensions"] = self.dimensions
         try:
             async with asyncio.timeout(EMBEDDING_TIMEOUT_S):
-                response = await client.post(EMBEDDING_URL, json={
-                    "input": texts, "model": self.model,
-                    "dimensions": self.dimensions, "encoding_format": "float",
-                })
+                response = await client.post(self._url, json=body)
                 response.raise_for_status()
         except (TimeoutError, httpx.TimeoutException):
             raise EmbeddingError("Embedding request timed out; please retry.") from None
@@ -151,3 +156,14 @@ class OpenRouterEmbedder:
         if not isinstance(payload, dict) or "error" in payload:
             raise EmbeddingError("Embedding provider returned an invalid response.")
         return payload
+
+
+class OpenRouterEmbedder(OpenAICompatibleEmbedder):
+    """The .env-configured OpenRouter embedder (kept for the CLI and existing tests)."""
+
+    def __init__(self, settings: Settings, *, transport: httpx.AsyncBaseTransport | None = None) -> None:
+        super().__init__(
+            model=settings.embedding_model, dimensions=settings.embed_dim, url=EMBEDDING_URL,
+            api_key=settings.openrouter_api_key, price_per_m=settings.price_embedding_in,
+            transport=transport,
+        )
