@@ -48,7 +48,7 @@ class OllamaProvider:
             status = ProviderStatus(self.name, self.locality, "ready")
         except httpx.HTTPError:
             status = ProviderStatus(self.name, self.locality, "unreachable",
-                                    f"Ollama is not reachable at {self._base}.")
+                                    "Ollama is not reachable. Check OLLAMA_BASE_URL in the backend .env.")
         with self._lock:
             self._cached = (self._clock(), status)
         return status

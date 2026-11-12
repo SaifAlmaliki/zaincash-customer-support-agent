@@ -50,7 +50,9 @@ def test_status_is_cached_and_reports_unreachable():
 
     provider = _provider(handler, clock=lambda: now[0])
     first = provider.status()
-    assert first.state == "unreachable" and first.locality == "local" and BASE in first.detail
+    assert first.state == "unreachable" and first.locality == "local"
+    assert first.detail == "Ollama is not reachable. Check OLLAMA_BASE_URL in the backend .env."
+    assert BASE not in first.detail
     provider.status()
     assert calls == ["/api/version"]
     now[0] = 16.0
