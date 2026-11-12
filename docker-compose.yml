@@ -39,6 +39,8 @@ services:
       - postgres_password
       - postgres_db
     ports: ["8000:8000"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /etc/ssl/certs/ca-certificates.crt:/certs/ca-certificates.crt:ro
       - ./data/taxonomy.yaml:/app/data/taxonomy.yaml:ro

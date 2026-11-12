@@ -70,6 +70,21 @@ An empty ticket skips classification, lookup, and drafting, and is escalated. Ev
 
 The graph is `prepare → jev_classify → extract → lookup → decide → draft`. An empty `ANTHROPIC_MODEL` or `INTAKE_MODEL` uses `GEMINI_MODEL` for that step. `GEMINI_STRONG_MODEL` and `GEMINI_EMBED_MODEL` are not called.
 
+The table shows the `.env` defaults. An admin can change any step's provider and model at runtime in the workspace under **Admin → Models** (requires `ADMIN_TOKEN`). Saved choices are stored in Postgres and apply to new runs and new intake sessions without a restart.
+
+### Using local models (Ollama)
+
+1. Install and start Ollama, then pull models:
+   - `ollama pull qwen3:4b` for extraction and drafting (tools, structured output),
+   - `ollama pull nomic-embed-text` for embeddings (768 dimensions),
+   - a vision model such as `ollama pull gemma3:4b` for customer intake (`qwen3:4b` has no vision).
+2. Make Ollama reachable from the API and set `OLLAMA_BASE_URL`:
+   - API in Docker: `http://host.docker.internal:11434`.
+   - API in WSL with Ollama on Windows: either enable mirrored networking (`networkingMode=mirrored` in `%UserProfile%\.wslconfig`, then `wsl --shutdown`) and keep `http://localhost:11434`, or set the Windows environment variable `OLLAMA_HOST=0.0.0.0`, restart Ollama and use `http://<windows-host-ip>:11434` (`ip route show default` in WSL prints that IP).
+3. Set `ADMIN_TOKEN`, restart the API, open **Admin → Models**, and change a step. Every model must pass a live test before it is saved.
+
+Local models are slower; local steps use `LOCAL_AGENT_TIMEOUT_S` / `LOCAL_INTAKE_TIMEOUT_S`. Jev classification always runs on TypeSafe, so the workspace shows **AI: Mixed** rather than **AI: Local**. Changing the embedding model re-indexes the knowledge base; new workspace batches are blocked until that finishes.
+
 ## Quick start
 
 ### 1. Configure the environment
@@ -114,7 +129,7 @@ npm ci
 npm --workspace web run dev
 ```
 
-Restart the API after changing model settings.
+Restart the API after changing model settings in `.env`; admin changes apply without a restart.
 
 | Application | Address |
 |---|---|
