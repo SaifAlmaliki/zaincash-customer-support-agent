@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     intake_max_images_per_message: int = Field(default=3, gt=0)
     intake_max_images_per_session: int = Field(default=10, gt=0)
 
+    # Admin model configuration. An empty token disables every /api/admin route.
+    admin_token: str = ""
+    ollama_base_url: str = "http://localhost:11434"
+    local_agent_timeout_s: float = Field(default=180, gt=0, le=600, allow_inf_nan=False)
+    local_intake_timeout_s: float = Field(default=180, gt=0, le=600, allow_inf_nan=False)
+
     # USD per 1M tokens. Check current pricing before reporting costs.
     price_gemini_flash_in: float = 0.75
     price_gemini_flash_out: float = 3.75
@@ -73,6 +79,11 @@ class Settings(BaseSettings):
         if value and not stripped:
             raise ValueError("INTAKE_MODEL must be a non-empty model ID")
         return stripped
+
+    @field_validator("ollama_base_url")
+    @classmethod
+    def trim_ollama_url(cls, value: str) -> str:
+        return value.strip().rstrip("/")
 
     @field_validator("intake_upload_dir")
     @classmethod
