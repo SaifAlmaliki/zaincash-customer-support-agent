@@ -25,6 +25,7 @@ import {
 import { useWorkspace } from "@/lib/workspace"
 import { useCopy } from "@/lib/locale"
 import { LoadingState } from "@/components/shared/workspace-ui"
+import { AiLocalityChip } from "@/components/layout/AiLocalityChip"
 import { LanguageToggle } from "@/components/layout/LanguageToggle"
 
 const navigation = [
@@ -159,6 +160,7 @@ export function WorkspaceLayout() {
               </TooltipTrigger>
               <TooltipContent>{copy.layout.reviewer}</TooltipContent>
             </Tooltip>
+            <AiLocalityChip />
             <LanguageToggle />
           </div>
         </header>

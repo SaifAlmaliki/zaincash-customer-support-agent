@@ -2698,3 +2698,24 @@ html[dir="rtl"] .workspace-toast {
     scroll-behavior: auto !important;
   }
 }
+.ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.ai-chip.ai-local {
+  color: var(--green);
+  border-color: currentColor;
+}
+.ai-chip-line {
+  display: block;
+}
+.run-models-card {
+  margin-bottom: 20px;
+}

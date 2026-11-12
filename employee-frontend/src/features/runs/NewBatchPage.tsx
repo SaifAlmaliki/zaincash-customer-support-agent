@@ -21,6 +21,7 @@ import { fill, useCopy } from "@/lib/locale"
 import { parseTicketFile } from "@/lib/imports"
 import { api } from "@/lib/api"
 import type { TicketInput } from "@/lib/types"
+import { runStartError } from "./run-start-error"
 
 const exampleTickets: TicketInput[] = [
   {
@@ -88,7 +89,7 @@ export function NewBatchPage() {
       workspace.notify(fill(text.submitted, { id: run.id }))
       navigate(`/runs/${run.id}`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : text.startFailed)
+      setError(runStartError(e, text))
     } finally {
       setBusy(false)
     }

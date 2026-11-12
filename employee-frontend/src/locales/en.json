@@ -13,7 +13,8 @@
     "runs": "Pipeline runs",
     "knowledge": "Knowledge base",
     "insights": "Weekly insights",
-    "evaluation": "Evaluation"
+    "evaluation": "Evaluation",
+    "models": "AI models"
   },
   "layout": {
     "skip": "Skip to content",
@@ -32,7 +33,8 @@
     "reviewer": "Local support reviewer",
     "footerApproval": "Human approval required for every response",
     "footerTopic": "Topic 06 · Built for Iraq",
-    "newBatch": "New batch"
+    "newBatch": "New batch",
+    "adminSection": "Admin"
   },
   "status": {
     "pending_review": "Needs review",
@@ -480,6 +482,93 @@
     "readyMany": "{count} tickets ready",
     "start": "Start processing",
     "startFailed": "Could not start the batch.",
-    "submitted": "Batch #{id} submitted for processing."
+    "submitted": "Batch #{id} submitted for processing.",
+    "switchInProgress": "The knowledge base is switching embedding models. Start the batch when it finishes."
+  },
+  "ai": {
+    "local": "AI: Local",
+    "cloud": "AI: Cloud",
+    "mixed": "AI: Mixed",
+    "tooltip": "Where each AI step runs"
+  },
+  "models": {
+    "title": "AI models",
+    "description": "Choose the model behind each step of the support pipeline. Changes apply to new batches and new customer conversations.",
+    "lock": "Lock admin settings",
+    "unlockTitle": "Unlock admin settings",
+    "unlockDescription": "Enter the admin token from the backend .env file and your name for the change history.",
+    "nameLabel": "Your name",
+    "tokenLabel": "Admin token",
+    "unlock": "Unlock",
+    "unlocking": "Checking…",
+    "wrongToken": "That admin token is not correct.",
+    "disabled": "Admin settings are turned off. Set ADMIN_TOKEN in the backend .env file and restart the API.",
+    "genericError": "Something went wrong. Please retry.",
+    "steps": {
+      "intake": "Customer intake",
+      "classify": "Classification (Jev)",
+      "extract": "Field extraction",
+      "draft": "Reply drafting",
+      "embed": "Knowledge search embeddings"
+    },
+    "stepHelp": {
+      "intake": "Talks with customers in the intake app and reads their screenshots. Needs vision and structured output.",
+      "classify": "Sorts each ticket into a category, priority and flags. Runs on TypeSafe.",
+      "extract": "Fills in missing transaction details from the ticket text. Needs structured output.",
+      "draft": "Writes the Arabic reply using tools and the knowledge base. Needs tool calling.",
+      "embed": "Turns knowledge documents and questions into 768-number vectors for search."
+    },
+    "locality": { "local": "Local", "cloud": "Cloud" },
+    "status": { "ready": "Ready", "missing_key": "API key missing", "unreachable": "Not reachable" },
+    "providers": { "openrouter": "OpenRouter · cloud", "ollama": "Ollama · local", "typesafe": "TypeSafe · cloud" },
+    "capabilities": {
+      "structured_output": "Structured output",
+      "tools": "Tools",
+      "vision": "Vision",
+      "embedding": "Embeddings",
+      "thinking": "Thinking",
+      "classifier": "Classifier"
+    },
+    "sourceEnv": "Default from the backend .env file",
+    "sourceAdmin": "Set by {name} on {date}",
+    "change": "Change model",
+    "dialogTitle": "Change the {step} model",
+    "requirements": "Required: {list}",
+    "search": "Search models",
+    "refresh": "Refresh model list",
+    "modelList": "Available models",
+    "noModels": "No suitable models found. Type a model ID below.",
+    "unknownCaps": "Capabilities unknown",
+    "free": "Free",
+    "price": "${in} / ${out} per 1M tokens",
+    "customModel": "Or type a model ID",
+    "customHelp": "Any model ID this provider accepts. It must pass the test before it can be saved.",
+    "temperature": "Temperature",
+    "temperatureHelp": "0 to 2. Leave empty for the step default.",
+    "thinking": "Let the model think before answering (slower)",
+    "localSlow": "Local models run on this machine. They keep data private but answer more slowly.",
+    "test": "Test model",
+    "testing": "Testing…",
+    "testPassed": "Test passed in {ms} ms.",
+    "testFailed": "Test failed: {error}",
+    "save": "Save",
+    "saving": "Saving…",
+    "reindex": "Re-index and switch",
+    "confirmTitle": "Switch the embedding model?",
+    "confirmDescription": "Every knowledge document will be re-indexed with the new model. Knowledge search pauses until it finishes, and new batches cannot start meanwhile. This cannot start while a batch is running.",
+    "confirmAction": "Re-index and switch",
+    "switchTitle": "Embedding switch progress",
+    "switchRunning": "Re-indexing the knowledge base",
+    "switchDone": "Embedding model switched",
+    "switchErrors": "Embedding model switched, some documents failed",
+    "switchFailed": "Embedding switch stopped",
+    "switchProgress": "{done} of {total} documents re-indexed",
+    "switchFailedDocs": "Re-index these documents from the knowledge base page: {ids}",
+    "runInProgress": "A batch is still running. Try again when it finishes.",
+    "switchInProgress": "An embedding switch is already running.",
+    "auditTitle": "Change history",
+    "auditEmpty": "No model changes yet.",
+    "auditBy": "{name} · {date}",
+    "usedTitle": "Models used"
   }
 }

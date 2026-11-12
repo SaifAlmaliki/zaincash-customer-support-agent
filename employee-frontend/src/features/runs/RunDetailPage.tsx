@@ -4,15 +4,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { EmptyState, ErrorState, LoadingState, Metric, PageHeader, StatusBadge } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
+import { useCopy } from "@/lib/locale"
 import { useWorkspace } from "@/lib/workspace"
 import { categoryLabel, dateLabel, downloadJson, duration, humanize, timeLabel } from "@/lib/format"
 import type { Result, Run } from "@/lib/types"
 import { TicketFlow } from "@/features/review/TicketFlow"
+import { runModelRows } from "./run-models"
 import { loadRunResults } from "./run-results"
 
 export function RunDetailPage() {
   const { id } = useParams(),
     workspace = useWorkspace()
+  const copy = useCopy()
   const query = useResource<Run>(`/runs/${id}`, workspace.revision, 2500)
   const run = query.data
   const results = useResource<Result[]>(
@@ -33,6 +36,7 @@ export function RunDetailPage() {
       />
     )
   const progress = run.total ? Math.round((run.processed / run.total) * 100) : 0
+  const models = runModelRows(run.model_ids)
   return (
     <>
       <Link to="/runs" className="back-link">
@@ -116,6 +120,23 @@ export function RunDetailPage() {
           icon={<Coins size={18} />}
         />
       </div>
+      {models.length > 0 && (
+        <Card className="run-models-card">
+          <CardHeader>
+            <CardTitle>{copy.models.usedTitle}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="simple-breakdown">
+              {models.map((row) => (
+                <div key={row.step}>
+                  <span>{copy.models.steps[row.step]}</span>
+                  <strong dir="ltr">{row.provider ? `${row.provider} · ${row.model}` : row.model}</strong>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <div className="two-column">
         <Card>
           <CardHeader>
