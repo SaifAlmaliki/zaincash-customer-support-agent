@@ -1,7 +1,8 @@
-"""Gemini structured-output adapter via OpenRouter behind a small protocol."""
+"""Structured-output sampling over any LangChain chat model, behind a small protocol."""
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Generic, Protocol, TypeVar
 
@@ -28,44 +29,28 @@ class StructuredLLM(Protocol):
     ) -> list[Sample[T]]: ...
 
 
-class GeminiStructuredLLM:
-    """`ChatOpenRouter.with_structured_output(method="json_schema", include_raw=True)`."""
+class StructuredChatLLM:
+    """`chat.with_structured_output(method="json_schema", include_raw=True)` for any provider."""
 
     def __init__(
         self,
         *,
-        api_key: str,
-        model: str,
+        chat_factory: Callable[[float], Any],
         price_in_per_m: float,
         price_out_per_m: float,
-        timeout_s: float = 60.0,
         max_retries: int = 2,
     ) -> None:
-        self._api_key = api_key
-        self._model = model
+        self._chat_factory = chat_factory
         self._price_in = price_in_per_m
         self._price_out = price_out_per_m
-        self._timeout = timeout_s
         self._max_retries = max_retries
         self._cache: dict[tuple[type, float], Any] = {}
 
     def _runnable(self, schema: type[BaseModel], temperature: float) -> Any:
         key = (schema, temperature)
         if key not in self._cache:
-            from langchain_openrouter import ChatOpenRouter
-
-            chat = ChatOpenRouter(
-                model=self._model,
-                temperature=temperature,
-                api_key=self._api_key,
-                timeout=int(self._timeout * 1000),  # ChatOpenRouter expects milliseconds.
-                max_retries=0,
-                # None disables per-request SDK retries (0 alone leaves its hourly default).
-                model_kwargs={"retries": None},
-            )
-            self._cache[key] = chat.with_structured_output(
-                schema, method="json_schema", include_raw=True
-            )
+            chat = self._chat_factory(temperature)
+            self._cache[key] = chat.with_structured_output(schema, method="json_schema", include_raw=True)
         return self._cache[key]
 
     async def sample(self, prompt, schema, *, temperature, n=1):

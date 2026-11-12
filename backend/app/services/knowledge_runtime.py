@@ -2,16 +2,20 @@
 import logging
 from threading import Lock
 
-from app.kb.embeddings import OpenRouterEmbedder
 from app.kb.service import KnowledgeService
+from app.models_config.embedder import ConfiguredEmbedder
+from app.models_config.store import ModelSettingsStore
 
 logger = logging.getLogger(__name__)
 MAX_INDEX_JOBS = 4
 
 
-def make_knowledge_service(session_factory, settings):
-    # The adapter owns a short-lived HTTP client per invocation, not per app.
-    return KnowledgeService(session_factory, settings, OpenRouterEmbedder(settings))
+def make_knowledge_service(session_factory, settings, store=None):
+    # The configured embedder owns a short-lived HTTP client per invocation, not per app.
+    if store is None:
+        store = ModelSettingsStore(session_factory, settings)
+        store.load()
+    return KnowledgeService(session_factory, settings, ConfiguredEmbedder(store))
 
 
 def knowledge_configured(settings):

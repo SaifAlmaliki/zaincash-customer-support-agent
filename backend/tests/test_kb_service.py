@@ -360,8 +360,6 @@ async def test_model_changes_require_reindex_and_keep_chunk_ids(support_test, se
     await new.index_document(document_id)
     assert (await old.search("تحويل")).passages == ()
     assert (await new.search("تحويل")).passages[0].id == original_id
-    with pytest.raises(ValueError):
-        KnowledgeService(sf, settings, provider)
 
 
 @pytest.mark.parametrize("mismatch", ["dimensions", "chunk_model", "attempt"])

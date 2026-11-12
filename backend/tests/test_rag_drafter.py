@@ -42,11 +42,12 @@ async def test_anthropic_fallback_prices_and_provider_cost_precedence(reported, 
 
     from app.pipeline.stage6_draft.agent import _ModelUsage
     from app.pipeline.stage6_draft.context import DraftContext
+    from app.pipeline.stage6_draft.model_info import DraftModelInfo
 
     settings = Settings(
         _env_file=None, anthropic_model="anthropic/claude-sonnet-5.5",
     )
-    ledger = _ModelUsage(DraftContext(draft_state()), settings)
+    ledger = _ModelUsage(DraftContext(draft_state()), DraftModelInfo.from_settings(settings))
     response = LLMResult(generations=[[ChatGeneration(message=answer(cost=reported))]])
     await ledger.on_llm_end(response, run_id=uuid4())
     assert ledger.cost_usd == pytest.approx(expected)
@@ -306,8 +307,9 @@ async def test_callback_partial_response_and_error_cost_are_alternatives(reporte
 
     from app.pipeline.stage6_draft.agent import _ModelUsage
     from app.pipeline.stage6_draft.context import DraftContext
+    from app.pipeline.stage6_draft.model_info import DraftModelInfo
 
-    ledger = _ModelUsage(DraftContext(draft_state()), Settings(_env_file=None))
+    ledger = _ModelUsage(DraftContext(draft_state()), DraftModelInfo.from_settings(Settings(_env_file=None)))
     response = LLMResult(generations=[[ChatGeneration(message=answer(cost=reported))]])
     run_id = uuid4()
     await ledger.on_llm_end(response, run_id=run_id)

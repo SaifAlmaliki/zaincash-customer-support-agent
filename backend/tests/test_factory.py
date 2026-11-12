@@ -25,12 +25,14 @@ def test_builds_jev_pipeline_with_injected_clients():
 
 
 def test_model_ids():
-    s = _settings()
-    rag = {"drafting": "google/gemini-3.8-flash", "embedding": "openai/text-embedding-3-small"}
-    assert model_ids(s) == {"jev": "jev-1.13.0", "gemini": "google/gemini-3.8-flash", **rag}
-    claude = _settings(anthropic_model="anthropic/claude-sonnet-5.5")
-    assert model_ids(claude)["drafting"] == "anthropic/claude-sonnet-5.5"
-    assert model_ids(claude)["gemini"] == "google/gemini-3.8-flash"
+    assert model_ids(_settings()) == {
+        "intake": "openrouter:google/gemini-3.8-flash", "classify": "typesafe:jev-1.13.0",
+        "extract": "openrouter:google/gemini-3.8-flash", "draft": "openrouter:google/gemini-3.8-flash",
+        "embed": "openrouter:openai/text-embedding-3-small",
+    }
+    claude = model_ids(_settings(anthropic_model="anthropic/claude-sonnet-5.5"))
+    assert claude["draft"] == "openrouter:anthropic/claude-sonnet-5.5"
+    assert claude["extract"] == "openrouter:google/gemini-3.8-flash"
 
 
 @pytest.mark.parametrize("mode", ["gemini", "cascade"])
@@ -115,22 +117,25 @@ async def test_explicit_even_falsy_drafter_wins_over_default_wiring():
     assert outcome.draft.text == "رد مخصص"
 
 
-async def test_jev_mode_builds_real_jev_checker_when_only_key_is_supplied(monkeypatch):
-    from app.pipeline import factory
+async def test_jev_mode_builds_real_jev_checker_from_the_classify_provider():
+    from app.models_config.resolver import ActiveModels
     from app.pipeline.graph import run_batch
+    from tests.models_config_fakes import FakeProvider, fake_registry
     from tests.rag_fakes import Knowledge, ScriptedChat, draft_state, script
 
-    monkeypatch.setattr(factory, "make_jev_client", lambda settings: FakeJevRunnable(
+    settings = _settings(openrouter_api_key="test", typesafe_api_key="test")
+    typesafe = FakeProvider("typesafe", classifier=FakeJevRunnable(
         category="general_inquiry", flags={"requests_credentials": 0.9}))
-    graph = build_pipeline(_settings(openrouter_api_key="test", typesafe_api_key="test"), "jev", REPO,
-                           llm=FakeStructuredLLM([None]),
-                           knowledge=Knowledge(), investigation=object(), model_factory=lambda: ScriptedChat(steps=script()))
+    models = ActiveModels(settings, {}, fake_registry(settings, typesafe=typesafe))
+    graph = build_pipeline(settings, "jev", REPO, models=models, llm=FakeStructuredLLM([None]),
+                           knowledge=Knowledge(), investigation=object(),
+                           model_factory=lambda: ScriptedChat(steps=script()))
     [outcome], summary = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)
     assert outcome.decision.reasons == ("draft_failed_guardrail",)
     assert "requests_credentials" in outcome.decision.note and not summary.degraded
 
 
-async def test_sql_defaults_retrieve_real_indexed_evidence(monkeypatch):
+async def test_sql_defaults_retrieve_real_indexed_evidence():
     import json
 
     from sqlalchemy import text
@@ -140,7 +145,6 @@ async def test_sql_defaults_retrieve_real_indexed_evidence(monkeypatch):
     from app.db.session import make_engine, make_sessionmaker, reset_db
     from app.kb.documents import store_document
     from app.kb.service import KnowledgeService
-    from app.pipeline import factory
     from app.pipeline.graph import run_batch
     from tests.kb_fakes import PaidEmbedder
     from tests.rag_fakes import REPLY, ScriptedChat, answer, call, draft_state
@@ -157,14 +161,21 @@ async def test_sql_defaults_retrieve_real_indexed_evidence(monkeypatch):
             document = store_document(session, "policy.md", "نراجع طلب العميل ولا نطلب أسراره.".encode())
             document_id = document.id
         await KnowledgeService(sf, settings, PaidEmbedder()).index_document(document_id)
-        monkeypatch.setattr(factory, "OpenRouterEmbedder", lambda settings: PaidEmbedder())
 
         async def submit(messages):
             [source] = json.loads(messages[-1].content)
             return answer(call("submit_draft", reply_ar=REPLY, citations=[source["id"]]), id="submit")
 
         model = ScriptedChat(steps=[answer(call("search_knowledge_base", query="سياسة الدعم"), id="search"), submit])
-        graph = build_pipeline(settings, "jev", SqlTransactionRepo(sf),
+        from app.models_config.resolver import ActiveModels
+        from tests.models_config_fakes import FakeProvider, fake_registry
+
+        class PaidProvider(FakeProvider):
+            def embedder(self, model, *, dimensions):
+                return PaidEmbedder()
+
+        models = ActiveModels(settings, {}, fake_registry(settings, openrouter=PaidProvider("openrouter")))
+        graph = build_pipeline(settings, "jev", SqlTransactionRepo(sf), models=models,
                                jev_client=FakeJevRunnable(category="general_inquiry"),
                                model_factory=lambda: model)
         [outcome], _ = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)
@@ -175,3 +186,43 @@ async def test_sql_defaults_retrieve_real_indexed_evidence(monkeypatch):
         assert outcome.draft.citations == (source["id"],)
     finally:
         engine.dispose()
+
+
+async def test_local_draft_model_is_built_by_its_provider_with_local_timeout():
+    from app.models_config.resolver import ActiveModels
+    from app.models_config.types import ModelChoice, Step
+    from app.pipeline.graph import run_batch
+    from tests.models_config_fakes import FakeProvider, fake_registry
+    from tests.rag_fakes import REPLY, Knowledge, ScriptedChat, draft_state, script
+
+    settings = _settings(typesafe_api_key="t", local_agent_timeout_s=200)
+    ollama = FakeProvider("ollama", locality="local", chat=ScriptedChat(steps=script()))
+    models = ActiveModels(settings, {Step.DRAFT: ModelChoice("ollama", "qwen3:4b")},
+                          fake_registry(settings, ollama=ollama))
+    graph = build_pipeline(settings, "jev", REPO, models=models,
+                           jev_client=FakeJevRunnable(category="general_inquiry"),
+                           llm=FakeStructuredLLM([None]), knowledge=Knowledge(), investigation=object())
+    [outcome], _ = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)
+    assert outcome.draft.text == REPLY
+    assert ollama.chat_calls[0]["model"] == "qwen3:4b" and ollama.chat_calls[0]["timeout_s"] == 200
+    assert outcome.draft.trace[-1]["model"] == "qwen3:4b"
+
+
+async def test_unreachable_local_draft_provider_never_falls_back_to_cloud():
+    from app.models_config.resolver import ActiveModels
+    from app.models_config.types import ModelChoice, Step
+    from app.pipeline.graph import run_batch
+    from tests.models_config_fakes import FakeProvider, fake_registry
+    from tests.rag_fakes import Knowledge, draft_state
+
+    settings = _settings(openrouter_api_key="k", typesafe_api_key="t")
+    openrouter = FakeProvider("openrouter")  # chat=None: any chat call fails the test
+    registry = fake_registry(settings, openrouter=openrouter,
+                             ollama=FakeProvider("ollama", locality="local", state="unreachable"))
+    models = ActiveModels(settings, {Step.DRAFT: ModelChoice("ollama", "qwen3:4b")}, registry)
+    graph = build_pipeline(settings, "jev", REPO, models=models,
+                           jev_client=FakeJevRunnable(category="general_inquiry"),
+                           llm=FakeStructuredLLM([None]), knowledge=Knowledge(), investigation=object())
+    [outcome], _ = await run_batch(graph, [draft_state()["ticket"]], concurrency=1)
+    assert outcome.decision.reasons == ("llm_unavailable",)
+    assert openrouter.chat_calls == []

@@ -131,9 +131,7 @@ class KnowledgeService:
                         event.remove(connection, name, listener)
 
     def _metadata(self) -> tuple[str, int]:
-        if (self._embedder.model != self._settings.embedding_model
-                or self._embedder.dimensions != self._settings.embed_dim
-                or self._embedder.dimensions != 768):
+        if self._embedder.dimensions != self._settings.embed_dim or self._embedder.dimensions != 768:
             raise ValueError("Embedding configuration does not match the provider/index schema.")
         return self._embedder.model, self._embedder.dimensions
 

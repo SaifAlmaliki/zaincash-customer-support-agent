@@ -17,13 +17,12 @@ from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
-from openrouter.errors import OpenRouterError
 
 from app.config import Settings
 from app.kb.embeddings import EmbeddingError
 from app.kb.service import KnowledgeError, KnowledgeExecutionError, KnowledgeService
 from app.llm import LLMUnavailable
-from app.models_config.providers.openrouter_chat import DraftProviderResponseError
+from app.models_config.providers.registry import provider_errors
 from app.pipeline.contracts import DraftResult
 from app.pipeline.execution import ticket_execution
 from app.pipeline.stage6_draft.context import DraftContext, DraftToolInputError, DraftToolLimit
@@ -31,12 +30,13 @@ from app.pipeline.stage6_draft.credentials import CredentialChecker
 from app.pipeline.stage6_draft.drafting import DraftExecutionError
 from app.pipeline.stage6_draft.guardrails import check_draft
 from app.pipeline.stage6_draft.investigation import SqlInvestigationRepo
+from app.pipeline.stage6_draft.model_info import DraftModelInfo
 from app.pipeline.stage6_draft.tools import _bounded, _json, build_tools
 from app.pipeline.state import PipelineState
 
 PROMPT_VERSION = "draft_v1"
 SYSTEM_PROMPT = Path(__file__).with_name("prompts").joinpath(f"{PROMPT_VERSION}.md").read_text(encoding="utf-8")
-_PROVIDER_ERRORS = (httpx.HTTPError, OpenRouterError, LLMUnavailable)
+_PROVIDER_ERRORS = provider_errors()
 
 
 def _number(value: Any) -> float:
@@ -54,13 +54,18 @@ def _error_cost(error: BaseException) -> float:
     return 0.0
 
 
+def _has_response_usage(error: BaseException) -> bool:
+    """Provider failures that still carry a paid response's usage (for example OpenRouter's)."""
+    return isinstance(error, LLMUnavailable) and hasattr(error, "usage_metadata") and hasattr(error, "response_metadata")
+
+
 class _ModelUsage(AsyncCallbackHandler):
     """Execution-time accounting: no dependence on the final graph response."""
 
     run_inline = True
 
-    def __init__(self, context: DraftContext, settings: Settings):
-        self.context, self.settings = context, settings
+    def __init__(self, context: DraftContext, info: DraftModelInfo):
+        self.context, self.info = context, info
         self.seen: set[str] = set()
         self.cost_usd = 0.0
 
@@ -78,7 +83,7 @@ class _ModelUsage(AsyncCallbackHandler):
         if response_id in self.seen:
             return
         self.seen.add(response_id)
-        price_in, price_out = self.settings.draft_token_prices
+        price_in, price_out = self.info.token_prices
         cost = (_number(usage.get("input_tokens")) * price_in
                 + _number(usage.get("output_tokens")) * price_out) / 1e6
         source = "token_estimate"
@@ -87,14 +92,14 @@ class _ModelUsage(AsyncCallbackHandler):
             cost, source = float(reported), "provider"
         self.cost_usd += cost
         entry = {"kind": "model", "status": "error" if error_type else "ok", "response_id": response_id,
-                 "model": metadata.get("model_name") or self.settings.draft_model,
+                 "model": metadata.get("model_name") or self.info.model,
                  "usage": _bounded(usage), "cost_usd": cost, "cost_source": source}
         if error_type:
             entry["error_type"] = error_type
         self.context.trace.append(entry)
 
     async def on_llm_error(self, error, *, run_id, **kwargs):
-        if isinstance(error, DraftProviderResponseError):
+        if _has_response_usage(error):
             self._record_response(error.response_metadata, error.usage_metadata,
                                   fallback_id=run_id, error_type=type(error).__name__)
             return
@@ -108,7 +113,7 @@ class _ModelUsage(AsyncCallbackHandler):
         # error cost are alternative outcomes of the SAME model invocation.
         cost = 0.0 if has_response else _error_cost(error)
         self.cost_usd += cost
-        self.context.trace.append({"kind": "model", "status": "error", "model": self.settings.draft_model,
+        self.context.trace.append({"kind": "model", "status": "error", "model": self.info.model,
                                    "error_type": type(error).__name__, "cost_usd": cost})
 
 
@@ -155,14 +160,15 @@ class _Execution(AgentMiddleware):
 class RagDrafter:
     def __init__(self, settings: Settings, *, model_factory: Callable[[], BaseChatModel],
                  knowledge: KnowledgeService, investigation: SqlInvestigationRepo,
-                 credential_checker: CredentialChecker):
+                 credential_checker: CredentialChecker, info: DraftModelInfo | None = None):
         self.settings, self.model_factory = settings, model_factory
         self.knowledge, self.investigation = knowledge, investigation
         self.credential_checker = credential_checker
+        self.info = info or DraftModelInfo.from_settings(settings)
 
     async def draft(self, state: PipelineState) -> DraftResult:
         context = DraftContext(state, max_tool_calls=self.settings.agent_max_tool_calls)
-        usage = _ModelUsage(context, self.settings)
+        usage = _ModelUsage(context, self.info)
         execution = _Execution(context)
         checker_cost = 0.0
         findings: list[str] = []
@@ -171,7 +177,7 @@ class RagDrafter:
         unexpected = None
         cancelled = None
         ticket_run = ticket_execution.get()
-        budget = ticket_run.draft_budget(self.settings.agent_timeout_s) if ticket_run else self.settings.agent_timeout_s
+        budget = ticket_run.draft_budget(self.info.timeout_s) if ticket_run else self.info.timeout_s
         try:
             async with asyncio.timeout(budget):
                 if budget <= 0:
@@ -245,8 +251,8 @@ class RagDrafter:
         rejected = failure or findings or submission is None or not context.retrieved
         status = "cancelled" if cancelled is not None else "error" if unexpected else "rejected" if rejected else "submitted"
         context.trace.append({"kind": "draft", "status": status,
-                              "prompt_version": PROMPT_VERSION, "model": self.settings.draft_model,
-                              "embedding_model": self.settings.embedding_model,
+                              "prompt_version": PROMPT_VERSION, "model": self.info.model,
+                              "embedding_model": self.info.embedding_model,
                               "reply_ar": submission.reply_ar if submission else None,
                               "citations": list(submission.citations) if submission else [],
                               "used_txn_ref": submission.used_txn_ref if submission else None,

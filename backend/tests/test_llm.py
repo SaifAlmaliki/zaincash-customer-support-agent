@@ -6,7 +6,7 @@ import pytest
 from pydantic import BaseModel
 
 from app.config import Settings
-from app.llm import GeminiStructuredLLM
+from app.llm import StructuredChatLLM
 from app.pipeline.factory import make_gemini_llm
 
 
@@ -15,7 +15,7 @@ class _S(BaseModel):
 
 
 def _llm():
-    return GeminiStructuredLLM(api_key="k", model="m", price_in_per_m=1.0, price_out_per_m=2.0)
+    return StructuredChatLLM(chat_factory=lambda temperature: None, price_in_per_m=1.0, price_out_per_m=2.0)
 
 
 def test_to_sample_parsed_with_cost():
@@ -91,8 +91,10 @@ async def test_openrouter_retry_budget_is_bounded(monkeypatch, max_retries, fail
                               json={"error": {"code": failure, "message": "provider unavailable"}})
 
     monkeypatch.setattr(httpx.AsyncClient, "send", send)
-    llm = GeminiStructuredLLM(api_key="test-key", model="google/gemini-3.8-flash",
-                             price_in_per_m=1, price_out_per_m=2, max_retries=max_retries)
+    from app.models_config.resolver import ActiveModels
+
+    llm = ActiveModels.from_env(Settings(_env_file=None, openrouter_api_key="test-key")).structured_llm(
+        max_retries=max_retries)
     [sample] = await llm.sample("Return x=7", _S, temperature=0, n=1)
     assert attempts == expected_attempts
     assert sample.parsed is None and sample.error
