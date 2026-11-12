@@ -33,6 +33,7 @@ class OllamaProvider:
     def __init__(self, settings: Settings, *, transport: httpx.BaseTransport | None = None,
                  clock: Callable[[], float] = time.monotonic) -> None:
         self._base = settings.ollama_base_url
+        self._num_ctx = settings.local_num_ctx
         self._transport = transport
         self._clock = clock
         self._lock = threading.Lock()
@@ -87,7 +88,7 @@ class OllamaProvider:
         from langchain_ollama import ChatOllama
 
         return ChatOllama(model=model, base_url=self._base, temperature=temperature,
-                          reasoning=options.get("think"), client_kwargs={"timeout": timeout_s},
+                          num_ctx=self._num_ctx, reasoning=options.get("think"), client_kwargs={"timeout": timeout_s},
                           validate_model_on_init=False)
 
     def embedder(self, model: str, *, dimensions: int) -> OpenAICompatibleEmbedder:

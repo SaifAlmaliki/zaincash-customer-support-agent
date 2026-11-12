@@ -83,7 +83,7 @@ The table shows the `.env` defaults. An admin can change any step's provider and
    - API in WSL with Ollama on Windows: either enable mirrored networking (`networkingMode=mirrored` in `%UserProfile%\.wslconfig`, then `wsl --shutdown`) and keep `http://localhost:11434`, or set the Windows environment variable `OLLAMA_HOST=0.0.0.0`, restart Ollama and use `http://<windows-host-ip>:11434` (`ip route show default` in WSL prints that IP).
 3. Set `ADMIN_TOKEN`, restart the API, open **Admin → Models**, and change a step. Every model must pass a live test before it is saved.
 
-Local models are slower; local steps use `LOCAL_AGENT_TIMEOUT_S` / `LOCAL_INTAKE_TIMEOUT_S`. Jev classification always runs on TypeSafe, so the workspace shows **AI: Mixed** rather than **AI: Local**. Changing the embedding model re-indexes the knowledge base; new workspace batches are blocked until that finishes.
+Local models are slower; local steps use `LOCAL_AGENT_TIMEOUT_S` / `LOCAL_INTAKE_TIMEOUT_S`. `LOCAL_NUM_CTX` (default 16384) sets the context window for local models; larger values use more memory. Jev classification always runs on TypeSafe, so the workspace shows **AI: Mixed** rather than **AI: Local**. Changing the embedding model re-indexes the knowledge base; new workspace batches are blocked until that finishes.
 
 ## Quick start
 

@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     local_agent_timeout_s: float = Field(default=180, gt=0, le=600, allow_inf_nan=False)
     local_intake_timeout_s: float = Field(default=180, gt=0, le=600, allow_inf_nan=False)
+    local_num_ctx: int = Field(default=16384, ge=2048, le=131072, strict=True)
 
     # USD per 1M tokens. Check current pricing before reporting costs.
     price_gemini_flash_in: float = 0.75
@@ -91,7 +92,7 @@ class Settings(BaseSettings):
         path = Path(value).expanduser()
         return str(path if path.is_absolute() else REPO_ROOT / path)
 
-    @field_validator("agent_max_tool_calls", mode="before")
+    @field_validator("agent_max_tool_calls", "local_num_ctx", mode="before")
     @classmethod
     def parse_tool_limit_env(cls, value):
         # Environment settings arrive as strings; keep strict rejection of bools

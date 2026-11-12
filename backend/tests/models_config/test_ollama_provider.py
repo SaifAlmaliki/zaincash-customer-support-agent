@@ -76,6 +76,15 @@ def test_chat_model_targets_the_configured_server():
     assert unset.reasoning is None
 
 
+def test_chat_model_sets_the_configured_context_window():
+    settings = Settings(_env_file=None, ollama_base_url=BASE, local_num_ctx=8192)
+    chat = OllamaProvider(settings).chat_model("qwen3:4b", temperature=None, timeout_s=10, options={})
+    assert chat.num_ctx == 8192
+    default = _provider(lambda r: httpx.Response(200)).chat_model(
+        "qwen3:4b", temperature=None, timeout_s=10, options={})
+    assert default.num_ctx == 16384
+
+
 async def test_embedder_uses_openai_compatible_endpoint_without_dimensions():
     seen = []
 
