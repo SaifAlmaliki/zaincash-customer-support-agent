@@ -2719,3 +2719,65 @@ html[dir="rtl"] .workspace-toast {
 .run-models-card {
   margin-bottom: 20px;
 }
+
+.model-dialog {
+  max-width: 640px;
+  display: grid;
+  gap: 12px;
+}
+.catalog-toolbar {
+  display: flex;
+  gap: 8px;
+}
+.catalog-list {
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.catalog-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: start;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.catalog-option.is-active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.model-field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.model-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+.model-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.probe-ok {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green);
+  font-size: 13px;
+}
