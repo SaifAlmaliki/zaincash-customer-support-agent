@@ -12,6 +12,7 @@ from app.kb.documents import store_document
 from app.kb.models import KnowledgeChunk
 from app.main import create_app
 from app.models_config.db_models import EmbeddingSwitchRow
+from app.models_config.types import ModelChoice, Step
 from tests.models_config_fakes import FakeProvider, fake_registry
 
 pytestmark = pytest.mark.integration
@@ -69,6 +70,23 @@ def test_switch_with_no_documents_completes_immediately(env):
         client.post("/api/admin/models/embed/switch", headers=HEADERS, json=SWITCH)
         view = client.get("/api/admin/models/embed/switch", headers=HEADERS).json()
     assert view["status"] == "completed" and view["total"] == 0
+
+
+def test_start_updates_the_cache_without_reloading_from_the_database(env, monkeypatch):
+    settings, sf = env
+    with _client(settings, sf) as client:
+        store = client.app.state.model_store
+
+        def broken_load():
+            raise RuntimeError("database went away after the commit")
+
+        monkeypatch.setattr(store, "load", broken_load)
+        target = ModelChoice("ollama", "nomic-embed-text")
+        view = client.app.state.embedding_switches.start(target, changed_by="Sara", latency_ms=5)
+        assert view["status"] == "running"
+        assert store.choice(Step.EMBED) == target
+        entry = next(item for item in store.describe() if item["step"] == "embed")
+        assert entry["source"] == "admin" and entry["updated_by"] == "Sara"
 
 
 def test_switch_is_refused_while_a_run_is_running(env):

@@ -84,8 +84,8 @@ class ModelSettingsStore:
         return described
 
     def save(self, step: Step, choice: ModelChoice, *, changed_by: str, latency_ms: int,
-             session: Session | None = None) -> None:
-        """Persist and audit. With an external session the caller commits, then calls load()."""
+             session: Session | None = None) -> datetime:
+        """Persist and audit. With an external session the caller commits, then calls remember()."""
         own = session is None
         session = session or self._sf()
         try:
@@ -106,8 +106,13 @@ class ModelSettingsStore:
             if own:
                 session.close()
         if own:
-            with self._lock:
-                self._rows[step] = {"choice": choice, "updated_at": now, "updated_by": changed_by}
+            self.remember(step, choice, changed_by=changed_by, updated_at=now)
+        return now
+
+    def remember(self, step: Step, choice: ModelChoice, *, changed_by: str, updated_at: datetime) -> None:
+        """Update the in-memory cache for a setting that is already committed; never touches the database."""
+        with self._lock:
+            self._rows[step] = {"choice": choice, "updated_at": updated_at, "updated_by": changed_by}
 
     def audit(self, limit: int = 50) -> list[dict[str, Any]]:
         with self._sf() as session:

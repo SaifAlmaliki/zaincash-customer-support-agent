@@ -67,10 +67,12 @@ class EmbeddingSwitches:
                                      status="running", total=total, done=0, failed_document_ids=[],
                                      started_by=changed_by, started_at=datetime.now(UTC))
             session.add(row)
-            self._store.save(Step.EMBED, choice, changed_by=changed_by, latency_ms=latency_ms, session=session)
+            updated_at = self._store.save(Step.EMBED, choice, changed_by=changed_by,
+                                          latency_ms=latency_ms, session=session)
             session.commit()
             view = _view(row)
-        self._store.load()
+        # The commit succeeded: refresh the cache without database I/O, which cannot strand the switch.
+        self._store.remember(Step.EMBED, choice, changed_by=changed_by, updated_at=updated_at)
         return view
 
     async def run(self, switch_id: int) -> None:
