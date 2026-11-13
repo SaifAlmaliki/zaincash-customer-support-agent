@@ -59,7 +59,7 @@ export function PageHeader({
   description,
   children,
 }: {
-  title: string
+  title: ReactNode
   description: string
   children?: ReactNode
 }) {

@@ -582,6 +582,14 @@ html[lang="ar"] .brand > div {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.customer-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.customer-title-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
 .ticket-identity small {
   display: block;
   color: var(--muted-foreground);

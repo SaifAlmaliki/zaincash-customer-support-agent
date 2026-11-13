@@ -10,6 +10,11 @@ const TicketReviewPage = lazy(() =>
     default: module.TicketReviewPage,
   }))
 )
+const CustomerPage = lazy(() =>
+  import("@/features/customers/CustomerPage").then((module) => ({
+    default: module.CustomerPage,
+  }))
+)
 const RunsPage = lazy(() =>
   import("@/features/runs/RunsPage").then((module) => ({
     default: module.RunsPage,
@@ -55,6 +60,7 @@ export default function App() {
             <Route element={<WorkspaceLayout />}>
               <Route index element={<QueuePage />} />
               <Route path="tickets/:id" element={<TicketReviewPage />} />
+              <Route path="customers/:phone" element={<CustomerPage />} />
               <Route path="runs" element={<RunsPage />} />
               <Route path="runs/new" element={<NewBatchPage />} />
               <Route path="runs/:id" element={<RunDetailPage />} />

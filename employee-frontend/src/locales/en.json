@@ -88,7 +88,7 @@
   },
   "review": {
     "back": "Back to queue",
-    "customerTicket": "Customer support ticket",
+    "customerProfile": "Open customer profile",
     "baghdad": "Baghdad",
     "notFound": "Ticket not found",
     "notFoundDetail": "Return to the queue and select a ticket in this workspace.",
@@ -220,6 +220,21 @@
     "noEscalations": "No escalations in this queue.",
     "humanTitle": "Always a person in the loop.",
     "humanBody": "Replies are prepared for review. Approval is a human decision."
+  },
+  "customer": {
+    "back": "Back to queue",
+    "since": "Customer since {date}",
+    "ticketCount": "{count} tickets",
+    "colTicket": "Ticket",
+    "colIssue": "Issue & message",
+    "colPriority": "Priority",
+    "colStatus": "Status",
+    "noTickets": "No tickets yet",
+    "noTicketsDetail": "Tickets for this phone number appear here after they are processed.",
+    "notFound": "No customer with this number",
+    "notFoundDetail": "No ticket has been received from this phone number yet.",
+    "invalid": "Not a valid phone number",
+    "invalidDetail": "Customer pages use a ZainCash phone number, for example 07701234567."
   },
   "pages": {
     "runsTitle": "Pipeline runs",

@@ -21,9 +21,6 @@ import {
   ErrorState,
   FilterSelect,
   LoadingState,
-  PageHeader,
-  PriorityBadge,
-  StatusBadge,
 } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
@@ -33,6 +30,7 @@ import { fill, useCopy } from "@/lib/locale"
 import type { Result, ReviewInput } from "@/lib/types"
 import { SourceEvidence } from "./SourceEvidence"
 import { TicketFlow } from "./TicketFlow"
+import { TicketHeader } from "./TicketHeader"
 import { IntakeEvidence } from "./IntakeEvidence"
 import { canReview } from "./review-availability"
 
@@ -316,13 +314,7 @@ export function TicketReviewPage() {
         <ArrowLeft size={15} />
         {textCopy.back}
       </Link>
-      <PageHeader
-        title={result.ticket.external_id}
-        description={`${textCopy.customerTicket} · ${dateLabel(result.ticket.received_at)}, ${timeLabel(result.ticket.received_at)} ${textCopy.baghdad}`}
-      >
-        <PriorityBadge priority={result.priority} />
-        <StatusBadge status={result.status} />
-      </PageHeader>
+      <TicketHeader result={result} />
       <div className="review-layout">
         <div>
           <IntakeEvidence intake={result.intake} />
