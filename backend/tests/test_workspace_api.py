@@ -318,3 +318,39 @@ def test_runs_require_and_normalize_the_customer_phone(client):
         {"external_id": "formatted", "text": "شكد العمولة؟", "customer_phone": "0780 987 6543"},
     ]})
     assert again.status_code == 202, again.text
+
+
+def test_result_search_matches_the_customer_phone_in_any_format(client):
+    start_run(client, [
+        {"external_id": "mine", "text": "تحويل معلق", "customer_phone": "07809876543"},
+        {"external_id": "theirs", "text": "سؤال", "customer_phone": "07501112233"},
+    ])
+    for query in ["07809876543", "+964 780 987 6543", "٠٧٨٠٩٨٧٦٥٤٣"]:
+        page = client.get("/api/results", params={"q": query}).json()
+        assert [item["ticket"]["external_id"] for item in page["items"]] == ["mine"], query
+
+
+def test_customer_profile_lists_the_latest_result_of_each_ticket(client):
+    start_run(client, [
+        {"external_id": "first", "text": "مرحبا", "customer_phone": "07809876543",
+         "received_at": "2026-10-07T09:00:00+03:00"},
+        {"external_id": "second", "text": "سؤال", "customer_phone": "07809876543",
+         "received_at": "2026-10-08T09:00:00+03:00"},
+        {"external_id": "other", "text": "سؤال", "customer_phone": "07501112233"},
+    ])
+    start_run(client, [{"external_id": "first", "text": "مرحبا", "customer_phone": "07809876543"}])
+    profile = client.get("/api/customers/+964 780 987 6543")
+    assert profile.status_code == 200, profile.text
+    body = profile.json()
+    assert body["phone"] == "07809876543"
+    assert body["ticket_count"] == 2
+    assert [item["ticket"]["external_id"] for item in body["results"]] == ["second", "first"]
+    latest_first = client.get("/api/results", params={"q": "first"}).json()["items"][0]
+    assert body["results"][1]["id"] == latest_first["id"]
+
+
+def test_customer_profile_rejects_invalid_and_unknown_phones(client):
+    invalid = client.get("/api/customers/12345")
+    assert invalid.status_code == 422
+    assert "valid ZainCash phone number" in invalid.json()["detail"]
+    assert client.get("/api/customers/07701234567").status_code == 404

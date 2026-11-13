@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 
 from app.api.dependencies import SessionDep
 from app.api.schemas import ReviewInput
+from app.customers.phone import customer_phone_or_none
 from app.db.models import TicketResultRow, TicketRow
 from app.intake.projection import employee_attachment
 from app.services.reviews import (
@@ -30,9 +31,11 @@ def list_results(session: SessionDep, status: str | None = None, team: str | Non
         if value:
             query = query.where(column == value)
     if q:
-        ticket_ids = select(TicketRow.id).where(TicketRow.text.contains(q, autoescape=True) |
-                                               TicketRow.external_id.contains(q, autoescape=True))
-        query = query.where(TicketResultRow.ticket_id.in_(ticket_ids))
+        match = TicketRow.text.contains(q, autoescape=True) | TicketRow.external_id.contains(q, autoescape=True)
+        phone = customer_phone_or_none(q)
+        if phone:
+            match = match | (TicketRow.customer_phone == phone)
+        query = query.where(TicketResultRow.ticket_id.in_(select(TicketRow.id).where(match)))
     total = session.scalar(
         select(func.count()).select_from(query.order_by(None).subquery())
     ) or 0
