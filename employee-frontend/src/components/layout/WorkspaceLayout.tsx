@@ -6,8 +6,6 @@ import {
   BookOpen,
   ChartNoAxesCombined,
   FlaskConical,
-  ChevronDown,
-  ChevronRight,
   PanelLeftClose,
   Menu,
   Plus,
@@ -82,15 +80,6 @@ export function WorkspaceLayout() {
             <PanelLeftClose size={18} />
           </Button>
         </div>
-        <div className="workspace-switch">
-          <span className="workspace-initials">ZC</span>
-          <span>
-            <strong>{copy.layout.customerSupport}</strong>
-            <small>{copy.layout.iraq}</small>
-          </span>
-          <ChevronDown size={15} />
-        </div>
-        <div className="nav-section-label">{copy.layout.section}</div>
         <nav aria-label={copy.layout.section}>
           {navigation.map((item) => (
             <NavLink
@@ -132,11 +121,13 @@ export function WorkspaceLayout() {
             {copy.layout.apiDocs}
             <ArrowUpRight size={14} />
           </a>
-          <div className="hackathon-label">
-            <span>06</span>
+          <div className="employee-profile">
+            <span className="reviewer-avatar" aria-hidden="true">
+              {copy.layout.employeeInitials}
+            </span>
             <div>
-              <strong>{copy.layout.challengeTitle}</strong>
-              <small>{copy.layout.challengeMeta}</small>
+              <strong>{copy.layout.employeeName}</strong>
+              <small>{copy.layout.employeeRole}</small>
             </div>
           </div>
         </div>
@@ -154,8 +145,6 @@ export function WorkspaceLayout() {
             >
               <Menu size={20} />
             </Button>
-            <span>{copy.layout.section}</span>
-            <ChevronRight size={14} />
             <strong>{section}</strong>
           </div>
           <div className="topbar-actions">
@@ -173,9 +162,11 @@ export function WorkspaceLayout() {
               <TooltipTrigger
                 render={<span className="reviewer-avatar" tabIndex={0} />}
               >
-                SA
+                {copy.layout.employeeInitials}
               </TooltipTrigger>
-              <TooltipContent>{copy.layout.reviewer}</TooltipContent>
+              <TooltipContent>
+                {copy.layout.employeeName}
+              </TooltipContent>
             </Tooltip>
             <AiLocalityChip />
             <LanguageToggle />
@@ -191,7 +182,6 @@ export function WorkspaceLayout() {
             <ShieldCheck size={13} />
             {copy.layout.footerApproval}
           </span>
-          <span>{copy.layout.footerTopic}</span>
         </footer>
         <Button
           className="mobile-new-batch"

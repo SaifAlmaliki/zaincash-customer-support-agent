@@ -317,7 +317,7 @@ export function TicketReviewPage() {
       <TicketHeader result={result} />
       <div className="review-layout">
         <div>
-          <IntakeEvidence intake={result.intake} omitDetails />
+          <IntakeEvidence intake={result.intake} omitDetails omitSummary />
           <div className="compare-pair">
             <ReportedDetails intake={result.intake} />
             <TransactionCard result={result} />

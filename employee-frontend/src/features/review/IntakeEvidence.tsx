@@ -41,17 +41,19 @@ export function ReportedDetails({ intake }: { intake: IntakeEvidenceData | null 
   )
 }
 
-export function IntakeEvidence({ intake, omitDetails = false }: { intake: IntakeEvidenceData | null | undefined, omitDetails?: boolean }) {
+export function IntakeEvidence({ intake, omitDetails = false, omitSummary = false }: { intake: IntakeEvidenceData | null | undefined, omitDetails?: boolean, omitSummary?: boolean }) {
   const copy = useCopy()
   const text = copy.intake
   if (!intake) return null
   return (
     <section className="intake-evidence" aria-labelledby="intake-heading">
       <h2 id="intake-heading">{text.heading}</h2>
-      <div lang="ar" dir="rtl">
-        <h3>{text.summary}</h3>
-        <p>{intake.summary_ar}</p>
-      </div>
+      {omitSummary ? null : (
+        <div lang="ar" dir="rtl">
+          <h3>{text.summary}</h3>
+          <p>{intake.summary_ar}</p>
+        </div>
+      )}
       {intake.quality ? <p className="intake-quality">{intake.quality === "sufficient_context" ? text.sufficient : text.partial}</p> : null}
       {omitDetails ? null : <ReportedDetails intake={intake} />}
       {intake.unknown_keys.length ? (

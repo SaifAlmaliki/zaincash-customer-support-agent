@@ -80,7 +80,7 @@ it("renders the pipeline as a thought chain with step names and findings", () =>
   expect(html).not.toContain("جيميناي")
   expect(html).toContain("مسودة")
   expect(html).toContain("قُرئت رسالة تطبيق زين كاش")
-  expect(html).toContain("التحويل لم يصل")
+  expect(html).not.toContain("التحويل لم يصل")
   expect(html).toContain("لم يُحفظ رد")
   expect(html).not.toContain("ما وجده كل خطوة")
 })
@@ -116,10 +116,8 @@ it("renders retained citations and valid tools while excluding malformed entries
     />,
   )
 
-  expect(html).toContain("بحث في قاعدة المعرفة: refund")
-  expect(html).not.toContain("اكتمل")
-  expect(html).toContain("saved.md")
-  expect(html).toContain("دليل محفوظ")
+  expect(html).toContain("حُفظ رد ليراجعه موظف")
+  expect(html).toContain("استُشهد بمقطع واحد من السياسة")
   expect(html).not.toContain("secret")
   expect(html).not.toContain("PIN 1234")
   expect(html).not.toContain(".py")

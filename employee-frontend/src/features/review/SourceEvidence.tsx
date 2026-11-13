@@ -1,46 +1,15 @@
-import type { ReactNode } from "react"
 import {
   FileSearch,
   Hash,
-  ReceiptText,
   ShieldAlert,
-  TextSearch,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Confidence } from "@/components/shared/workspace-ui"
-import { categoryLabel, channelLabel, dateLabel, humanize, percentage, reasonLabel, timeLabel } from "@/lib/format"
-import { fill, useCopy, useLocale } from "@/lib/locale"
+import { categoryLabel, dateLabel, humanize, percentage, reasonLabel, timeLabel } from "@/lib/format"
+import { useCopy, useLocale } from "@/lib/locale"
 import type { Result } from "@/lib/types"
 import { CitationEvidence } from "./CitationEvidence"
-
-function highlightedText(result: Result, extractedMark: string): ReactNode[] {
-  const characters = Array.from(result.ticket.text) // Python source spans count code points, not UTF-16 units.
-  const spans = Object.values(result.extracted)
-    .filter(
-      (field) =>
-        field.start !== null &&
-        field.end !== null &&
-        field.start >= 0 &&
-        field.end <= characters.length &&
-        field.end > field.start
-    )
-    .sort((a, b) => a.start! - b.start!)
-  let cursor = 0
-  const parts: ReactNode[] = []
-  for (const [index, field] of spans.entries()) {
-    if (field.start! < cursor) continue
-    parts.push(characters.slice(cursor, field.start!).join(""))
-    parts.push(
-      <mark key={index} title={fill(extractedMark, { value: String(field.value ?? "") })}>
-        {characters.slice(field.start!, field.end!).join("")}
-      </mark>
-    )
-    cursor = field.end!
-  }
-  parts.push(characters.slice(cursor).join(""))
-  return parts
-}
 
 function ledgerValue(key: string, value: string | number, arabic: boolean): string {
   if ((key === "amount_iqd" || key === "amount") && Number.isFinite(Number(value))) {
@@ -124,61 +93,6 @@ export function SourceEvidence({ result, omitTransaction = false }: { result: Re
       <Card>
         <CardHeader>
           <CardTitle className="section-title">
-            <ReceiptText size={17} />
-            {text.message}
-            <Badge variant="outline">{channelLabel(result.ticket.channel)}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="source-message" dir="auto" lang="ar">
-            {highlightedText(result, text.extractedMark)}
-          </div>
-          <p className="field-help">
-            <span className="highlight-dot" />
-            {text.highlight}
-          </p>
-        </CardContent>
-      </Card>
-      <Card className="extracted-card">
-        <CardHeader>
-          <CardTitle className="section-title">
-            <TextSearch size={15} />
-            {text.extracted}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="extracted-grid">
-            {[
-              ["txn_ref", text.reference],
-              ["amount", text.amount],
-              ["date", text.date],
-              ["phone", text.phone],
-            ].map(([key, label]) => {
-              const field = result.extracted[key]
-              return (
-                <div className="extracted-field" key={key}>
-                  <small>{label}</small>
-                  <strong>
-                    {field?.value != null ? (
-                      `${key === "amount" ? Number(field.value).toLocaleString("en-US") : field.value}${key === "amount" ? ` ${field.currency || "IQD"}` : ""}`
-                    ) : (
-                      <span className="not-stated">{copy.common.notStated}</span>
-                    )}
-                  </strong>
-                  {field?.span && (
-                    <span dir="auto" lang="ar" title={field.span}>
-                      “{field.span}”
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle className="section-title">
             <Hash size={17} />
             {text.classification}
             <Confidence value={result.category_confidence} />
@@ -187,29 +101,24 @@ export function SourceEvidence({ result, omitTransaction = false }: { result: Re
         <CardContent>
           <div className="classification-heading">
             <strong>{categoryLabel(result.category)}</strong>
-            <Badge variant="secondary">
-              {result.classifier_path === "gemini_fallback"
-                ? text.geminiFallback
-                : humanize(result.classifier_path || text.unavailable)}
-            </Badge>
           </div>
-          <div className="probability-list">
-            {Object.entries(result.category_probs)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 4)
-              .map(([category, probability]) => (
-                <div key={category}>
-                  <span>{categoryLabel(category)}</span>
-                  <div>
-                    <i style={{ width: `${probability * 100}%` }} />
+          {Object.entries(result.category_probs).some(([category, probability]) => category !== result.category && probability > 0.005) ? (
+            <div className="probability-list">
+              {Object.entries(result.category_probs)
+                .filter((entry): entry is [string, number] => entry[0] !== result.category && entry[1] > 0.005)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([category, probability]) => (
+                  <div key={category}>
+                    <span>{categoryLabel(category)}</span>
+                    <div>
+                      <i style={{ width: `${probability * 100}%` }} />
+                    </div>
+                    <strong>{percentage(probability)}</strong>
                   </div>
-                  <strong>{percentage(probability)}</strong>
-                </div>
-              ))}
-          </div>
-          <p className="field-help">
-            {text.confidenceHelp}
-          </p>
+                ))}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
       {omitTransaction ? null : <TransactionCard result={result} />}

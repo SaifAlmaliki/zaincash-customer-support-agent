@@ -22,7 +22,7 @@ function statusFor(step: FlowStep, result: Result, steps: FlowStep[]) {
 }
 
 function linesFor(step: FlowStep) {
-  return [step.received, ...step.events, step.produced].filter((line) => line.trim())
+  return [step.received, ...step.events].filter((line) => line.trim() && line !== step.produced)
 }
 
 export function TicketFlow({ result }: { result: Result }) {
@@ -39,9 +39,12 @@ export function TicketFlow({ result }: { result: Result }) {
               <ThoughtChainStep
                 key={`${step.id}-${status}`}
                 status={status}
-                defaultOpen={status !== "pending"}
+                defaultOpen={status === "active"}
               >
-                <ThoughtChainTrigger progressLabel={flow.arabic ? "قيد التنفيذ" : "In progress"}>
+                <ThoughtChainTrigger
+                  detail={step.produced}
+                  progressLabel={flow.arabic ? "قيد التنفيذ" : "In progress"}
+                >
                   {step.name}
                 </ThoughtChainTrigger>
                 <ThoughtChainContent>

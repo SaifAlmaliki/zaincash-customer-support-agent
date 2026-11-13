@@ -156,39 +156,6 @@ html[lang="ar"] .brand > div {
   top: 19px;
   left: 0;
 }
-.workspace-switch {
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 12px 9px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 2px 31px;
-}
-.workspace-initials {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  font-size: 11px;
-  font-weight: 650;
-}
-.workspace-switch strong {
-  font-size: 11px;
-  display: block;
-  font-weight: 600;
-}
-.workspace-switch small {
-  display: block;
-  color: var(--muted-foreground);
-  font-size: 10px;
-}
-.workspace-switch > svg {
-  margin-inline-start: auto;
-  color: var(--muted-foreground);
-}
 .nav-section-label {
   font-size: 11px;
   color: #858b96;
@@ -225,29 +192,23 @@ html[lang="ar"] .brand > div {
 .sidebar-bottom .nav-item > svg:last-child {
   margin-inline-start: auto;
 }
-.hackathon-label {
+.employee-profile {
   border-top: 1px solid var(--border);
-  padding: 18px 4px 0;
+  padding: 16px 4px 0;
   margin-top: 13px;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
 }
-.hackathon-label > span {
-  font-weight: 600;
-  color: #da3345;
-  background: var(--accent-soft);
-  border-radius: 6px;
-  padding: 9px 7px;
-}
-.hackathon-label strong {
+.employee-profile strong {
   display: block;
-  font-size: 10px;
-  font-weight: 550;
+  font-size: 12px;
+  font-weight: 600;
 }
-.hackathon-label small {
+.employee-profile small {
+  display: block;
   color: var(--muted-foreground);
-  font-size: 9px;
+  font-size: 10px;
 }
 .workspace-main {
   margin-left: 232px;

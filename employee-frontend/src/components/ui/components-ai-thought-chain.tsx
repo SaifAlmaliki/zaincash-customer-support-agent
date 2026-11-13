@@ -129,19 +129,21 @@ export function ThoughtChainStep({
 
 export function ThoughtChainTrigger({
   children,
+  detail,
   progressLabel = "In progress",
 }: {
   children: React.ReactNode;
+  detail?: string;
   progressLabel?: string;
 }) {
   const { open, status } = useContext(StepContext)!;
   const styles = statusStyles[status];
 
   return (
-    <CollapsibleTrigger className="flex cursor-pointer select-none items-center gap-1.5 text-start outline-none">
+    <CollapsibleTrigger className="flex w-full cursor-pointer select-none items-center gap-1.5 text-start outline-none">
       <span
         className={cn(
-          "text-[13.5px] font-semibold tracking-tight",
+          "shrink-0 text-[13.5px] font-semibold tracking-tight",
           styles.label,
         )}
       >
@@ -155,6 +157,11 @@ export function ThoughtChainTrigger({
           children
         )}
       </span>
+      {detail ? (
+        <span className="min-w-0 flex-1 truncate text-[12px] font-normal text-gray-400">
+          {detail}
+        </span>
+      ) : null}
 
       <motion.span
         animate={{ rotate: open ? 180 : 0 }}

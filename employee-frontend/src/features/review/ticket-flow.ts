@@ -1,6 +1,6 @@
 import type { ExtractedField, Result } from "../../lib/types"
 import { categoryLabel, percentage } from "../../lib/format"
-import { channelName, checkLines, fieldLabel, isArabicMessage, lookupSentence, reasonName, sentence, teamName, toolLine, transactionLabel } from "./ticket-flow-copy"
+import { channelName, checkLines, isArabicMessage, lookupSentence, reasonName, sentence, teamName, toolLine } from "./ticket-flow-copy"
 import { reviewEvidence } from "./review-evidence"
 
 export const STEP_ORDER = [
@@ -31,6 +31,17 @@ export type TicketFlow = {
   arabic: boolean
   selectedId: FlowStepId
   steps: FlowStep[]
+}
+
+const TXN_STATUS: Record<string, readonly [string, string]> = {
+  pending: ["Pending", "معلّقة"],
+  completed: ["Completed", "مكتملة"],
+  failed: ["Failed", "فاشلة"],
+}
+
+function txnStatus(status: string, arabic: boolean): string {
+  const labels = TXN_STATUS[status]
+  return labels ? labels[arabic ? 1 : 0] : status
 }
 
 const NAMES: Record<FlowStepId, string> = {
@@ -139,23 +150,6 @@ function probabilityLines(result: Result, arabic: boolean): string[] {
     .map(([id, value]) => sentence("probability", arabic, { category: categoryLabel(id), confidence: percentage(value) }))
 }
 
-function presentValue(value: string | number): string {
-  return typeof value === "number" && Number.isFinite(value) ? value.toLocaleString("en-US") : String(value)
-}
-
-function transactionLines(result: Result, arabic: boolean): string[] {
-  const rows = Object.entries(result.transaction ?? {}).filter((entry): entry is [string, string | number] => {
-    const value = entry[1]
-    return value != null && value !== ""
-  })
-  return rows.map(([key, value]) => sentence("lookupDetail", arabic, { label: transactionLabel(key, arabic), value: presentValue(value) }))
-}
-
-function sameToken(value: string, span: string): boolean {
-  const plain = (text: string) => text.replace(/[\s«»"'.,]/g, "").toLowerCase()
-  return plain(value) === plain(span)
-}
-
 function excerpt(text: string): string {
   const flat = text.replace(/\s+/g, " ").trim()
   return flat.length > 180 ? `${flat.slice(0, 177)}…` : flat
@@ -176,12 +170,7 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
     const received = length
       ? sentence("prepareReceived", arabic, { channel: channelName(result.ticket.channel, arabic), length: length.toLocaleString("en-US") })
       : sentence("prepareEmpty", arabic)
-    const phone = result.ticket.customer_phone?.trim()
-    return {
-      received,
-      produced: sentence("prepareProduced", arabic),
-      events: [...message, ...(phone ? [sentence("customerPhone", arabic, { phone })] : [])],
-    }
+    return { received: "", produced: received, events: [] }
   }
   if (id === "escalate_empty") {
     return { received: sentence("emptyReceived", arabic), produced: sentence("emptyProduced", arabic), events: message }
@@ -202,23 +191,22 @@ function story(id: FlowStepId, result: Result, arabic: boolean, route: Route): {
     }
   }
   if (id === "extract") {
-    const fields = FIELD_KEYS.flatMap((key) => {
-      const label = fieldLabel(key, arabic)
-      const field = result.extracted[key]
-      const value = fieldValue(field, arabic)
-      if (value == null || value === sentence("notStated", arabic)) return []
-      const span = field?.span?.trim()
-      return [span && !sameToken(value, span)
-        ? sentence("fieldFrom", arabic, { label, value, span })
-        : sentence("fieldLine", arabic, { label, value })]
-    })
-    return { received: "", produced: fields.length ? "" : sentence("nothingExtracted", arabic), events: fields }
+    const count = FIELD_KEYS.filter((key) => {
+      const value = fieldValue(result.extracted[key], arabic)
+      return value != null && value !== sentence("notStated", arabic)
+    }).length
+    return {
+      received: "",
+      produced: count ? sentence("extractCount", arabic, { count }) : sentence("nothingExtracted", arabic),
+      events: [],
+    }
   }
   if (id === "lookup") {
     const reference = result.matched_txn_ref?.trim()
-    const alreadyListed = Boolean(result.transaction?.txn_ref)
-    const matched = reference && !alreadyListed ? [sentence("lookupDetail", arabic, { label: fieldLabel("txn_ref", arabic), value: reference })] : []
-    return { received: "", produced: lookupSentence(result.lookup_status, arabic), events: [...transactionLines(result, arabic), ...matched] }
+    const status = result.transaction?.status
+    const statusLabel = status ? txnStatus(String(status), arabic) : ""
+    const outcome = [lookupSentence(result.lookup_status, arabic), reference, statusLabel].filter(Boolean).join(" · ")
+    return { received: "", produced: outcome, events: [] }
   }
   if (id === "decide") {
     const reasons = result.escalation_reasons.map((reason) => reasonName(reason, arabic)).join(arabic ? "، " : ", ")
