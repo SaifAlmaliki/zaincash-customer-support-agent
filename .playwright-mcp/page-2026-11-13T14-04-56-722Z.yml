@@ -1,0 +1,50 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - paragraph [ref=e8]: زين كاش
+    - generic [ref=e9]:
+      - button "راجع المعلومات الحالية" [disabled]
+      - button "تقرير جديد" [ref=e20]
+      - group "داخل بالرقم" [ref=e21]:
+        - generic [ref=e23]: "07809876543"
+        - button "تغيير الرقم" [ref=e24]
+      - group "اللغة" [ref=e10]:
+        - button "العربية" [pressed] [ref=e11]: ع
+        - button "English" [ref=e12]: EN
+  - paragraph [ref=e13]: وصلت الفلوس للشخص الثاني؟
+  - main [ref=e14]:
+    - button "أرفق لقطات" [disabled] [ref=e25]
+    - generic [ref=e26]:
+      - log "المحادثة" [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e48]:
+            - generic [ref=e49]: أنت
+            - text: حولت فلوس وما وصلت
+          - generic [ref=e52]:
+            - generic [ref=e53]: الدعم
+            - text: شنو كنت تتوقع يصير؟
+          - generic [ref=e59]:
+            - generic [ref=e60]: أنت
+            - text: توقعت توصل للشخص
+          - generic [ref=e63]:
+            - generic [ref=e64]: الدعم
+            - text: شكد كان المبلغ اللي حولته؟
+          - generic [ref=e67]:
+            - generic [ref=e68]: أنت
+            - text: 50 الف
+          - generic [ref=e71]:
+            - generic [ref=e72]: الدعم
+            - text: المبلغ انخصم من حسابك بعد التحويل؟
+          - generic [ref=e78]:
+            - generic [ref=e79]: أنت
+            - text: امس
+          - generic [ref=e82]:
+            - generic [ref=e83]: الدعم
+            - text: وصلت الفلوس للشخص الثاني؟
+      - status [ref=e87]: جاري مراجعة التفاصيل…
+      - generic [ref=e35]:
+        - textbox "رسالتك" [active] [ref=e37]:
+          - /placeholder: اكتب رسالتك…
+          - text: ما اعرف
+        - generic [ref=e38]:
+          - generic [ref=e39]: أرفق لقطات
+          - button "إرسال" [disabled]

@@ -4,7 +4,6 @@ import type { Language } from "./types"
 
 export type IntakeCopy = {
   title: string
-  subtitle: string
   conversation: string
   message: string
   placeholder: string

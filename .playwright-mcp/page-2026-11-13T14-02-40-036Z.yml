@@ -1,0 +1,14 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - paragraph [ref=e8]: زين كاش
+    - group "اللغة" [ref=e10]:
+      - button "العربية" [pressed] [ref=e11]: ع
+      - button "English" [ref=e12]: EN
+  - paragraph [ref=e13]
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - heading "ابدأ برقم هاتفك" [level=1] [ref=e16]
+      - paragraph [ref=e17]: استخدم الرقم المسجّل بحساب زين كاش مالتك.
+      - textbox "رقم هاتفك بزين كاش" [active] [ref=e18]:
+        - /placeholder: 07XXXXXXXXX
+      - button "استمرار" [ref=e19]

@@ -56,13 +56,9 @@
   font-size: 1.25rem;
   font-weight: 700;
 }
-.intake-subtitle,
 .intake-muted {
   margin: 0;
   color: var(--muted-foreground);
-}
-.intake-subtitle {
-  font-size: 0.875rem;
 }
 .lang-toggle {
   direction: ltr;

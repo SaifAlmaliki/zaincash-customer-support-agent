@@ -8,8 +8,8 @@ export function isArabicMessage(text: string): boolean {
 
 const EN = {
   messageHadText: "The message had text.",
-  askedGeminiDirectly: "This run asked Gemini directly.",
-  jevWasSure: "Jev was already sure.",
+  askedGeminiDirectly: "This run used the second classification only.",
+  jevWasSure: "The first classification was already confident.",
   emptyEnded: "The empty message ended the path.",
   runStopped: "The run stopped.",
   chartFailed: "The chart could not be drawn.",
@@ -32,12 +32,13 @@ const EN = {
   emptyReceived: "The customer message was empty.",
   emptyProduced: "Held for a person because the message was empty.",
   cleaned: "Received the cleaned message.",
-  jevSure: "Jev classified this ticket. Gemini was not asked. {category}, {confidence} confidence, priority {priority}.",
-  jevUnsure: "Jev was unsure, so Gemini was asked.",
-  jevUnsureEscalated: "Jev was unsure, so the ticket was flagged for human review.",
-  jevOnlyNoGemini: "This Jev-only run did not use Gemini.",
-  geminiUnavailable: "Gemini was asked, but no classification was recorded.",
-  geminiAfterJev: "Received Jev's uncertain classification.",
+  jevSure: "Classified as {category}, {confidence} confidence, priority {priority}.",
+  jevUnsure: "The first classification was uncertain, so a second classification was requested.",
+  jevUnsureEscalated: "The classification was uncertain, so the ticket was flagged for a person.",
+  jevOnlyNoGemini: "A second classification was not run.",
+  geminiUnavailable: "A second classification was requested, but none was recorded.",
+  geminiAfterJev: "Reviewed the uncertain first classification.",
+  nothingExtracted: "No details were recorded.",
   classified: "{category}, {confidence} confidence, priority {priority}.",
   extractReceived: "Received the classification {category}.",
   fieldLine: "{label}: {value}.",
@@ -68,7 +69,7 @@ const EN = {
   noTeam: "no team",
   noCategory: "Unclassified",
   toolFallback: "Ran {name}",
-  toolOk: "{action}. Completed.",
+  toolOk: "{action}.",
   toolCancelled: "{action}. Cancelled.",
   toolIncomplete: "{action}. Did not complete.",
   toolPlain: "{action}.",
@@ -82,8 +83,8 @@ const EN = {
 
 const AR: Record<keyof typeof EN, string> = {
   messageHadText: "الرسالة تحتوي على نص.",
-  askedGeminiDirectly: "هذا التشغيل طلب جيميناي مباشرة.",
-  jevWasSure: "جيف كان متأكدًا.",
+  askedGeminiDirectly: "هذا التشغيل استخدم التصنيف الثاني فقط.",
+  jevWasSure: "التصنيف الأول كان واثقًا.",
   emptyEnded: "الرسالة الفارغة أنهت المسار.",
   runStopped: "توقف التشغيل.",
   chartFailed: "تعذّر رسم المسار.",
@@ -106,12 +107,13 @@ const AR: Record<keyof typeof EN, string> = {
   emptyReceived: "كانت رسالة العميل فارغة.",
   emptyProduced: "أُبقيت لموظف لأن الرسالة كانت فارغة.",
   cleaned: "استلم الرسالة بعد تنظيفها.",
-  jevSure: "صنّف جيف هذه التذكرة. لم يُسأل جيميناي. {category}، ثقة {confidence}، أولوية {priority}.",
-  jevUnsure: "جيف لم يكن متأكدًا، لذلك سُئل جيميناي.",
-  jevUnsureEscalated: "كان جيف غير متأكد، لذلك أُحالت التذكرة لموظف للمراجعة.",
-  jevOnlyNoGemini: "هذا التشغيل يستخدم جيف فقط ولم يستخدم جيميناي.",
-  geminiUnavailable: "طُلب من جيميناي التصنيف، لكن لم يُسجَّل تصنيف.",
-  geminiAfterJev: "استلم تصنيف جيف غير المؤكد.",
+  jevSure: "صُنّفت {category}، ثقة {confidence}، أولوية {priority}.",
+  jevUnsure: "التصنيف الأول لم يكن واثقًا، لذلك طُلب تصنيف ثانٍ.",
+  jevUnsureEscalated: "التصنيف لم يكن واثقًا، لذلك أُحالت التذكرة لموظف.",
+  jevOnlyNoGemini: "لم يُنفَّذ تصنيف ثانٍ.",
+  geminiUnavailable: "طُلب تصنيف ثانٍ، لكن لم يُسجَّل.",
+  geminiAfterJev: "راجع التصنيف الأول غير الواثق.",
+  nothingExtracted: "لم تُسجَّل تفاصيل.",
   classified: "{category}، ثقة {confidence}، أولوية {priority}.",
   extractReceived: "استلم التصنيف {category}.",
   fieldLine: "{label}: {value}.",
@@ -142,7 +144,7 @@ const AR: Record<keyof typeof EN, string> = {
   noTeam: "بدون فريق",
   noCategory: "بدون تصنيف",
   toolFallback: "شغّل الأداة {name}",
-  toolOk: "{action}. اكتمل.",
+  toolOk: "{action}.",
   toolCancelled: "{action}. أُلغي.",
   toolIncomplete: "{action}. لم يكتمل.",
   toolPlain: "{action}.",
@@ -189,6 +191,8 @@ const REASONS_AR: Record<string, string> = {
   llm_unavailable: "نموذج الصياغة غير متاح",
   draft_failed_guardrail: "المسودة لم تجتز فحص الأمان",
   no_kb_support: "لا يوجد مستند سياسة يدعم الرد",
+  missing_citations: "لا توجد استشهادات",
+  missing_citation: "لا توجد استشهادات",
 }
 
 export function teamName(id: string, arabic: boolean): string {
@@ -226,6 +230,7 @@ const TXN_FIELDS: Record<string, [string, string]> = {
   txn_ref: ["Transaction reference", "الرقم المرجعي"],
   sender_phone: ["Sender phone", "هاتف المرسل"],
   receiver_phone: ["Receiver phone", "هاتف المستلم"],
+  receiver_name: ["Receiver", "المستلم"],
   amount_iqd: ["Amount", "المبلغ"],
   amount: ["Amount", "المبلغ"],
   type: ["Type", "النوع"],
@@ -297,21 +302,15 @@ export function checkLines(
     if (event.kind === "guardrail") {
       const findings = texts(event.findings)
       if (event.credential_check_degraded === true) return [sentence("credentialUnavailable", arabic)]
-      const credential = event.status === "passed" && findings.length === 0
-        ? sentence("credentialPassed", arabic)
-        : findings.length
-          ? sentence("credentialFailed", arabic)
-          : sentence("credentialUnrecorded", arabic)
-      const safety = findings.length
-        ? sentence("safetyFlagged", arabic, { findings: findings.map(humanize).join(", ") })
-        : sentence("safetyClear", arabic)
-      return [credential, safety]
+      if (findings.length) return [sentence("safetyFlagged", arabic, { findings: findings.map((item) => reasonName(item, arabic)).join(arabic ? "، " : ", ") })]
+      if (event.status === "passed") return [sentence("credentialPassed", arabic)]
+      return []
     }
     if (event.kind === "draft") {
       const reasons = texts(event.reasons).map((item) => reasonName(item, arabic)).join(arabic ? "، " : ", ")
       const status = event.status
         ? arabic
-          ? { submitted: "أُرسلت", passed: "نجح", failed: "فشل" }[event.status] || humanize(event.status)
+          ? { submitted: "أُرسلت", passed: "نجح", failed: "فشل", rejected: "مرفوضة" }[event.status] || humanize(event.status)
           : humanize(event.status).toLowerCase()
         : sentence("draftStatusUnknown", arabic)
       return [reasons ? sentence("draftCheckReasons", arabic, { status, reasons }) : sentence("draftCheckPlain", arabic, { status })]

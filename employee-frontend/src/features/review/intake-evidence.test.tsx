@@ -49,6 +49,6 @@ it("distinguishes contradictions and applicability and links supporting evidence
   } }} />)
   expect(html).toContain("متعارض")
   expect(html).toContain("لا ينطبق")
-  expect(html).toContain('href="#intake-message-m1"')
+  expect(html).not.toContain('href="#intake-message-m1"')
   expect(html).toContain('id="intake-message-m1"')
 })

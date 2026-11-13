@@ -178,10 +178,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
         <header className="intake-header">
           <div className="intake-brand">
             <span className="intake-mark" aria-hidden="true" />
-            <div>
-              <p className="intake-title">{text.title}</p>
-              <p className="intake-subtitle">{text.subtitle}</p>
-            </div>
+            <p className="intake-title">{text.title}</p>
           </div>
           <div className="intake-header-actions">
             {needsPhone ? null : (

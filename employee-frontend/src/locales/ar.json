@@ -262,7 +262,21 @@
     "partial": "سياق جزئي",
     "screenshot": "لقطة شاشة",
     "message": "رسالة الزبون",
-    "imageUnavailable": "الصورة غير متاحة"
+    "imageUnavailable": "الصورة غير متاحة",
+    "fields": {
+      "issue": "المشكلة",
+      "actual": "ما حدث",
+      "expected": "المتوقع",
+      "date": "التاريخ",
+      "amount": "المبلغ",
+      "currency": "العملة",
+      "debited": "خصم من الرصيد",
+      "recipient_outcome": "وصول المبلغ",
+      "customer_phone": "هاتف الزبون",
+      "recipient_phone": "هاتف المستلم",
+      "txn_ref": "رقم العملية",
+      "exact_error": "نص الخطأ"
+    }
   },
   "trace": {
     "title": "أثر المعالجة والأدوات",
@@ -310,6 +324,19 @@
     "unavailable": "غير متاح",
     "confidenceHelp": "الثقة إشارة من النموذج، وليست ضماناً لصحة التصنيف.",
     "transaction": "دليل العملية",
+    "txn": {
+      "txn_ref": "رقم العملية",
+      "sender_phone": "هاتف المرسل",
+      "receiver_phone": "هاتف المستلم",
+      "receiver_name": "المستلم",
+      "amount_iqd": "المبلغ",
+      "amount": "المبلغ",
+      "type": "النوع",
+      "status": "الحالة",
+      "created_at": "تاريخ الإنشاء",
+      "biller": "الجهة",
+      "currency": "العملة"
+    },
     "lookupSkipped": "هذه المشكلة لا تحتاج البحث عن عملية.",
     "lookupMissing": "لا توجد عملية مطابقة. تحقق قبل تأكيد تفاصيل العملية."
   },

@@ -28,10 +28,10 @@ import { api } from "@/lib/api"
 import { dateLabel, teamLabel, teams, timeLabel, humanize } from "@/lib/format"
 import { fill, useCopy } from "@/lib/locale"
 import type { Result, ReviewInput } from "@/lib/types"
-import { SourceEvidence } from "./SourceEvidence"
+import { SourceEvidence, TransactionCard } from "./SourceEvidence"
 import { TicketFlow } from "./TicketFlow"
 import { TicketHeader } from "./TicketHeader"
-import { IntakeEvidence } from "./IntakeEvidence"
+import { IntakeEvidence, ReportedDetails } from "./IntakeEvidence"
 import { canReview } from "./review-availability"
 
 function reviewerNote(result: Result) {
@@ -317,8 +317,12 @@ export function TicketReviewPage() {
       <TicketHeader result={result} />
       <div className="review-layout">
         <div>
-          <IntakeEvidence intake={result.intake} />
-          <SourceEvidence result={result} />
+          <IntakeEvidence intake={result.intake} omitDetails />
+          <div className="compare-pair">
+            <ReportedDetails intake={result.intake} />
+            <TransactionCard result={result} />
+          </div>
+          <SourceEvidence result={result} omitTransaction />
         </div>
         <ReviewEditor
           key={result.id}

@@ -262,7 +262,21 @@
     "partial": "Partial context",
     "screenshot": "Screenshot",
     "message": "Customer message",
-    "imageUnavailable": "Image unavailable"
+    "imageUnavailable": "Image unavailable",
+    "fields": {
+      "issue": "Issue",
+      "actual": "What happened",
+      "expected": "Expected",
+      "date": "Date",
+      "amount": "Amount",
+      "currency": "Currency",
+      "debited": "Deducted",
+      "recipient_outcome": "Recipient received it",
+      "customer_phone": "Customer phone",
+      "recipient_phone": "Recipient phone",
+      "txn_ref": "Transaction reference",
+      "exact_error": "Error text"
+    }
   },
   "trace": {
     "title": "Pipeline & tool trace",
@@ -310,6 +324,19 @@
     "unavailable": "Unavailable",
     "confidenceHelp": "Confidence is a model signal, not a guarantee of correctness.",
     "transaction": "Transaction evidence",
+    "txn": {
+      "txn_ref": "Transaction reference",
+      "sender_phone": "Sender phone",
+      "receiver_phone": "Receiver phone",
+      "receiver_name": "Receiver",
+      "amount_iqd": "Amount",
+      "amount": "Amount",
+      "type": "Type",
+      "status": "Status",
+      "created_at": "Created",
+      "biller": "Biller",
+      "currency": "Currency"
+    },
     "lookupSkipped": "This issue does not require a transaction lookup.",
     "lookupMissing": "No matched transaction is available. Investigate before confirming transaction details."
   },

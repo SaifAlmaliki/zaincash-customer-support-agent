@@ -1,5 +1,7 @@
 import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { IntakeEvidenceData } from "@/lib/types"
+import { humanize } from "@/lib/format"
 import { getCopy, useCopy } from "@/lib/locale"
 
 function factValue(status: string, value: string | null | undefined, normalized: string | null | undefined) {
@@ -16,7 +18,30 @@ function Screenshot({ url, filename }: { url: string; filename: string }) {
   return failed ? <span>{copy.intake.imageUnavailable}: {filename}</span> : <img src={url} alt={filename} loading="lazy" onError={() => setFailed(true)} />
 }
 
-export function IntakeEvidence({ intake }: { intake: IntakeEvidenceData | null | undefined }) {
+export function ReportedDetails({ intake }: { intake: IntakeEvidenceData | null | undefined }) {
+  const text = useCopy().intake
+  if (!intake || Object.keys(intake.facts).length === 0) return null
+  const labels = text.fields as Record<string, string>
+  return (
+    <Card className="compare-card">
+      <CardHeader>
+        <CardTitle className="section-title">{text.details}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <dl className="compare-rows">
+          {Object.entries(intake.facts).map(([key, fact]) => (
+            <div key={key}>
+              <dt>{labels[key] || humanize(key)}</dt>
+              <dd><bdi dir="auto">{factValue(fact.status, fact.value, fact.normalized)}</bdi></dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function IntakeEvidence({ intake, omitDetails = false }: { intake: IntakeEvidenceData | null | undefined, omitDetails?: boolean }) {
   const copy = useCopy()
   const text = copy.intake
   if (!intake) return null
@@ -28,23 +53,7 @@ export function IntakeEvidence({ intake }: { intake: IntakeEvidenceData | null |
         <p>{intake.summary_ar}</p>
       </div>
       {intake.quality ? <p className="intake-quality">{intake.quality === "sufficient_context" ? text.sufficient : text.partial}</p> : null}
-      <h3>{text.details}</h3>
-      <dl>
-        {Object.entries(intake.facts).map(([key, fact]) => (
-          <div key={key}>
-            <dt>{key}</dt>
-            <dd>
-              <bdi dir="auto">{factValue(fact.status, fact.value, fact.normalized)}</bdi>
-              {fact.evidence?.map((source, index) => (
-                <p key={`${source.source_id}-${index}`} dir="auto">
-                  <a href={`#intake-${source.kind}-${source.source_id}`}>{source.kind === "image" ? text.screenshot : text.message}</a>
-                  {": "}{source.quote}
-                </p>
-              ))}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      {omitDetails ? null : <ReportedDetails intake={intake} />}
       {intake.unknown_keys.length ? (
         <ul>
           {intake.unknown_keys.map((key) => (

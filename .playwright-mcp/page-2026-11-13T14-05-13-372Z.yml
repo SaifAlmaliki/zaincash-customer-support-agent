@@ -1,0 +1,89 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - paragraph [ref=e8]: زين كاش
+    - generic [ref=e9]:
+      - button "تقرير جديد" [ref=e20]
+      - group "داخل بالرقم" [ref=e21]:
+        - generic [ref=e23]: "07809876543"
+        - button "تغيير الرقم" [ref=e24]
+      - group "اللغة" [ref=e10]:
+        - button "العربية" [pressed] [ref=e11]: ع
+        - button "English" [ref=e12]: EN
+  - paragraph [ref=e13]: راجع التفاصيل قبل الإرسال.
+  - main [ref=e14]:
+    - button "أرفق لقطات" [ref=e25]
+    - generic [ref=e26]:
+      - log "المحادثة" [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e48]:
+            - generic [ref=e49]: أنت
+            - text: حولت فلوس وما وصلت
+          - generic [ref=e52]:
+            - generic [ref=e53]: الدعم
+            - text: شنو كنت تتوقع يصير؟
+          - generic [ref=e59]:
+            - generic [ref=e60]: أنت
+            - text: توقعت توصل للشخص
+          - generic [ref=e63]:
+            - generic [ref=e64]: الدعم
+            - text: شكد كان المبلغ اللي حولته؟
+          - generic [ref=e67]:
+            - generic [ref=e68]: أنت
+            - text: 50 الف
+          - generic [ref=e71]:
+            - generic [ref=e72]: الدعم
+            - text: المبلغ انخصم من حسابك بعد التحويل؟
+          - generic [ref=e78]:
+            - generic [ref=e79]: أنت
+            - text: امس
+          - generic [ref=e82]:
+            - generic [ref=e83]: الدعم
+            - text: وصلت الفلوس للشخص الثاني؟
+          - generic [ref=e90]:
+            - generic [ref=e91]: أنت
+            - text: ما اعرف
+          - generic [ref=e94]:
+            - generic [ref=e95]: الدعم
+            - text: راجع التفاصيل قبل الإرسال.
+          - region "راجع تفاصيل المشكلة" [ref=e96]:
+            - heading "راجع تفاصيل المشكلة" [level=2] [ref=e97]
+            - paragraph [ref=e98]: بعض التفاصيل بعدها مو معروفة
+            - paragraph [ref=e99]: "المشكلة: حولت فلوس وما وصلت. الفعلي: الفلوس ما وصلت. المتوقع: توقعت توصل للشخص. التاريخ: امس (2026-11-12). المبلغ: 50 الف (50000)، والعملة غير محددة. هل انخصم المبلغ من حسابي: غير معروف لحد الآن. وضع المستلم: غير معروف، لأن الزبون كال \"ما اعرف\". رقم هاتف الزبون: 07809876543. المشكلة لسه مو محلولة وما تأكد استرجاع أي مبلغ."
+            - heading "التفاصيل" [level=3] [ref=e100]
+            - generic [ref=e101]:
+              - generic [ref=e102]:
+                - term [ref=e103]: المشكلة
+                - definition [ref=e104]: حولت فلوس وما وصلت
+              - generic [ref=e105]:
+                - term [ref=e106]: اللي صار
+                - definition [ref=e107]: الفلوس ما وصلت
+              - generic [ref=e108]:
+                - term [ref=e109]: المتوقع
+                - definition [ref=e110]: توقعت توصل للشخص
+              - generic [ref=e111]:
+                - term [ref=e112]: التاريخ
+                - definition [ref=e113]: 2026-11-12
+              - generic [ref=e114]:
+                - term [ref=e115]: المبلغ
+                - definition [ref=e116]: "50000"
+              - generic [ref=e117]:
+                - term [ref=e118]: انخصم المبلغ؟
+                - definition [ref=e119]: غير معروف
+              - generic [ref=e120]:
+                - term [ref=e121]: وصل المبلغ؟
+                - definition [ref=e122]: غير معروف
+              - generic [ref=e123]:
+                - term [ref=e124]: رقم حسابك
+                - definition [ref=e125]: "07809876543"
+            - list [ref=e126]:
+              - listitem [ref=e127]: "انخصم المبلغ؟: غير معروف"
+              - listitem [ref=e128]: "وصل المبلغ؟: غير معروف"
+      - generic [ref=e129]:
+        - button "كمّل المحادثة" [ref=e130]
+        - button "إرسال التذكرة" [ref=e131]
+      - generic [ref=e35]:
+        - textbox "رسالتك" [active] [ref=e37]:
+          - /placeholder: اكتب رسالتك…
+        - generic [ref=e38]:
+          - generic [ref=e39]: أرفق لقطات
+          - button "إرسال" [disabled]

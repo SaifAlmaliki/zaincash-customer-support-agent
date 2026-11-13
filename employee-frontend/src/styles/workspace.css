@@ -2584,6 +2584,48 @@ html[dir="rtl"] .knowledge-note span svg {
     font-size: 10px;
   }
 }
+.compare-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+.compare-pair > :only-child {
+  grid-column: 1 / -1;
+}
+.compare-card.compare-card {
+  --card-spacing: 14px;
+  min-width: 0;
+}
+.compare-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.compare-rows > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.compare-rows dt {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.compare-rows dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .compare-pair {
+    grid-template-columns: 1fr;
+  }
+}
 .intake-evidence {
   display: flex;
   flex-direction: column;

@@ -37,7 +37,6 @@ export function PhoneGate({
     <form className="intake-gate" onSubmit={submit} noValidate>
       <h1 className="intake-gate-title">{copy.phoneTitle}</h1>
       <p className="intake-muted">{copy.phoneHelp}</p>
-      <label htmlFor="intake-phone">{copy.phoneLabel}</label>
       <input
         id="intake-phone"
         className="intake-gate-input"
@@ -46,6 +45,7 @@ export function PhoneGate({
         autoComplete="tel"
         autoFocus
         placeholder="07XXXXXXXXX"
+        aria-label={copy.phoneLabel}
         value={value}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? "intake-phone-error" : undefined}

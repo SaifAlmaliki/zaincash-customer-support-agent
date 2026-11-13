@@ -33,7 +33,7 @@ export function TicketFlow({ result }: { result: Result }) {
     <Card>
       <CardContent className="path-card" style={{ fontFamily: font }}>
         <ThoughtChain key={result.id}>
-          {flow.steps.map((step) => {
+          {flow.steps.filter((step) => step.state === "used").map((step) => {
             const status = statusFor(step, result, flow.steps)
             return (
               <ThoughtChainStep

@@ -1,6 +1,5 @@
 {
   "title": "ZainCash",
-  "subtitle": "Tell support what happened before a ticket is sent",
   "conversation": "Conversation",
   "message": "Your message",
   "placeholder": "Send a message…",
@@ -65,7 +64,7 @@
   "imageUnavailable": "Image unavailable",
   "resumeUnavailable": "This browser cannot save the conversation for later.",
   "phoneTitle": "Start with your phone number",
-  "phoneHelp": "Use the number registered on your ZainCash account. Support uses it to find your account and your reports.",
+  "phoneHelp": "Use the number registered on your ZainCash account.",
   "phoneLabel": "Your ZainCash phone number",
   "phoneContinue": "Continue",
   "phoneInvalid": "Enter a valid ZainCash phone number, for example 07701234567.",

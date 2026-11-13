@@ -11,8 +11,8 @@ it("treats Arabic letters as an Arabic message and a blank message as English", 
 
 it("returns the English skip reasons verbatim and the Arabic reasons for the same ids", () => {
   expect(sentence("messageHadText", false)).toBe("The message had text.")
-  expect(sentence("askedGeminiDirectly", false)).toBe("This run asked Gemini directly.")
-  expect(sentence("jevWasSure", false)).toBe("Jev was already sure.")
+  expect(sentence("askedGeminiDirectly", false)).toBe("This run used the second classification only.")
+  expect(sentence("jevWasSure", false)).toBe("The first classification was already confident.")
   expect(sentence("emptyEnded", false)).toBe("The empty message ended the path.")
   expect(sentence("runStopped", false)).toBe("The run stopped.")
   expect(sentence("chartFailed", false)).toBe("The chart could not be drawn.")
@@ -38,7 +38,7 @@ it("fills a sentence template and describes a lookup", () => {
 
 it("keeps only safe tool details and states credential checks without secrets", () => {
   expect(toolLine({ tool: "lookup_transaction", status: "ok", arguments: { txn_ref: "ZC-1044", pin: "1234" } }, false)).toBe(
-    "Looked up a transaction reference: ZC-1044. Completed.",
+    "Looked up a transaction reference: ZC-1044.",
   )
   expect(toolLine({ tool: "lookup_transaction", status: "ok", arguments: { txn_ref: "ZC-1044", pin: "1234" } }, false)).not.toContain("1234")
   expect(checkLines([{ kind: "guardrail", status: "passed", findings: [], credential_check_degraded: true }], false)).toEqual([
@@ -46,7 +46,9 @@ it("keeps only safe tool details and states credential checks without secrets", 
   ])
   expect(checkLines([{ kind: "guardrail", status: "passed", findings: [] }], false)).toEqual([
     "The credential check passed.",
-    "No safety-check findings were recorded.",
+  ])
+  expect(checkLines([{ kind: "guardrail", status: "failed", findings: ["missing_citations"] }], false)).toEqual([
+    "Safety checks flagged Missing citations.",
   ])
 })
 
@@ -100,7 +102,7 @@ function step(flow: ReturnType<typeof buildTicketFlow>, id: string) {
 it("opens Draft on a straight Jev path and explains the skipped steps", () => {
   const flow = buildTicketFlow(result())
   expect(flow.selectedId).toBe("draft")
-  expect(step(flow, "gemini_classify")).toMatchObject({ state: "unused", reason: "Jev was already sure." })
+  expect(step(flow, "gemini_classify")).toMatchObject({ state: "unused", reason: "The first classification was already confident." })
   expect(step(flow, "escalate_empty")).toMatchObject({ state: "unused", reason: "The message had text." })
   expect(step(flow, "jev_classify").state).toBe("used")
 })
@@ -108,10 +110,10 @@ it("opens Draft on a straight Jev path and explains the skipped steps", () => {
 it("explains that an uncertain Jev-only result goes to human review", () => {
   const flow = buildTicketFlow(result({ escalated: true, escalation_reasons: ["low_confidence"] }))
   expect(step(flow, "jev_classify").produced).toBe(
-    "Jev was unsure, so the ticket was flagged for human review.",
+    "The classification was uncertain, so the ticket was flagged for a person.",
   )
   expect(step(flow, "jev_classify").produced).not.toContain("Gemini")
-  expect(step(flow, "gemini_classify").reason).toBe("This Jev-only run did not use Gemini.")
+  expect(step(flow, "gemini_classify").reason).toBe("A second classification was not run.")
 })
 
 it("does not call a legacy Gemini-unavailable result Jev-only", () => {
@@ -125,7 +127,7 @@ it("does not call a legacy Gemini-unavailable result Jev-only", () => {
   })
   const flow = buildTicketFlow(legacy)
   expect(step(flow, "gemini_classify").reason).toBe(
-    "Gemini was asked, but no classification was recorded.",
+    "A second classification was requested, but none was recorded.",
   )
 })
 
@@ -161,7 +163,7 @@ it("opens Prepare when Gemini was asked directly", () => {
     agent_trace: [{ kind: "stage", node: "gemini_classify" }],
   }))
   expect(flow.selectedId).toBe("prepare")
-  expect(step(flow, "jev_classify")).toMatchObject({ state: "unused", reason: "This run asked Gemini directly." })
+  expect(step(flow, "jev_classify")).toMatchObject({ state: "unused", reason: "This run used the second classification only." })
 })
 
 it("does not invent a Jev skip reason when a Gemini path has no trace", () => {
@@ -185,7 +187,7 @@ it("lets a Jev path ignore a stray Gemini stage event", () => {
     agent_trace: [{ kind: "stage", node: "gemini_classify" }],
   }))
   expect(flow.selectedId).toBe("draft")
-  expect(step(flow, "gemini_classify").reason).toBe("Jev was already sure.")
+  expect(step(flow, "gemini_classify").reason).toBe("The first classification was already confident.")
 })
 
 it("stops a failed run at its last stage event and hides the raw error", () => {
@@ -251,17 +253,20 @@ it("adds the message, the ledger row, and the reply to the steps that used them"
     draft_text: "سنراجع عملية الدفع.",
     category_probs: { bill_payment: 1, other: 0 },
   }))
+  expect(step(flow, "prepare").events.join("\n")).toContain("The transfer failed")
+  expect(step(flow, "jev_classify").events.join("\n")).not.toContain("The transfer failed")
   expect(step(flow, "lookup").events.join("\n")).toContain("ZC-1044")
   expect(step(flow, "lookup").events.join("\n")).toContain("35,000")
   expect(step(flow, "lookup").events.join("\n")).toContain("electricity")
   expect(step(flow, "draft").events.join("\n")).toContain("سنراجع عملية الدفع.")
-  expect(step(flow, "gemini_classify").events.join("\n")).toContain("The transfer failed")
-  expect(step(flow, "decide").events.join("\n")).toContain("priority high")
+  expect(step(flow, "draft").events.join("\n")).not.toContain("The transfer failed")
+  expect(step(flow, "decide").produced).toContain("Payments Ops")
 })
 
-it("says a missing extracted field was not recorded", () => {
+it("says nothing was extracted when no details were recorded", () => {
   const flow = buildTicketFlow(result({ extracted: {} }))
-  expect(step(flow, "extract").events).toContain("Transaction reference: This field was not recorded.")
+  expect(step(flow, "extract").produced).toBe("No details were recorded.")
+  expect(step(flow, "extract").events).toEqual([])
 })
 
 it("uses Arabic received and produced lines when the message is Arabic", () => {
@@ -276,23 +281,24 @@ it("uses Arabic received and produced lines when the message is Arabic", () => {
   expect(step(flow, "prepare").produced).toBe("حُوّلت الأرقام العربية إلى 0–9، وأُخفيت أرقام البطاقات.")
   const draftEvents = step(flow, "draft").events.join("\n")
   expect(draftEvents).not.toContain("Looked up")
-  expect(draftEvents).not.toContain("Completed")
+  expect(draftEvents).not.toContain("اكتمل")
   expect(draftEvents).not.toContain("Draft ")
   expect(draftEvents).toContain("ZC-1044")
-  expect(draftEvents).toContain("اكتمل")
+  expect(draftEvents).toContain("بحث عن رقم مرجعي")
 })
 
 it("omits unsafe tool arguments from the Draft events", () => {
   const flow = buildTicketFlow(result({
     agent_trace: [{ kind: "tool", tool: "search_knowledge_base", status: "ok", arguments: { query: "refund", password: "secret" } }],
   }))
-  expect(step(flow, "draft").events.join("\n")).toContain("Searched the knowledge base: refund. Completed.")
+  expect(step(flow, "draft").events.join("\n")).toContain("Searched the knowledge base: refund.")
   expect(step(flow, "draft").events.join("\n")).not.toContain("secret")
 })
 
 it("uses Arabic step names when the profile is Arabic", () => {
   const flow = buildTicketFlow(result(), true)
   expect(step(flow, "prepare").name).toBe("تجهيز")
-  expect(step(flow, "jev_classify").name).toBe("جيف")
-  expect(step(flow, "gemini_classify").reason).toBe("جيف كان متأكدًا.")
+  expect(step(flow, "jev_classify").name).toBe("تصنيف")
+  expect(step(flow, "gemini_classify").name).toBe("تصنيف ثانٍ")
+  expect(step(flow, "gemini_classify").reason).toBe("التصنيف الأول كان واثقًا.")
 })

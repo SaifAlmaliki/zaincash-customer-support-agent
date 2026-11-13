@@ -75,8 +75,9 @@ function result(patch: Partial<Result> = {}): Result {
 it("renders the pipeline as a thought chain with step names and findings", () => {
   const html = renderToStaticMarkup(<TicketFlow result={result()} />)
   expect(html).toContain("تجهيز")
-  expect(html).toContain("جيف")
-  expect(html).toContain("جيميناي")
+  expect(html).toContain("تصنيف")
+  expect(html).not.toContain("جيف")
+  expect(html).not.toContain("جيميناي")
   expect(html).toContain("مسودة")
   expect(html).toContain("قُرئت رسالة تطبيق زين كاش")
   expect(html).toContain("التحويل لم يصل")
@@ -115,8 +116,8 @@ it("renders retained citations and valid tools while excluding malformed entries
     />,
   )
 
-  expect(html).toContain("بحث في قاعدة المعرفة")
-  expect(html).toContain("اكتمل")
+  expect(html).toContain("بحث في قاعدة المعرفة: refund")
+  expect(html).not.toContain("اكتمل")
   expect(html).toContain("saved.md")
   expect(html).toContain("دليل محفوظ")
   expect(html).not.toContain("secret")
