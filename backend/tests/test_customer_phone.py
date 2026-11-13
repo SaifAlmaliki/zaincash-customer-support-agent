@@ -17,6 +17,11 @@ from app.customers.phone import InvalidPhone, customer_phone_or_none, normalize_
     "٠٧٧٠١٢٣٤٥٦٧",
     "+۹۶۴\u00a0۷۷۰-۱۲۳ ۴۵۶۷",
     "  07701234567  ",
+    "\u202a+964 770 123 4567\u202c",
+    "\u2066+964 770 123 4567\u2069",
+    "\u200e07701234567",
+    "\u061c07701234567",
+    "\ufeff07701234567",
 ])
 def test_accepted_formats_become_the_canonical_phone(raw):
     assert normalize_customer_phone(raw) == "07701234567"

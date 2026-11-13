@@ -1,7 +1,11 @@
 import { expect, it } from "vitest"
 import { customerPath, normalizeCustomerPhone } from "./phone"
 
-it.each(["07809876543", "+964 780 987 6543", "٠٧٨٠٩٨٧٦٥٤٣", "7809876543", "00964-780-987-6543"])("accepts %s", (raw) => {
+it.each([
+  "07809876543", "+964 780 987 6543", "٠٧٨٠٩٨٧٦٥٤٣", "7809876543", "00964-780-987-6543",
+  "\u202a+964 780 987 6543\u202c", "\u2066+964 780 987 6543\u2069", "\u200e07809876543",
+  "\u061c07809876543", "\ufeff07809876543",
+])("accepts %s", (raw) => {
   expect(normalizeCustomerPhone(raw)).toBe("07809876543")
 })
 

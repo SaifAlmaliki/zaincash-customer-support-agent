@@ -1,5 +1,7 @@
 // Same rules as backend/app/customers/phone.py. The server stays authoritative.
 const ALLOWED = /^[0-9\s+\-().]*$/
+// Invisible direction marks come from copy/paste in RTL apps and cannot alias another number.
+const FORMAT_MARKS = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g
 const CANONICAL = /^07[3-9][0-9]{8}$/
 const WITHOUT_ZERO = /^7[3-9][0-9]{8}$/
 
@@ -9,7 +11,7 @@ function asciiDigits(value: string) {
 }
 
 export function normalizeCustomerPhone(raw: string): string | null {
-  const text = asciiDigits(raw).trim()
+  const text = asciiDigits(raw).replace(FORMAT_MARKS, "").trim()
   if (!ALLOWED.test(text)) return null
   let digits = text.replace(/[^0-9]/g, "")
   if (digits.startsWith("00964")) digits = digits.slice(2)
