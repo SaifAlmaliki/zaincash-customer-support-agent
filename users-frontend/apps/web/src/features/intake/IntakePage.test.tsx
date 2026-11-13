@@ -7,7 +7,7 @@ import { IntakeController } from "./controller"
 import { IntakePage } from "./IntakePage"
 import { memoryStorage } from "./session"
 import { CUSTOMER_PHONE, attachment, emptySession as sharedEmptySession, fakeApi as sharedFakeApi, review } from "./test/fixtures"
-import type { SessionView } from "./types"
+import type { Choice, PendingQuestion, SessionView } from "./types"
 import { ThemeProvider } from "@/components/theme-provider"
 
 function pageReadiness(): SessionView["readiness"] {
@@ -290,4 +290,80 @@ it("renders the complete themed page when browser storage is denied", async () =
     fireEvent.keyDown(window, { key: "d" })
     expect(document.documentElement).toHaveClass("light")
   } finally { denied.mockRestore() }
+})
+
+function asking(question: PendingQuestion): Partial<SessionView> {
+  return {
+    messages: [{ id: question.message_id, role: "assistant", text: question.text, language: "ar", created_at: "2026-10-18T09:00:00Z", attachment_ids: [] }],
+    pending_question: question,
+  }
+}
+
+const debited: PendingQuestion = {
+  key: "debited", message_id: "q1", text: "انخصم المبلغ من محفظتك؟", reason: "حتى نعرف إذا الفلوس طلعت من محفظتك.",
+  answer_kind: "yes_no", choices: ["yes", "no", "unknown"] as Choice[], attempt: 1,
+}
+
+it("shows why a question is asked and answers it with one tap", async () => {
+  const user = userEvent.setup()
+  const { controller, api } = await collectingController("ar", asking(debited))
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByText("ليش نسأل: حتى نعرف إذا الفلوس طلعت من محفظتك.")).toBeVisible()
+  await user.click(screen.getByRole("button", { name: "اي" }))
+  expect(vi.mocked(api.message).mock.calls[0]?.[1]).toMatchObject({
+    text: "اي", attachment_ids: [], answer_to: { message_id: "q1", key: "debited", choice: "yes" },
+  })
+})
+
+it("hides an empty reason from older conversations", async () => {
+  const { controller } = await collectingController("ar", asking({ ...debited, reason: "" }))
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByRole("button", { name: "ما أعرف" })).toBeVisible()
+  expect(screen.queryByText(/ليش نسأل/)).not.toBeInTheDocument()
+})
+
+it("offers the receipt upload for a reference question", async () => {
+  const { controller } = await collectingController("ar", asking({
+    ...debited, key: "txn_ref", text: "عدك رقم عملية أو مرجع؟", answer_kind: "reference", choices: ["unknown", "attach"],
+  }))
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByRole("button", { name: "ما عندي رقم" })).toBeVisible()
+  expect(screen.getByText("أرفق لقطة الوصل").closest("label")).toHaveAttribute("for", "intake-shots")
+})
+
+it("adapts the composer to the expected answer", async () => {
+  const { controller } = await collectingController("ar", asking({
+    ...debited, key: "recipient_phone", text: "على أي رقم حولت الفلوس؟", answer_kind: "phone", choices: ["unknown"],
+  }))
+  render(<IntakePage controller={controller} />)
+  const input = await screen.findByRole("textbox", { name: "رسالتك" })
+  expect(input).toHaveAttribute("placeholder", "07XXXXXXXXX")
+  expect(input).toHaveAttribute("inputmode", "tel")
+})
+
+it("shows the sent message and a typing indicator while the reply is pending", async () => {
+  const user = userEvent.setup()
+  const { controller, api } = await collectingController("en")
+  vi.mocked(api.message).mockImplementation(() => new Promise(() => undefined))
+  render(<IntakePage controller={controller} />)
+  const input = await screen.findByRole("textbox", { name: "Your message" })
+  await user.type(input, "hello")
+  await user.click(screen.getByRole("button", { name: "Send" }))
+  expect(await screen.findByText("hello")).toBeVisible()
+  expect(screen.getByRole("img", { name: "Support is typing…" })).toBeVisible()
+  expect(input).toHaveValue("")
+  expect(screen.getByRole("status")).toHaveTextContent("Sending…")
+})
+
+it("marks an unsent message and resends it", async () => {
+  const user = userEvent.setup()
+  const { controller, api } = await collectingController("en")
+  vi.mocked(api.message).mockRejectedValueOnce(new TypeError("offline"))
+  vi.mocked(api.get).mockRejectedValueOnce(new TypeError("offline"))
+  render(<IntakePage controller={controller} />)
+  await user.type(await screen.findByRole("textbox", { name: "Your message" }), "hello")
+  await user.click(screen.getByRole("button", { name: "Send" }))
+  expect(await screen.findByText("Not sent")).toBeVisible()
+  await user.click(screen.getByRole("button", { name: "Try again" }))
+  await waitFor(() => expect(api.message).toHaveBeenCalledTimes(2))
 })

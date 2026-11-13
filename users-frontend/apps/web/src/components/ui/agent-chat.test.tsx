@@ -23,3 +23,20 @@ describe("AgentChat stop control", () => {
     expect(onStop).toHaveBeenCalledTimes(1)
   })
 })
+
+describe("AgentChat interview parts", () => {
+  it("renders a typing indicator, a pending user bubble and the input mode", () => {
+    render(
+      <AgentChat
+        inputMode="tel"
+        messages={[
+          { id: "u", role: "user", pending: true, parts: [{ type: "text", text: "hello" }] },
+          { id: "t", role: "assistant", parts: [{ type: "typing", label: "Support is typing…" }] },
+        ]}
+      />
+    )
+    expect(screen.getByRole("img", { name: "Support is typing…" })).toBeVisible()
+    expect(screen.getByText("hello")).toHaveClass("opacity-60")
+    expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "tel")
+  })
+})

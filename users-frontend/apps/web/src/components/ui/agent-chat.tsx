@@ -22,11 +22,13 @@ export type ChatStatus = "ready" | "streaming" | "submitted" | "idle"
 export type MessagePart =
   | { type: "text"; text: string }
   | { type: "error"; title?: string; message: string }
+  | { type: "typing"; label: string }
 
 export type AgentMessage = {
   id: string
   role: "user" | "assistant"
   parts: MessagePart[]
+  pending?: boolean
 }
 
 export type AttachedImage = {
@@ -61,6 +63,7 @@ export type AgentChatProps = {
     onRemoveFile?: (id: string) => void
   }
   placeholder?: string
+  inputMode?: "text" | "tel" | "numeric"
   inputLabel?: string
   inputId?: string
   sendLabel?: string
@@ -157,10 +160,16 @@ const FileIcon = () => (
   </svg>
 )
 
-function UserBubble({ text, speaker }: { text: string; speaker?: string }) {
+function UserBubble({ text, speaker, pending }: { text: string; speaker?: string; pending?: boolean }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[80%] rounded-2xl bg-[color-mix(in_oklch,#da3345_10%,var(--card))] px-3.5 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
+      <div
+        dir="auto"
+        className={cn(
+          "max-w-[80%] rounded-2xl bg-[color-mix(in_oklch,#da3345_10%,var(--card))] px-3.5 py-2 text-sm break-words whitespace-pre-wrap text-foreground",
+          pending && "opacity-60"
+        )}
+      >
         {speaker ? <span className="sr-only">{speaker}</span> : null}
         {text}
       </div>
@@ -195,6 +204,22 @@ function ErrorBubble({ title, message }: { title?: string; message: string }) {
         <div className={cn("text-muted-foreground", title && "mt-0.5")}>
           {message}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function TypingBubble({ label }: { label: string }) {
+  return (
+    <div className="flex justify-start">
+      <div role="img" aria-label={label} className="inline-flex items-center gap-1 rounded-2xl bg-muted px-3 py-2.5">
+        {[0, 150, 300].map((delay) => (
+          <span
+            key={delay}
+            className="size-1.5 animate-bounce rounded-full bg-muted-foreground motion-reduce:animate-none"
+            style={{ animationDelay: `${delay}ms` }}
+          />
+        ))}
       </div>
     </div>
   )
@@ -247,12 +272,16 @@ function MessageList({
                   />
                 )
               }
+              if (part.type === "typing") {
+                return <TypingBubble key={index} label={part.label} />
+              }
               if (message.role === "user") {
                 return (
                   <UserBubble
                     key={index}
                     text={part.text}
                     speaker={speakers?.user}
+                    pending={message.pending}
                   />
                 )
               }
@@ -359,6 +388,7 @@ function InputBar({
   onStop,
   status = "ready",
   placeholder = "Send a message...",
+  inputMode,
   attachments,
   className,
   value: controlledValue,
@@ -375,6 +405,7 @@ function InputBar({
   onStop?: () => void
   status?: ChatStatus
   placeholder?: string
+  inputMode?: AgentChatProps["inputMode"]
   attachments?: AgentChatProps["attachments"]
   className?: string
   value?: string
@@ -506,10 +537,11 @@ function InputBar({
                 submit()
               }}
               placeholder={placeholder}
+              inputMode={inputMode}
               disabled={disabled}
               rows={1}
               className={cn(
-                "w-full resize-none overflow-hidden border-0 bg-transparent text-[14px] leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground",
+                "w-full resize-none overflow-hidden border-0 bg-transparent text-[16px] leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground",
                 disabled && "cursor-not-allowed opacity-50"
               )}
             />
@@ -577,6 +609,7 @@ export const AgentChat = memo(function AgentChat({
   emptyStatePosition = "default",
   attachments,
   placeholder,
+  inputMode,
   inputLabel,
   inputId,
   sendLabel,
@@ -621,6 +654,7 @@ export const AgentChat = memo(function AgentChat({
       onStop={onStop}
       status={status}
       placeholder={placeholder}
+      inputMode={inputMode}
       attachments={attachments}
       value={value}
       onChange={onValueChange}

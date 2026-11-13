@@ -53,6 +53,24 @@ export type IntakeCopy = {
   confirmChange: string
   confirmChangeBody: string
   receiptFor: string
+  whyPrefix: string
+  quickReplies: string
+  choiceYes: string
+  choiceNo: string
+  choiceUnknown: string
+  choiceNoReference: string
+  choiceAttach: string
+  hintPhone: string
+  hintAmount: string
+  hintReference: string
+  hintDate: string
+  typing: string
+  sending: string
+  uploading: string
+  removing: string
+  submitting: string
+  notSent: string
+  resend: string
   empty: string
 }
 

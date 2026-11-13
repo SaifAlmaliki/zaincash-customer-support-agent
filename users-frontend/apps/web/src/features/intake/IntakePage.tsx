@@ -12,10 +12,12 @@ import { PhoneGate } from "./PhoneGate"
 import { ReceiptPanel } from "./ReceiptPanel"
 import { ReviewPanel } from "./ReviewPanel"
 import { OwnedImage } from "./OwnedImage"
+import { QuestionExtras } from "./QuestionExtras"
+import { activityText, composerHint } from "./composer"
 import { copy } from "./copy"
 import type { IntakeController } from "./controller"
 import { useIntakeUploads } from "./useIntakeUploads"
-import type { Language } from "./types"
+import type { AnswerTo, Language } from "./types"
 import "./intake.css"
 
 export function IntakePage({ controller }: { controller: IntakeController }) {
@@ -73,6 +75,25 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     session?.attachments.some((item) => !item.removed)
   )
   const inProgress = hasContent && session?.phase !== "submitted"
+  const pending = session?.pending_question ?? null
+  const interactive = Boolean(
+    pending &&
+    session?.phase === "collecting" &&
+    session.turn_status === "idle" &&
+    !snapshot.busy
+  )
+  const hint = composerHint(interactive && pending ? pending.answer_kind : null, text)
+  const outgoing = snapshot.outgoing
+  const showOutgoing = Boolean(
+    outgoing?.text &&
+    session &&
+    session.phase !== "submitted" &&
+    session.revision === outgoing.expected_revision
+  )
+  const outgoingFailed = showOutgoing && !snapshot.busy && Boolean(snapshot.error)
+  const typing =
+    (snapshot.busy && (snapshot.activity === "message" || snapshot.activity === "ask")) ||
+    session?.turn_status === "processing"
 
   function changeNumber() {
     setConfirmChange(false)
@@ -96,21 +117,26 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
 
   const chatMessages = useMemo<AgentMessage[]>(() => {
     const history = session?.messages ?? []
-    if (!history.length && !session?.review && !session?.receipt) {
-      return [
-        {
-          id: "welcome",
-          role: "assistant",
-          parts: [{ type: "text", text: text.empty }],
-        },
-      ]
+    const items: AgentMessage[] =
+      !history.length && !session?.review && !session?.receipt
+        ? [
+            {
+              id: "welcome",
+              role: "assistant",
+              parts: [{ type: "text", text: text.empty }],
+            },
+          ]
+        : history.map((message) => ({
+            id: message.id,
+            role: message.role,
+            parts: [{ type: "text" as const, text: message.text }],
+          }))
+    if (showOutgoing && outgoing) {
+      items.push({ id: "outgoing", role: "user", pending: !outgoingFailed, parts: [{ type: "text", text: outgoing.text }] })
     }
-    return history.map((message) => ({
-      id: message.id,
-      role: message.role,
-      parts: [{ type: "text" as const, text: message.text }],
-    }))
-  }, [session?.messages, session?.receipt, session?.review, text.empty])
+    if (typing) items.push({ id: "typing", role: "assistant", parts: [{ type: "typing", label: text.typing }] })
+    return items
+  }, [session?.messages, session?.receipt, session?.review, text.empty, text.typing, showOutgoing, outgoing, outgoingFailed, typing])
 
   const failure =
     snapshot.error || session?.turn_status === "retryable_failure"
@@ -133,12 +159,21 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   async function send(content: string) {
     if (!canSend) return
     const attachmentIds = unsent.map((item) => item.id)
+    setDraft("")
     await controller.send(content, locale, attachmentIds)
-    if (!controller.getSnapshot().error) {
-      setDraft((current) => (current.trim() === content ? "" : current))
+    const after = controller.getSnapshot()
+    if (after.error && !after.outgoing) {
+      setDraft((current) => current || content)
+      return
+    }
+    if (!after.error) {
       clearPreviews()
       document.getElementById("intake-message")?.focus()
     }
+  }
+
+  function answer(label: string, answerTo: AnswerTo) {
+    void controller.send(label, locale, [], answerTo)
   }
 
   const threadFooter = (
@@ -165,7 +200,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     </>
   )
 
-  const showTyping = snapshot.busy || session?.turn_status === "processing"
+  const statusText = activityText(snapshot.activity, snapshot.busy, session?.turn_status === "processing", text)
   const showRefresh =
     session?.turn_status === "processing" || snapshot.pollingExhausted
   const showRetry =
@@ -375,7 +410,8 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                 <AgentChat
                   messages={chatMessages}
                   status="ready"
-                  placeholder={text.placeholder}
+                  placeholder={hint.placeholder}
+                  inputMode={hint.inputMode}
                   inputLabel={text.message}
                   inputId="intake-message"
                   sendLabel={text.send}
@@ -409,6 +445,28 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                       void controller.remove(attachmentId).catch(() => undefined),
                   }}
                   renderAfter={(message) => {
+                    if (message.id === "outgoing") {
+                      return outgoingFailed ? (
+                        <div className="intake-outgoing-failed">
+                          <span>{text.notSent}</span>
+                          <Button type="button" variant="outline" size="sm" className={quietButton} onClick={() => void controller.retry()}>
+                            {text.resend}
+                          </Button>
+                        </div>
+                      ) : null
+                    }
+                    if (pending && message.id === pending.message_id && message.role === "assistant") {
+                      return (
+                        <QuestionExtras
+                          question={pending}
+                          copy={text}
+                          interactive={interactive}
+                          attachInputId="intake-shots"
+                          attachDisabled={Boolean(attachingDisabled)}
+                          onAnswer={answer}
+                        />
+                      )
+                    }
                     const source = session?.messages.find(
                       (item) => item.id === message.id
                     )
@@ -436,7 +494,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                   threadFooter={threadFooter}
                   toolbar={
                     previews.length ||
-                    showTyping ||
+                    statusText ||
                     snapshot.resumeUnavailable ||
                     showReview ? (
                       <>
@@ -449,9 +507,9 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                             aria-label={`${text.uploadProgress} ${preview.name}`}
                           />
                         ))}
-                        {showTyping ? (
+                        {statusText ? (
                           <p role="status" className="intake-typing">
-                            {text.processing}
+                            {statusText}
                           </p>
                         ) : null}
                         {snapshot.resumeUnavailable ? (
