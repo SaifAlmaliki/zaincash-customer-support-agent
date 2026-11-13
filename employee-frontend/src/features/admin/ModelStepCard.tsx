@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { dateLabel } from "@/lib/format"
 import { fill, useCopy } from "@/lib/locale"
 import type { StepModel } from "@/lib/types"
@@ -15,35 +14,37 @@ export function ModelStepCard({
   onChange: () => void
 }) {
   const text = useCopy().models
+  const source =
+    value.source === "admin" && value.updated_at
+      ? fill(text.sourceAdmin, { name: value.updated_by ?? "", date: dateLabel(value.updated_at) })
+      : text.sourceEnv
   return (
-    <Card className="model-card">
-      <CardHeader>
-        <CardTitle className="section-title">
-          {text.steps[value.step]}
+    <li className="model-row">
+      <div className="model-row-main">
+        <div className="model-row-title">
+          <h2>{text.steps[value.step]}</h2>
           <Badge variant={value.locality === "local" ? "secondary" : "outline"}>
             {text.locality[value.locality]}
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="field-help">{text.stepHelp[value.step]}</p>
-        <div className="model-current">
-          <span className="muted small" dir="ltr">{value.provider}</span>
-          <strong dir="ltr">{value.model}</strong>
         </div>
+        <p className="model-row-help" title={text.stepHelp[value.step]}>
+          {text.stepHelp[value.step]}
+        </p>
+      </div>
+      <div className="model-current">
+        <span className="muted" dir="ltr">{value.provider}</span>
+        <strong dir="ltr" title={value.model}>{value.model}</strong>
+      </div>
+      <div className="model-row-meta">
         <p className={`model-status status-${value.status}`}>
           {text.status[value.status]}
           {value.status_detail ? ` · ${value.status_detail}` : ""}
         </p>
-        <p className="muted small">
-          {value.source === "admin" && value.updated_at
-            ? fill(text.sourceAdmin, { name: value.updated_by ?? "", date: dateLabel(value.updated_at) })
-            : text.sourceEnv}
-        </p>
-        <Button variant="outline" onClick={onChange} disabled={disabled}>
-          {text.change}
-        </Button>
-      </CardContent>
-    </Card>
+        <p className="muted" title={source}>{source}</p>
+      </div>
+      <Button variant="outline" size="sm" onClick={onChange} disabled={disabled}>
+        {text.change}
+      </Button>
+    </li>
   )
 }

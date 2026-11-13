@@ -28,7 +28,7 @@ import { api } from "@/lib/api"
 import { dateLabel, teamLabel, teams, timeLabel, humanize } from "@/lib/format"
 import { fill, useCopy } from "@/lib/locale"
 import type { Result, ReviewInput } from "@/lib/types"
-import { SourceEvidence, TransactionCard } from "./SourceEvidence"
+import { EscalationCallout, SourceEvidence, TransactionCard } from "./SourceEvidence"
 import { TicketFlow } from "./TicketFlow"
 import { TicketHeader } from "./TicketHeader"
 import { IntakeEvidence, ReportedDetails } from "./IntakeEvidence"
@@ -274,7 +274,6 @@ function ReviewEditor({
           </div>
         </CardContent>
       </Card>
-      <TicketFlow result={result} />
     </div>
   )
 }
@@ -310,19 +309,21 @@ export function TicketReviewPage() {
     )
   return (
     <>
+      <EscalationCallout result={result} />
       <Link to="/" className="back-link">
         <ArrowLeft size={15} />
         {textCopy.back}
       </Link>
       <TicketHeader result={result} />
       <div className="review-layout">
-        <div>
+        <div className="review-column">
           <IntakeEvidence intake={result.intake} omitDetails omitSummary />
           <div className="compare-pair">
             <ReportedDetails intake={result.intake} />
             <TransactionCard result={result} />
           </div>
           <SourceEvidence result={result} omitTransaction />
+          <TicketFlow result={result} />
         </div>
         <ReviewEditor
           key={result.id}

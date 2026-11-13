@@ -6,7 +6,7 @@ import type { AuditEntry } from "@/lib/types"
 export function AuditList({ items, error }: { items: AuditEntry[]; error: string | null }) {
   const text = useCopy().models
   return (
-    <Card className="audit-card">
+    <Card className="audit-card" size="sm">
       <CardHeader>
         <CardTitle>{text.auditTitle}</CardTitle>
       </CardHeader>

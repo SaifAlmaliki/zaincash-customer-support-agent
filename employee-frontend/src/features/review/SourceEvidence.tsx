@@ -64,27 +64,34 @@ export function TransactionCard({ result }: { result: Result }) {
   )
 }
 
+export function EscalationCallout({ result }: { result: Result }) {
+  const copy = useCopy()
+  if (!result.escalated) return null
+  return (
+    <div className="escalation-callout" role="status">
+      <div className="escalation-callout-inner">
+        <ShieldAlert size={14} />
+        <strong>{copy.review.needsCloser}</strong>
+        <p>{copy.review.held}</p>
+        {result.escalation_reasons.length > 0 && (
+          <div className="escalation-reasons">
+            {result.escalation_reasons.map((reason) => (
+              <Badge key={reason} variant="outline">
+                {reasonLabel(reason)}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function SourceEvidence({ result, omitTransaction = false }: { result: Result, omitTransaction?: boolean }) {
   const copy = useCopy()
   const text = copy.evidence
   return (
     <div className="evidence-stack">
-      {result.escalated && (
-        <div className="escalation-callout">
-          <ShieldAlert size={20} />
-          <div>
-            <strong>{copy.review.needsCloser}</strong>
-            <p>{copy.review.held}</p>
-            <div>
-              {result.escalation_reasons.map((reason) => (
-                <Badge key={reason} variant="outline">
-                  {reasonLabel(reason)}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       {result.error && (
         <div className="error-state" role="alert">
           {result.error}

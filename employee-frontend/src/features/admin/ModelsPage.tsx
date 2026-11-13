@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { ErrorState, LoadingState, PageHeader } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
 import { setAdminSession, useAdminSession, type AdminSession } from "@/lib/admin-session"
@@ -46,16 +47,18 @@ function UnlockedModels({ session }: { session: AdminSession }) {
   return (
     <>
       {embedSwitch.data && <EmbeddingSwitchStatus value={embedSwitch.data} />}
-      <div className="models-grid">
-        {models.data.steps.map((step) => (
-          <ModelStepCard
-            key={step.step}
-            value={step}
-            disabled={step.step === "embed" && switching}
-            onChange={() => setEditing(step)}
-          />
-        ))}
-      </div>
+      <Card className="models-panel" size="sm">
+        <ul className="models-list">
+          {models.data.steps.map((step) => (
+            <ModelStepCard
+              key={step.step}
+              value={step}
+              disabled={step.step === "embed" && switching}
+              onChange={() => setEditing(step)}
+            />
+          ))}
+        </ul>
+      </Card>
       <AuditList items={audit.data?.items ?? []} error={audit.error} />
       {editing && (
         <ChangeModelDialog

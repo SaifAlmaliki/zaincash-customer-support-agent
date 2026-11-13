@@ -12,7 +12,7 @@ export function EmbeddingSwitchStatus({ value }: { value: EmbeddingSwitch }) {
     failed: text.switchFailed,
   }[value.status]
   return (
-    <Card className="switch-card" role="status">
+    <Card className="switch-card" size="sm" role="status">
       <CardContent>
         <h2>{title}</h2>
         <p dir="ltr">
