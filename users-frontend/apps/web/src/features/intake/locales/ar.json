@@ -95,5 +95,13 @@
   "empty": "اكتب شنو صار، أو أرفق لقطة للخطأ.",
   "progressLabel": "التفاصيل: {done} من {total}",
   "stillNeeded": "بعده مطلوب",
-  "notKnown": "ما معروف"
+  "notKnown": "ما معروف",
+  "complete": "التفاصيل كاملة",
+  "missingList": "ناقص: {items}",
+  "listSeparator": "، ",
+  "groupKnown": "اللي عرفناه",
+  "groupMissing": "ناقص",
+  "groupUnknown": "ما معروف",
+  "answer": "جاوب",
+  "answerRemembered": "تذكرت؟ جاوب"
 }

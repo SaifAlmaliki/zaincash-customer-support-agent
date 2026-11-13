@@ -108,11 +108,12 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     void controller.changeNumber()
   }
 
+  const submitting = snapshot.busy && snapshot.activity === "submit"
   const showReview = Boolean(
     session?.review &&
     !session.receipt &&
-    !snapshot.busy &&
-    session.turn_status === "idle"
+    session.turn_status === "idle" &&
+    (!snapshot.busy || submitting)
   )
   const attachingDisabled =
     snapshot.busy ||
@@ -199,6 +200,12 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
           headingRef={(node) => {
             reviewHeading.current = node
           }}
+          askable={session.progress.map((item) => item.key)}
+          busy={snapshot.busy}
+          submitting={submitting}
+          onAsk={(key) => void controller.ask(key)}
+          onSubmit={() => void controller.submit()}
+          onContinue={() => document.getElementById("intake-message")?.focus()}
         />
       ) : null}
     </>
@@ -486,8 +493,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                     showProgress ||
                     previews.length ||
                     statusText ||
-                    snapshot.resumeUnavailable ||
-                    showReview ? (
+                    snapshot.resumeUnavailable ? (
                       <>
                         {showProgress && session ? (
                           <ProgressStrip
@@ -516,29 +522,6 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                         ) : null}
                         {snapshot.resumeUnavailable ? (
                           <p className="intake-muted">{text.resumeUnavailable}</p>
-                        ) : null}
-                        {showReview ? (
-                          <div className="intake-actions">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className={quietButton}
-                              disabled={snapshot.busy}
-                              onClick={() => {
-                                document.getElementById("intake-message")?.focus()
-                              }}
-                            >
-                              {text.continueChat}
-                            </Button>
-                            <Button
-                              type="button"
-                              className={solidButton}
-                              disabled={snapshot.busy}
-                              onClick={() => void controller.submit()}
-                            >
-                              {text.submit}
-                            </Button>
-                          </div>
                         ) : null}
                       </>
                     ) : undefined

@@ -75,6 +75,14 @@ export type IntakeCopy = {
   progressLabel: string
   stillNeeded: string
   notKnown: string
+  complete: string
+  missingList: string
+  listSeparator: string
+  groupKnown: string
+  groupMissing: string
+  groupUnknown: string
+  answer: string
+  answerRemembered: string
 }
 
 export const copy: Record<Language, IntakeCopy> = { ar, en }

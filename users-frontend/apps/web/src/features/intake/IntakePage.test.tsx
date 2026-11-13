@@ -420,3 +420,56 @@ it("requests an early review from the progress strip", async () => {
   await user.click(screen.getByRole("button", { name: "Review what I have" }))
   expect(vi.mocked(api.review).mock.calls[0]?.[1]).toMatchObject({ allow_partial: true, language: "en" })
 })
+
+const groupedReview = {
+  ...review,
+  facts: {
+    customer_phone: { key: "customer_phone", status: "known" as const, value: CUSTOMER_PHONE, normalized: CUSTOMER_PHONE, evidence: [] },
+    amount: { key: "amount", status: "known" as const, value: "50000", normalized: "50000", evidence: [] },
+    recipient_phone: { key: "recipient_phone", status: "missing" as const, value: null, normalized: null, evidence: [] },
+    txn_ref: { key: "txn_ref", status: "unknown" as const, value: null, normalized: null, evidence: [] },
+  },
+  unknown_keys: ["recipient_phone", "txn_ref"],
+}
+const groupedProgress: ProgressItem[] = [
+  { key: "amount", tier: "required", status: "known", display: "50000" },
+  { key: "recipient_phone", tier: "required", status: "missing", display: null },
+  { key: "txn_ref", tier: "ask_once", status: "unknown", display: null },
+]
+
+it("groups review details and asks for a missing one", async () => {
+  const user = userEvent.setup()
+  const api = fakeApi({ phase: "review_ready", review: groupedReview, progress: groupedProgress })
+  const controller = new IntakeController(api, memoryStorage())
+  await controller.initialize("en", CUSTOMER_PHONE)
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByText("Missing: Recipient number")).toBeVisible()
+  expect(screen.getByRole("heading", { name: "What we know" })).toBeVisible()
+  expect(screen.getByRole("heading", { name: "Missing" })).toBeVisible()
+  expect(screen.getByRole("heading", { name: "Not known" })).toBeVisible()
+  expect(screen.queryByText("Your account number")).not.toBeInTheDocument()
+  expect(screen.getByRole("button", { name: "Remembered? Answer: Reference" })).toBeVisible()
+  await user.click(screen.getByRole("button", { name: "Answer: Recipient number" }))
+  expect(vi.mocked(api.ask).mock.calls[0]?.[1]).toMatchObject({ key: "recipient_phone" })
+})
+
+it("marks a complete review", async () => {
+  const api = fakeApi({ phase: "review_ready", review: { ...review, quality: "sufficient_context", facts: { amount: groupedReview.facts.amount }, unknown_keys: [] } })
+  const controller = new IntakeController(api, memoryStorage())
+  await controller.initialize("en", CUSTOMER_PHONE)
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByText("Details complete")).toBeVisible()
+})
+
+it("keeps the review visible while the ticket is submitting", async () => {
+  const user = userEvent.setup()
+  const { controller, api } = await readyController("en")
+  vi.mocked(api.submit).mockImplementation(() => new Promise(() => undefined))
+  render(<IntakePage controller={controller} />)
+  const submit = await screen.findByRole("button", { name: "Submit ticket" })
+  await user.click(submit)
+  expect(screen.getByRole("heading", { name: "Review your report" })).toBeVisible()
+  expect(submit).toBeDisabled()
+  expect(submit).toHaveAttribute("aria-busy", "true")
+  expect(screen.getByRole("status")).toHaveTextContent("Submitting the ticket…")
+})

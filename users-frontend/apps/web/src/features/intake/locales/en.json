@@ -95,5 +95,13 @@
   "empty": "Describe what happened, or attach a screenshot of the error.",
   "progressLabel": "Details: {done} of {total}",
   "stillNeeded": "still needed",
-  "notKnown": "Not known"
+  "notKnown": "Not known",
+  "complete": "Details complete",
+  "missingList": "Missing: {items}",
+  "listSeparator": ", ",
+  "groupKnown": "What we know",
+  "groupMissing": "Missing",
+  "groupUnknown": "Not known",
+  "answer": "Answer",
+  "answerRemembered": "Remembered? Answer"
 }
