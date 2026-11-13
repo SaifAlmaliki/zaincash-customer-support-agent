@@ -90,11 +90,73 @@ Stated from the diff of commit 47288d9 (`git show 47288d9 -- backend/tests/intak
 
 ## Remaining limits
 
-- **No live-model browser run yet.** The live-model run on `http://localhost:5174` (Arabic at 390px from the vague message through quick replies and typed answers to submit; English on desktop with the complete message; ticket check in the employee app) is done by the controller after the whole-branch review, and its results are appended here. Until then, UI behavior is covered by automated tests and the backend by the scripted scenarios plus the live probe above.
+- **Live-model browser run.** The run happened after the whole-branch review and its fix wave (`3a92530`, `45c4cc7`; backend 984 passed, customer app 157 passed). See "Live browser run" below.
 - Out of scope per the spec:
   - The UI does not switch its language on its own from the model-detected language.
   - Duplicate review invitations after a language switch are not handled.
   - Specific error messages are not provided (errors stay generic).
   - There is no readable ticket reference.
   - The customer does not poll for receipt status.
-- Rulings recorded during implementation: while an unsent message is pending, the composer and chips are blocked until "Try again" (Task 8); the welcome bubble stays until the first reply, and outgoing and typing bubbles append after it (Task 8).
+- Rulings recorded during implementation: while an unsent message is pending, the composer and chips are blocked until "Try again" (Task 8); the welcome bubble stays until the first reply, and outgoing and typing bubbles append after it (Task 8). After the final review, a saved unsent message or ask is replayed automatically, with the same request ID, after a reload or when polling ends.
+- Known minor issues, deliberately left after the final review:
+  - **Restored text can be dropped in one rare case.** A 409 on an automatic replay restores the customer's text to the composer, but only once per page view; a second restore in the same view is ignored. This needs a poll-triggered replay that fails with a 409 after an earlier restore. Normal sends restore the text themselves.
+  - **A brief misleading label after a reload.** "Not sent · Try again" can show for one network round trip while the automatic replay reloads.
+
+## Live browser run
+
+The run took place on 2026-11-13 after the final fix wave, against the code at `45c4cc7`.
+
+**Setup.** The user's Docker API on 8000 runs a pre-feature build without auto-reload, and it was left untouched. A separate API ran from the repository on `127.0.0.1:8001`, against the same development database, with the configured live intake model. A second customer Vite server ran on `5175` with `API_PROXY_TARGET=http://127.0.0.1:8001`. All names, numbers and the reference are synthetic.
+
+### Arabic at 390×844, starting from the vague message
+
+The customer started with the vague message `حولت فلوس وما وصلت` ("I sent money and it didn't arrive").
+
+| Turn | Customer | Agent |
+|---|---|---|
+| 1 | `حولت فلوس وما وصلت` | `المبلغ انقطع من رصيدك بعد ما حولت؟` (was the amount taken from your balance?), with the reason "ليش نسأل: حتى نعرف إذا الفلوس طلعت من محفظتك." and the chips اي / لا / ما أعرف. The progress strip showed "التفاصيل: 2 من 6" (details: 2 of 6): the model had already recorded that the money did not arrive. It did not ask "what did you expect?". |
+| 2 | Tapped **اي** (yes) | `شكد المبلغ؟` (how much?) in about 2 s, with no model call. The composer hint changed to "مثلاً 50000". |
+| 3 | Typed `50000 دينار`, then **reloaded the page immediately** | After the reload the message appeared once and processing continued. The next question was `شنو رقم المستلم اللي حولتله؟` (the recipient's number) with the hint `07XXXXXXXXX`. There was no stuck composer and no "Not sent". |
+| 4 | `07701234567` | `متى صار التحويل تقريباً؟` (when did it happen?) |
+| 5 | `2026-10-06` | Asked for the reference, offering the receipt screenshot as an alternative. |
+| 6 | `ZC2410000123` | `شنو اسم الشخص اللي حولتله؟` (the recipient's name) |
+| 7 | `علي حسين` | Review: **التفاصيل كاملة** (details complete). |
+
+- **Typed turns** took about 4–7 s each.
+- **Review card**: one "اللي عرفناه" (what we know) group with:
+  - amount 50000
+  - date 2026-10-06
+  - debited اي (yes)
+  - received لا (no)
+  - recipient number 07701234567
+  - recipient name علي حسين
+  - reference ZC2410000123
+  - currency IQD
+
+  Submit and Continue sit inside the card.
+- **Submit** produced receipt `INTAKE-f874f4f2eb2a4211b09b3dbeff74635f`.
+- **Employee API** (same database): the result is `pending_review`, with the following facts:
+  - amount 50000
+  - date 2026-10-06
+  - debited yes
+  - recipient_outcome no
+  - recipient_phone 07701234567
+  - recipient_name علي حسين
+  - txn_ref ZC2410000123
+
+  The ticket text includes the recipient name, and the pipeline matched transaction `ZC2410000123`.
+- **Screenshot**: `.playwright-mcp/guided-intake-review-390.png`.
+
+### English at 1280×900, with the complete message
+
+The customer sent: "I sent 50000 IQD to Ali Hussein on 07701234567 on 2026-10-06. It was deducted from my balance but he did not receive it. Reference ZC2410000123".
+
+- It went **straight to "Details complete" with zero questions**, in 9.4 s.
+- The facts matched the Arabic run, with `Funds deducted: Yes`, `Recipient outcome: No` and `Recipient name: Ali Hussein`.
+- This report was left unsubmitted.
+- **Screenshot**: `.playwright-mcp/guided-intake-complete-desktop.png`.
+
+### Observations
+
+- The model sometimes asks in a different order from the template plan, for example debited before amount. That is allowed: a model suggestion within the current round is accepted.
+- On a 390px screen the header (new report, phone, language) wraps onto three rows. This predates the feature and is out of scope.
