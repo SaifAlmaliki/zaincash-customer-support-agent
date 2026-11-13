@@ -52,7 +52,17 @@ What to know:
 
 You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter key.
 
-1. **Configure.** Run `cp .env.example .env`, then set `TYPESAFE_API_KEY`, `OPENROUTER_API_KEY`, and `ADMIN_TOKEN`. Copy each file in `secrets/` from its `.example` version, removing the `.example` suffix.
+1. **Configure.** Create a `.env` file in the repository root (it is gitignored):
+   ```bash
+   TYPESAFE_API_KEY=...
+   OPENROUTER_API_KEY=...
+   # Empty disables the admin page.
+   ADMIN_TOKEN=...
+   # Drafting and customer intake models; if empty, both use GEMINI_MODEL.
+   ANTHROPIC_MODEL=anthropic/claude-sonnet-5.5
+   INTAKE_MODEL=anthropic/claude-sonnet-5.5
+   ```
+   Every other setting has a default in [`backend/app/config.py`](backend/app/config.py); add a line to `.env` only to override one. Do not set `DATABASE_URL`: the API container builds it from `secrets/`. Copy each file in `secrets/` from its `.example` version, removing the `.example` suffix.
 2. **Start the database and API:**
    ```bash
    docker compose up --build -d
