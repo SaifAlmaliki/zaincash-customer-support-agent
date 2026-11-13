@@ -99,6 +99,23 @@ class Readiness(IntakeModel):
     next_key: str | None = None
 
 
+class PendingQuestion(IntakeModel):
+    key: str
+    message_id: UUID
+    text: str
+    reason: str
+    answer_kind: AnswerKind
+    choices: list[Choice] = Field(default_factory=list)
+    attempt: int = 1
+
+
+class ProgressItem(IntakeModel):
+    key: str
+    tier: Literal["required", "ask_once"]
+    status: FactStatus
+    display: str | None = None
+
+
 class IntakeState(IntakeModel):
     language: Language = "ar"
     category: str = "other"
@@ -180,6 +197,8 @@ class SessionView(IntakeModel):
     review: CustomerReview | None = None
     receipt: Receipt | None = None
     error_code: str | None = None
+    pending_question: PendingQuestion | None = None
+    progress: list[ProgressItem] = Field(default_factory=list)
 
 
 class Credentials(IntakeModel):

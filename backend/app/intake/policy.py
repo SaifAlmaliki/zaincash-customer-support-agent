@@ -9,6 +9,9 @@ from app.intake.contracts import (
     Choice,
     Fact,
     IntakeState,
+    Message,
+    PendingQuestion,
+    ProgressItem,
     Question,
     Readiness,
 )
@@ -311,4 +314,33 @@ def assess_readiness(state: IntakeState, taxonomy: Taxonomy, *, allow_partial: b
         )
     return Readiness(
         quality="collecting", missing=missing, conflicts=conflicts, reason="More context is needed.", next_key=next_key
+    )
+
+
+def progress(state: IntakeState, taxonomy: Taxonomy | None = None) -> list[ProgressItem]:
+    if not any(key != "customer_phone" for key in state.facts):
+        return []
+    items: list[ProgressItem] = []
+    tiers = (("required", material_keys(state.category, taxonomy)), ("ask_once", optional_keys(state, taxonomy)))
+    for tier, keys in tiers:
+        for key in keys:
+            item = state.facts.get(key)
+            known = item is not None and item.status == "known"
+            items.append(ProgressItem(
+                key=key, tier=tier, status=item.status if item is not None else "missing",
+                display=(item.normalized or item.value) if known else None,
+            ))
+    return items
+
+
+def pending_question(state: IntakeState, messages: list[Message], phase: str) -> PendingQuestion | None:
+    if phase != "collecting" or not state.questions or not messages:
+        return None
+    record = state.questions[-1]
+    latest = messages[-1]
+    if latest.role != "assistant" or latest.id != record.message_id:
+        return None
+    return PendingQuestion(
+        key=record.key, message_id=record.message_id, text=latest.text, reason=record.reason,
+        answer_kind=answer_kind(record.key), choices=answer_choices(record.key), attempt=record.attempt,
     )

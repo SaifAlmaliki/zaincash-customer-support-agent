@@ -124,11 +124,11 @@ class IntakeGraph:
     def _merge(self, state: dict) -> dict:
         merged = merge_analysis(state["context"], state["analysis"], visible_image_ids=state["visible_image_ids"])
         readiness = assess_readiness(merged, self.taxonomy)
-        merged = merged.model_copy(update={"readiness": readiness})
         question = choose_question(
             merged, state["analysis"].suggested_question, state["context"].revision + 1, self.taxonomy
         )
-        return {**state, "state": merged, "question": question}
+        readiness = readiness.model_copy(update={"next_key": question.key if question is not None else None})
+        return {**state, "state": merged.model_copy(update={"readiness": readiness}), "question": question}
 
     @staticmethod
     def _route(state: dict) -> str:
@@ -141,7 +141,8 @@ class IntakeGraph:
     def _ask(state: dict) -> dict:
         question = state["question"]
         record = QuestionRecord(
-            key=question.key, basis_revision=question.basis_revision, message_id=uuid4(), outcome="asked"
+            key=question.key, basis_revision=question.basis_revision, message_id=uuid4(), outcome="asked",
+            reason=question.reason, attempt=question.attempt,
         )
         updated = state["state"].model_copy(update={"questions": [*state["state"].questions, record]})
         return {**state, "state": updated, "assistant_text": question.text, "review": None}

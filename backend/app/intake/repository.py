@@ -34,6 +34,7 @@ from app.intake.db_models import (
     IntakeSubmissionRow,
 )
 from app.intake.errors import InvalidCustomerPhone, NotOwned, OperationConflict
+from app.intake.policy import pending_question, progress
 
 
 def operation_fingerprint(kind: str, payload: dict) -> str:
@@ -161,6 +162,7 @@ def receipt_for(session: Session, row: IntakeSessionRow) -> Receipt | None:
 
 def session_view(session: Session, row: IntakeSessionRow) -> SessionView:
     state = IntakeState.model_validate(row.state)
+    messages = load_messages(session, row.id)
     return SessionView(
         id=row.id,
         revision=row.revision,
@@ -169,12 +171,14 @@ def session_view(session: Session, row: IntakeSessionRow) -> SessionView:
         customer_phone=row.customer_phone,
         turn_status=row.turn_status,
         active_request_id=row.active_request_id,
-        messages=load_messages(session, row.id),
+        messages=messages,
         attachments=load_attachments(session, row.id),
         readiness=state.readiness,
         review=customer_review(row.review),
         receipt=receipt_for(session, row),
         error_code=row.error_code,
+        pending_question=pending_question(state, messages, row.phase),
+        progress=progress(state),
     )
 
 
