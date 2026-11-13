@@ -477,7 +477,7 @@
     "channelCall": "ملاحظة اتصال",
     "phone": "هاتف الزبون",
     "phonePlaceholder": "07…",
-    "phoneInvalid": "اكتب رقم هاتف صحيحاً، مثل 07701234567.",
+    "phoneInvalid": "اكتب رقم زين كاش صحيحاً، مثل 07701234567.",
     "readyNone": "لا توجد تذاكر جاهزة",
     "readyOne": "تذكرة واحدة جاهزة",
     "readyMany": "{count} تذاكر جاهزة",

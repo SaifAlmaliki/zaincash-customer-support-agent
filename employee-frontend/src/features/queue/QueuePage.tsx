@@ -242,7 +242,11 @@ export function QueuePage() {
                     }}
                   >
                     <TableCell>
-                      <TicketIdentity ticket={row.ticket} index={index} />
+                      <TicketIdentity
+                        ticket={row.ticket}
+                        index={index}
+                        ticketPath={`/tickets/${row.id}`}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="ticket-subject">

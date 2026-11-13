@@ -477,7 +477,7 @@
     "channelCall": "Call note",
     "phone": "Customer phone",
     "phonePlaceholder": "07…",
-    "phoneInvalid": "Enter a valid phone number, for example 07701234567.",
+    "phoneInvalid": "Enter a valid ZainCash phone number, for example 07701234567.",
     "readyNone": "0 tickets ready",
     "readyOne": "1 ticket ready",
     "readyMany": "{count} tickets ready",
