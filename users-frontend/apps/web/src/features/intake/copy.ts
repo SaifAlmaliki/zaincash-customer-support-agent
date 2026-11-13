@@ -44,6 +44,16 @@ export type IntakeCopy = {
   uploadProgress: string
   imageUnavailable: string
   resumeUnavailable: string
+  phoneTitle: string
+  phoneHelp: string
+  phoneLabel: string
+  phoneContinue: string
+  phoneInvalid: string
+  profileLabel: string
+  changeNumber: string
+  confirmChange: string
+  confirmChangeBody: string
+  receiptFor: string
   empty: string
 }
 

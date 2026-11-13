@@ -1,8 +1,8 @@
-import { act, render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { fireEvent } from "@testing-library/react"
 import { beforeEach, expect, it, vi } from "vitest"
-import type { IntakeApi } from "./api"
+import { IntakeRequestError, type IntakeApi } from "./api"
 import { IntakeController } from "./controller"
 import { IntakePage } from "./IntakePage"
 import { memoryStorage } from "./session"
@@ -53,6 +53,7 @@ it("requires explicit submission after summary review", async () => {
   expect(api.submit).not.toHaveBeenCalled()
   await user.click(screen.getByRole("button", { name: "Submit ticket" }))
   expect(await screen.findByText("INTAKE-demo")).toBeVisible()
+  expect(within(screen.getByRole("region", { name: "Ticket received" })).getByText(CUSTOMER_PHONE)).toBeVisible()
   expect(api.submit).toHaveBeenCalledTimes(1)
   expect(screen.getByText(/employee still needs to review it/i)).toBeVisible()
   expect(document.body.textContent).not.toMatch(/recovered|resolved/i)
@@ -195,14 +196,50 @@ it("drops a late reply after starting a new report", async () => {
   expect(screen.queryByText("late secret")).not.toBeInTheDocument()
 })
 
-it("starts with Iraqi Arabic before asynchronous initialization", async () => {
+it("asks for the phone number in Iraqi Arabic before the chat", async () => {
+  const user = userEvent.setup()
   const api = fakeApi({ language: "ar" })
   const controller = new IntakeController(api, memoryStorage())
   render(<IntakePage controller={controller} />)
-  expect(await screen.findByLabelText("رسالتك")).toBeVisible()
+  const phone = await screen.findByRole("textbox", { name: "رقم هاتفك بزين كاش" })
   expect(document.documentElement).toHaveAttribute("lang", "ar")
   expect(document.documentElement).toHaveAttribute("dir", "rtl")
-  expect(screen.getByRole("button", { name: "English" })).toBeVisible()
+  await user.type(phone, "0770")
+  await user.click(screen.getByRole("button", { name: "استمرار" }))
+  expect(screen.getByRole("alert")).toHaveTextContent("اكتب رقم زين كاش صحيح، مثل 07701234567.")
+  expect(api.create).not.toHaveBeenCalled()
+  await user.clear(phone)
+  await user.type(phone, "+964 770 123 4567")
+  await user.click(screen.getByRole("button", { name: "استمرار" }))
+  expect(api.create).toHaveBeenCalledWith("ar", CUSTOMER_PHONE, expect.any(AbortSignal))
+  expect(await screen.findByLabelText("رسالتك")).toBeVisible()
+})
+
+it("shows the server's invalid-number answer on the phone screen", async () => {
+  const user = userEvent.setup()
+  const api = fakeApi({ language: "en" })
+  vi.mocked(api.create).mockRejectedValueOnce(new IntakeRequestError("Enter a valid ZainCash phone number, for example 07701234567.", 422, "invalid_phone"))
+  const controller = new IntakeController(api, memoryStorage())
+  render(<IntakePage controller={controller} />)
+  await user.click(await screen.findByRole("button", { name: "English" }))
+  await user.type(screen.getByRole("textbox", { name: "Your ZainCash phone number" }), "07701234567")
+  await user.click(screen.getByRole("button", { name: "Continue" }))
+  expect(await screen.findByRole("alert")).toHaveTextContent("Enter a valid ZainCash phone number")
+  expect(screen.getByRole("textbox", { name: "Your ZainCash phone number" })).toBeVisible()
+})
+
+it("shows the signed-in phone and changes number after confirmation", async () => {
+  const user = userEvent.setup()
+  const { controller } = await collectingController("en", {
+    messages: [{ id: "m1", role: "user", text: "old report", language: "en", created_at: "2026-10-18T09:00:00Z", attachment_ids: [] }],
+  })
+  render(<IntakePage controller={controller} />)
+  expect(screen.getByRole("group", { name: "Signed in as" })).toHaveTextContent(CUSTOMER_PHONE)
+  await user.click(screen.getByRole("button", { name: "Change number" }))
+  await user.click(screen.getByRole("button", { name: "Use another number" }))
+  expect(await screen.findByRole("textbox", { name: "Your ZainCash phone number" })).toBeVisible()
+  expect(document.documentElement).toHaveAttribute("lang", "en")
+  expect(screen.queryByText("old report")).not.toBeInTheDocument()
 })
 
 it("retains text typed while the previous message is in flight", async () => {

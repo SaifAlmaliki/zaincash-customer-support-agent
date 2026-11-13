@@ -6,10 +6,9 @@ import {
   useSyncExternalStore,
 } from "react"
 import { Button } from "@workspace/ui/components/button"
-
-const solidButton = "bg-[#da3345] text-white hover:bg-[#c42d3d]"
-const quietButton = "border-border bg-card text-foreground hover:bg-muted"
 import { AgentChat, type AgentMessage } from "@/components/ui/agent-chat"
+import { quietButton, solidButton } from "./buttons"
+import { PhoneGate } from "./PhoneGate"
 import { ReceiptPanel } from "./ReceiptPanel"
 import { ReviewPanel } from "./ReviewPanel"
 import { OwnedImage } from "./OwnedImage"
@@ -31,10 +30,12 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const [draft, setDraft] = useState("")
   const { previews, selectFiles, clearPreviews } = useIntakeUploads(controller)
   const [confirmNew, setConfirmNew] = useState(false)
+  const [confirmChange, setConfirmChange] = useState(false)
   const reviewHeading = useRef<HTMLHeadingElement | null>(null)
   const reviewRequest = useRef(false)
   const text = copy[locale]
   const credentials = controller.access()
+  const needsPhone = snapshot.needsPhone
   const latestAssistant = session?.messages
     .filter((message) => message.role === "assistant")
     .at(-1)
@@ -71,6 +72,17 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     session?.messages.length ||
     session?.attachments.some((item) => !item.removed)
   )
+  const inProgress = hasContent && session?.phase !== "submitted"
+
+  function changeNumber() {
+    setConfirmChange(false)
+    setConfirmNew(false)
+    setDraft("")
+    clearPreviews()
+    setLocale(locale) // keep the language the customer chose
+    void controller.changeNumber()
+  }
+
   const showReview = Boolean(
     session?.review &&
     !session.receipt &&
@@ -132,7 +144,11 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const threadFooter = (
     <>
       {session?.receipt ? (
-        <ReceiptPanel receipt={session.receipt} copy={text} />
+        <ReceiptPanel
+          receipt={session.receipt}
+          customerPhone={session.customer_phone}
+          copy={text}
+        />
       ) : null}
       {showReview && session?.review ? (
         <ReviewPanel
@@ -168,56 +184,83 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
             </div>
           </div>
           <div className="intake-header-actions">
-            {showReviewNow && hasContent ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={quietButton}
-                disabled={snapshot.busy}
-                onClick={() => {
-                  reviewRequest.current = true
-                  void controller.requestReview(true, locale)
-                }}
+            {needsPhone ? null : (
+              <>
+                {showReviewNow && hasContent ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={quietButton}
+                    disabled={snapshot.busy}
+                    onClick={() => {
+                      reviewRequest.current = true
+                      void controller.requestReview(true, locale)
+                    }}
+                  >
+                    {text.reviewNow}
+                  </Button>
+                ) : null}
+                {showRefresh ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={quietButton}
+                    onClick={() => void controller.refresh()}
+                  >
+                    {text.refresh}
+                  </Button>
+                ) : null}
+                {showRetry ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={quietButton}
+                    onClick={() => void controller.retry()}
+                  >
+                    {text.retry}
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={quietButton}
+                  onClick={() =>
+                    hasContent
+                      ? setConfirmNew(true)
+                      : void controller.startNew(locale)
+                  }
+                >
+                  {text.startNew}
+                </Button>
+              </>
+            )}
+            {session ? (
+              <div
+                className="intake-profile"
+                role="group"
+                aria-label={text.profileLabel}
               >
-                {text.reviewNow}
-              </Button>
+                <span className="intake-muted">{text.profileLabel}</span>
+                <bdi dir="ltr" className="intake-profile-phone">
+                  {session.customer_phone}
+                </bdi>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={quietButton}
+                  onClick={() =>
+                    inProgress ? setConfirmChange(true) : changeNumber()
+                  }
+                >
+                  {text.changeNumber}
+                </Button>
+              </div>
             ) : null}
-            {showRefresh ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={quietButton}
-                onClick={() => void controller.refresh()}
-              >
-                {text.refresh}
-              </Button>
-            ) : null}
-            {showRetry ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={quietButton}
-                onClick={() => void controller.retry()}
-              >
-                {text.retry}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={quietButton}
-              onClick={() =>
-                hasContent
-                  ? setConfirmNew(true)
-                  : void controller.startNew(locale)
-              }
-            >
-              {text.startNew}
-            </Button>
             <div
               className="lang-toggle"
               role="group"
@@ -280,135 +323,172 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
             </div>
           </div>
         ) : null}
+        {confirmChange ? (
+          <div
+            className="intake-confirm"
+            role="dialog"
+            aria-label={text.changeNumber}
+          >
+            <p>{text.confirmChangeBody}</p>
+            <div className="intake-actions">
+              <Button
+                type="button"
+                className={solidButton}
+                onClick={changeNumber}
+              >
+                {text.confirmChange}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={quietButton}
+                onClick={() => setConfirmChange(false)}
+              >
+                {text.cancel}
+              </Button>
+            </div>
+          </div>
+        ) : null}
         <p className="intake-announce" aria-live="polite">
           {latestAssistant?.text ?? ""}
         </p>
         <main className="intake-chat">
-          <input
-            id="intake-shots"
-            className="intake-file"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            multiple
-            disabled={attachingDisabled}
-            onChange={(event) => {
-              const picked = event.target.files
-              if (picked?.length) void selectFiles(Array.from(picked))
-              event.target.value = ""
-            }}
-          />
-          <AgentChat
-            messages={chatMessages}
-            status="ready"
-            placeholder={text.placeholder}
-            inputLabel={text.message}
-            inputId="intake-message"
-            sendLabel={text.send}
-            sendDisabled={!canSend}
-            allowEmptySend={unsent.length > 0}
-            hideComposer={session?.phase === "submitted"}
-            conversationLabel={text.conversation}
-            speakers={{ user: text.you, assistant: text.assistant }}
-            value={draft}
-            onValueChange={setDraft}
-            onSend={(message) => void send(message.content)}
-            error={
-              failure ? { title: text.errorTitle, message: failure } : undefined
-            }
-            attachments={{
-              attachInputId: "intake-shots",
-              attachLabel: text.attach,
-              removeLabel: text.remove,
-              disabled: Boolean(attachingDisabled),
-              images: previews.map((preview) => ({
-                id: preview.id,
-                filename: preview.name,
-                url: preview.url,
-              })),
-              files: unsent.map((item) => ({
-                id: item.id,
-                filename: item.filename,
-                size: item.size,
-              })),
-              onRemoveFile: (attachmentId) =>
-                void controller.remove(attachmentId).catch(() => undefined),
-            }}
-            renderAfter={(message) => {
-              const source = session?.messages.find(
-                (item) => item.id === message.id
-              )
-              if (!source || message.role !== "user") return null
-              const shots = session?.attachments.filter(
-                (item) =>
-                  !item.removed && source.attachment_ids.includes(item.id)
-              )
-              if (!shots?.length) return null
-              return (
-                <div className="intake-inline-shot is-user">
-                  {shots.map((attachment) => (
-                    <OwnedImage
-                      key={attachment.id}
-                      attachment={attachment}
-                      credentials={credentials}
-                      api={controller.transport()}
-                      alt={attachment.filename}
-                      unavailable={text.imageUnavailable}
-                    />
-                  ))}
-                </div>
-              )
-            }}
-            threadFooter={threadFooter}
-            toolbar={
-              previews.length ||
-              showTyping ||
-              snapshot.resumeUnavailable ||
-              showReview ? (
-                <>
-                  {previews.map((preview) => (
-                    <progress
-                      key={preview.id}
-                      className="intake-progress"
-                      value={snapshot.uploads[preview.id] ?? 0}
-                      max={1}
-                      aria-label={`${text.uploadProgress} ${preview.name}`}
-                    />
-                  ))}
-                  {showTyping ? (
-                    <p role="status" className="intake-typing">
-                      {text.processing}
-                    </p>
-                  ) : null}
-                  {snapshot.resumeUnavailable ? (
-                    <p className="intake-muted">{text.resumeUnavailable}</p>
-                  ) : null}
-                  {showReview ? (
-                    <div className="intake-actions">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={quietButton}
-                        disabled={snapshot.busy}
-                        onClick={() => {
-                          document.getElementById("intake-message")?.focus()
-                        }}
-                      >
-                        {text.continueChat}
-                      </Button>
-                      <Button
-                        type="button"
-                        className={solidButton}
-                        disabled={snapshot.busy}
-                        onClick={() => void controller.submit()}
-                      >
-                        {text.submit}
-                      </Button>
-                    </div>
-                  ) : null}
-                </>
-              ) : undefined
-            }
-          />
+          {needsPhone ? (
+            <PhoneGate
+              copy={text}
+              busy={snapshot.busy}
+              serverError={snapshot.phoneError}
+              onSubmit={(phone) => void controller.initialize(locale, phone)}
+            />
+          ) : (
+            <>
+                <input
+                  id="intake-shots"
+                  className="intake-file"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                  disabled={attachingDisabled}
+                  onChange={(event) => {
+                    const picked = event.target.files
+                    if (picked?.length) void selectFiles(Array.from(picked))
+                    event.target.value = ""
+                  }}
+                />
+                <AgentChat
+                  messages={chatMessages}
+                  status="ready"
+                  placeholder={text.placeholder}
+                  inputLabel={text.message}
+                  inputId="intake-message"
+                  sendLabel={text.send}
+                  sendDisabled={!canSend}
+                  allowEmptySend={unsent.length > 0}
+                  hideComposer={session?.phase === "submitted"}
+                  conversationLabel={text.conversation}
+                  speakers={{ user: text.you, assistant: text.assistant }}
+                  value={draft}
+                  onValueChange={setDraft}
+                  onSend={(message) => void send(message.content)}
+                  error={
+                    failure ? { title: text.errorTitle, message: failure } : undefined
+                  }
+                  attachments={{
+                    attachInputId: "intake-shots",
+                    attachLabel: text.attach,
+                    removeLabel: text.remove,
+                    disabled: Boolean(attachingDisabled),
+                    images: previews.map((preview) => ({
+                      id: preview.id,
+                      filename: preview.name,
+                      url: preview.url,
+                    })),
+                    files: unsent.map((item) => ({
+                      id: item.id,
+                      filename: item.filename,
+                      size: item.size,
+                    })),
+                    onRemoveFile: (attachmentId) =>
+                      void controller.remove(attachmentId).catch(() => undefined),
+                  }}
+                  renderAfter={(message) => {
+                    const source = session?.messages.find(
+                      (item) => item.id === message.id
+                    )
+                    if (!source || message.role !== "user") return null
+                    const shots = session?.attachments.filter(
+                      (item) =>
+                        !item.removed && source.attachment_ids.includes(item.id)
+                    )
+                    if (!shots?.length) return null
+                    return (
+                      <div className="intake-inline-shot is-user">
+                        {shots.map((attachment) => (
+                          <OwnedImage
+                            key={attachment.id}
+                            attachment={attachment}
+                            credentials={credentials}
+                            api={controller.transport()}
+                            alt={attachment.filename}
+                            unavailable={text.imageUnavailable}
+                          />
+                        ))}
+                      </div>
+                    )
+                  }}
+                  threadFooter={threadFooter}
+                  toolbar={
+                    previews.length ||
+                    showTyping ||
+                    snapshot.resumeUnavailable ||
+                    showReview ? (
+                      <>
+                        {previews.map((preview) => (
+                          <progress
+                            key={preview.id}
+                            className="intake-progress"
+                            value={snapshot.uploads[preview.id] ?? 0}
+                            max={1}
+                            aria-label={`${text.uploadProgress} ${preview.name}`}
+                          />
+                        ))}
+                        {showTyping ? (
+                          <p role="status" className="intake-typing">
+                            {text.processing}
+                          </p>
+                        ) : null}
+                        {snapshot.resumeUnavailable ? (
+                          <p className="intake-muted">{text.resumeUnavailable}</p>
+                        ) : null}
+                        {showReview ? (
+                          <div className="intake-actions">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className={quietButton}
+                              disabled={snapshot.busy}
+                              onClick={() => {
+                                document.getElementById("intake-message")?.focus()
+                              }}
+                            >
+                              {text.continueChat}
+                            </Button>
+                            <Button
+                              type="button"
+                              className={solidButton}
+                              disabled={snapshot.busy}
+                              onClick={() => void controller.submit()}
+                            >
+                              {text.submit}
+                            </Button>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : undefined
+                  }
+                />
+            </>
+          )}
         </main>
       </div>
     </div>

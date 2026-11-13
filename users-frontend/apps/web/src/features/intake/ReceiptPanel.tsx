@@ -1,7 +1,7 @@
 import type { IntakeCopy } from "./copy"
 import type { Receipt } from "./types"
 
-export function ReceiptPanel({ receipt, copy }: { receipt: Receipt; copy: IntakeCopy }) {
+export function ReceiptPanel({ receipt, customerPhone, copy }: { receipt: Receipt; customerPhone: string; copy: IntakeCopy }) {
   const detail =
     receipt.processing_status === "needs_attention"
       ? copy.receiptAttention
@@ -13,6 +13,9 @@ export function ReceiptPanel({ receipt, copy }: { receipt: Receipt; copy: Intake
       <h2 id="intake-receipt-heading">{copy.receiptTitle}</h2>
       <p>
         <bdi dir="ltr">{receipt.ticket_reference}</bdi>
+      </p>
+      <p>
+        {copy.receiptFor} <bdi dir="ltr">{customerPhone}</bdi>
       </p>
       <p>{detail}</p>
     </section>

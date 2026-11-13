@@ -186,6 +186,47 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
+.intake-profile {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.intake-profile-phone {
+  font-family: var(--font-latin);
+  font-weight: 600;
+}
+.intake-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(420px, 100%);
+  margin: auto;
+  padding: 24px 16px;
+}
+.intake-gate-title {
+  margin: 0;
+  font-size: 1.35rem;
+}
+.intake-gate-input {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-latin);
+  font-size: 1.05rem;
+  text-align: left;
+}
+.intake-gate-input:focus-visible {
+  outline: 2px solid #da3345;
+  outline-offset: 2px;
+}
+.intake-gate-error {
+  margin: 0;
+  color: #da3345;
+}
 @media (min-width: 800px) {
   .intake-shell {
     padding: 16px;

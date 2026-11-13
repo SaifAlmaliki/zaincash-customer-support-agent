@@ -64,5 +64,15 @@
   "uploadProgress": "Uploading screenshot",
   "imageUnavailable": "Image unavailable",
   "resumeUnavailable": "This browser cannot save the conversation for later.",
+  "phoneTitle": "Start with your phone number",
+  "phoneHelp": "Use the number registered on your ZainCash account. Support uses it to find your account and your reports.",
+  "phoneLabel": "Your ZainCash phone number",
+  "phoneContinue": "Continue",
+  "phoneInvalid": "Enter a valid ZainCash phone number, for example 07701234567.",
+  "profileLabel": "Signed in as",
+  "changeNumber": "Change number",
+  "confirmChange": "Use another number",
+  "confirmChangeBody": "Your current report stays saved with this number. You can enter a different number next.",
+  "receiptFor": "Submitted for",
   "empty": "Describe what happened, or attach a screenshot of the error."
 }
