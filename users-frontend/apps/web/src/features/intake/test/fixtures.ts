@@ -19,6 +19,8 @@ export function emptySession(overrides: Partial<SessionView> = {}): SessionView 
     review: null,
     receipt: null,
     error_code: null,
+    pending_question: null,
+    progress: [],
     ...overrides,
   }
 }
@@ -70,6 +72,7 @@ export function fakeApi(overrides: Partial<SessionView> = {}): IntakeApi {
         review: { ...review, language: command.language },
       }),
     ),
+    ask: vi.fn(async () => session),
     retry: vi.fn(async () => session),
     submit: vi.fn(async () => ({
       ticket_reference: "INTAKE-demo",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   IntakeRequestError,
   parseCredentials,
+  parseSavedSession,
   parseSession,
 } from "./contracts"
 import { attachment, emptySession, review } from "./test/fixtures"
@@ -54,6 +55,10 @@ const malformed: Array<[string, unknown]> = [
   ["fact evidence entry", { ...populated, review: { ...populated.review!, facts: { amount: { ...populated.review!.facts.amount!, evidence: [{}] } } } }],
   ["fact supersedes entry", { ...populated, review: { ...populated.review!, facts: { amount: { ...populated.review!.facts.amount!, supersedes: [{}] } } } }],
   ["additional issue", { ...populated, review: { ...populated.review!, additional_issues: [{}] } }],
+  ["pending question kind", { ...populated, pending_question: { key: "amount", message_id: "m1", text: "?", reason: "", answer_kind: "money", choices: [], attempt: 1 } }],
+  ["pending question choice", { ...populated, pending_question: { key: "amount", message_id: "m1", text: "?", reason: "", answer_kind: "amount", choices: ["maybe"], attempt: 1 } }],
+  ["progress tier", { ...populated, progress: [{ key: "amount", tier: "later", status: "known", display: null }] }],
+  ["progress status", { ...populated, progress: [{ key: "amount", tier: "required", status: "done", display: null }] }],
 ]
 
 describe("intake runtime contracts", () => {
@@ -88,5 +93,21 @@ describe("intake runtime contracts", () => {
 
   it("accepts the fully populated valid session", () => {
     expect(parseSession(populated)).toEqual(populated)
+  })
+
+  it("fills the interview fields for an older server", () => {
+    const older: Record<string, unknown> = { ...populated }
+    delete older.pending_question
+    delete older.progress
+    expect(parseSession(older)).toMatchObject({ pending_question: null, progress: [] })
+  })
+
+  it("restores a saved quick reply and a saved ask", () => {
+    const credentials = { session_id: "session-1", token: "token" }
+    const answer = { request_id: "r1", expected_revision: 2, text: "اي", language: "ar", attachment_ids: [], answer_to: { message_id: "q1", key: "debited", choice: "yes" } }
+    expect(parseSavedSession({ credentials, pending: { kind: "message", payload: answer } })?.pending).toEqual({ kind: "message", payload: answer })
+    const ask = { request_id: "r2", expected_revision: 2, key: "txn_ref" }
+    expect(parseSavedSession({ credentials, pending: { kind: "ask", payload: ask } })?.pending).toEqual({ kind: "ask", payload: ask })
+    expect(parseSavedSession({ credentials, pending: { kind: "message", payload: { ...answer, answer_to: { key: "debited" } } } })).toBeNull()
   })
 })

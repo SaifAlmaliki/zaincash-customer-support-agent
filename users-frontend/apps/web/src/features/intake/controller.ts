@@ -1,6 +1,8 @@
 import { IntakeRequestError, type IntakeApi } from "./api"
 import type { SessionStorage } from "./session"
 import type {
+  AnswerTo,
+  AskCommand,
   Credentials,
   Language,
   MessageCommand,
@@ -14,9 +16,13 @@ const POLL_MS = 2000
 const POLL_LIMIT_MS = 70_000
 const RESUME_UNAVAILABLE = "This browser cannot save the conversation for later. It stays open on this screen."
 
+export type Activity = "message" | "review" | "ask" | "upload" | "remove" | "submit"
+
 export type ControllerState = {
   session: SessionView | null
   busy: boolean
+  activity: Activity | null
+  outgoing: MessageCommand | null
   error: string | null
   uploads: Record<string, number>
   resumeUnavailable: boolean
@@ -29,6 +35,8 @@ function emptyState(): ControllerState {
   return {
     session: null,
     busy: false,
+    activity: null,
+    outgoing: null,
     error: null,
     uploads: {},
     resumeUnavailable: false,
@@ -109,13 +117,20 @@ export class IntakeController {
     return this.initPromise
   }
 
-  async send(text: string, language: Language, attachmentIds: string[]) {
+  async send(text: string, language: Language, attachmentIds: string[], answerTo?: AnswerTo) {
     if (this.sendFlight) return this.sendFlight
     this.sendFlight = this.enqueue(async () => {
       if (this.unreconciled()) return
-      await this.sendNow(text, language, attachmentIds)
+      await this.sendNow(text, language, attachmentIds, answerTo)
     }).finally(() => { this.sendFlight = null })
     return this.sendFlight
+  }
+
+  async ask(key: string) {
+    return this.enqueue(async () => {
+      if (this.unreconciled()) return
+      await this.askNow(key)
+    })
   }
 
   async requestReview(allowPartial: boolean, language: Language) {
@@ -292,7 +307,7 @@ export class IntakeController {
     this.watch(created.session)
   }
 
-  private async sendNow(text: string, language: Language, attachmentIds: string[]) {
+  private async sendNow(text: string, language: Language, attachmentIds: string[], answerTo?: AnswerTo) {
     const session = this.requireSession()
     if (!session || session.turn_status === "processing") return
     const generation = this.generation
@@ -304,12 +319,13 @@ export class IntakeController {
           text,
           language,
           attachment_ids: attachmentIds,
+          ...(answerTo ? { answer_to: answerTo } : {}),
         }
     if (this.pending?.kind !== "message") {
       this.pending = { kind: "message", payload: command }
       this.persist()
     }
-    await this.dispatch(generation, () => this.api.message(this.credentials!, command, this.nextSignal()))
+    await this.dispatch(generation, () => this.api.message(this.credentials!, command, this.nextSignal()), "message")
   }
 
   private async reviewNow(allowPartial: boolean, language: Language) {
@@ -328,7 +344,21 @@ export class IntakeController {
       this.pending = { kind: "review", payload: command }
       this.persist()
     }
-    await this.dispatch(generation, () => this.api.review(this.credentials!, command, this.nextSignal()))
+    await this.dispatch(generation, () => this.api.review(this.credentials!, command, this.nextSignal()), "review")
+  }
+
+  private async askNow(key: string) {
+    const session = this.requireSession()
+    if (!session || session.turn_status === "processing") return
+    const generation = this.generation
+    const command: AskCommand = this.pending?.kind === "ask"
+      ? this.pending.payload
+      : { request_id: crypto.randomUUID(), expected_revision: session.revision, key }
+    if (this.pending?.kind !== "ask") {
+      this.pending = { kind: "ask", payload: command }
+      this.persist()
+    }
+    await this.dispatch(generation, () => this.api.ask(this.credentials!, command, this.nextSignal()), "ask")
   }
 
   private async submitNow() {
@@ -355,7 +385,7 @@ export class IntakeController {
       this.pending = { kind: "submit", payload: command }
       this.persist()
     }
-    this.replace({ ...this.snapshot, busy: true, error: null })
+    this.replace({ ...this.snapshot, busy: true, activity: "submit", error: null })
     try {
       const receipt = await this.api.submit(this.credentials!, command, this.nextSignal())
       if (generation !== this.generation) return
@@ -408,6 +438,7 @@ export class IntakeController {
     ) {
       await this.dispatch(generation, () =>
         this.api.retry(this.credentials!, session.active_request_id!, session.revision, this.nextSignal()),
+        "message",
       )
       return
     }
@@ -416,9 +447,10 @@ export class IntakeController {
     }
     if (this.pendingRemoval) return this.removeNow(this.pendingRemoval.attachmentId)
     if (this.pending?.kind === "submit") return this.submitNow()
+    if (this.pending?.kind === "ask") return this.askNow(this.pending.payload.key)
     if (this.pending?.kind === "message") {
       const command = this.pending.payload
-      return this.sendNow(command.text, command.language, command.attachment_ids)
+      return this.sendNow(command.text, command.language, command.attachment_ids, command.answer_to)
     }
     if (this.pending?.kind === "review") {
       const command = this.pending.payload
@@ -449,6 +481,7 @@ export class IntakeController {
     this.replace({
       ...this.snapshot,
       busy: true,
+      activity: "upload",
       error: null,
       uploads: { ...this.snapshot.uploads, [clientId]: 0 },
     })
@@ -517,7 +550,7 @@ export class IntakeController {
       expected_revision: session.revision,
     }
     this.pendingRemoval = { ...command, attachmentId }
-    this.replace({ ...this.snapshot, busy: true, error: null })
+    this.replace({ ...this.snapshot, busy: true, activity: "remove", error: null })
     try {
       const view = await this.api.remove(this.credentials!, attachmentId,
         { request_id: command.request_id, expected_revision: command.expected_revision }, this.nextSignal())
@@ -534,9 +567,9 @@ export class IntakeController {
     }
   }
 
-  private async dispatch(generation: number, run: () => Promise<SessionView>) {
+  private async dispatch(generation: number, run: () => Promise<SessionView>, activity: Activity) {
     this.stopPoll()
-    this.replace({ ...this.snapshot, busy: true, error: null, pollingExhausted: false })
+    this.replace({ ...this.snapshot, busy: true, activity, error: null, pollingExhausted: false })
     try {
       const view = await run()
       if (generation !== this.generation) return
@@ -654,7 +687,7 @@ export class IntakeController {
   }
 
   private replace(next: ControllerState) {
-    this.snapshot = next
+    this.snapshot = { ...next, outgoing: this.pending?.kind === "message" ? this.pending.payload : null }
     for (const listener of this.listeners) listener()
   }
 

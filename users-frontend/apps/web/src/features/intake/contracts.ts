@@ -1,4 +1,6 @@
 import type {
+  AnswerTo,
+  AskCommand,
   Attachment,
   Credentials,
   EvidenceRef,
@@ -6,6 +8,8 @@ import type {
   Language,
   MessageCommand,
   PendingOperation,
+  PendingQuestion,
+  ProgressItem,
   Receipt,
   ReviewCommand,
   SavedSession,
@@ -123,6 +127,36 @@ function validReview(value: unknown): boolean {
     stringList(value.attachment_ids)
 }
 
+const ANSWER_KINDS = ["yes_no", "amount", "phone", "reference", "date", "text"]
+const CHOICES = ["yes", "no", "unknown", "attach"]
+const FACT_STATUSES = ["known", "missing", "unknown", "conflicting", "not_applicable"]
+
+function validPendingQuestion(value: unknown): value is PendingQuestion {
+  return isRecord(value) &&
+    typeof value.key === "string" &&
+    typeof value.message_id === "string" &&
+    typeof value.text === "string" &&
+    typeof value.reason === "string" &&
+    ANSWER_KINDS.includes(String(value.answer_kind)) &&
+    Array.isArray(value.choices) && value.choices.every((choice) => CHOICES.includes(String(choice))) &&
+    typeof value.attempt === "number" && Number.isInteger(value.attempt) && value.attempt >= 1
+}
+
+function validProgressItem(value: unknown): value is ProgressItem {
+  return isRecord(value) &&
+    typeof value.key === "string" &&
+    (value.tier === "required" || value.tier === "ask_once") &&
+    FACT_STATUSES.includes(String(value.status)) &&
+    nullableString(value.display)
+}
+
+function validAnswerTo(value: unknown): value is AnswerTo {
+  return isRecord(value) &&
+    typeof value.message_id === "string" && !!value.message_id &&
+    typeof value.key === "string" && !!value.key &&
+    (value.choice === "yes" || value.choice === "no" || value.choice === "unknown")
+}
+
 export function parseCredentials(value: unknown): Credentials {
   if (!isRecord(value) || typeof value.session_id !== "string" || !value.session_id ||
       typeof value.token !== "string" || !value.token) invalid()
@@ -154,11 +188,16 @@ export function parseSession(value: unknown): SessionView {
       !Array.isArray(value.attachments) || !value.attachments.every(validAttachment) ||
       !validReadiness(value.readiness) ||
       (value.review !== null && !validReview(value.review)) ||
+      (value.pending_question !== undefined && value.pending_question !== null &&
+        !validPendingQuestion(value.pending_question)) ||
+      (value.progress !== undefined &&
+        (!Array.isArray(value.progress) || !value.progress.every(validProgressItem))) ||
       !nullableString(value.error_code)) {
     invalid()
   }
   if (value.receipt !== null) parseReceipt(value.receipt)
-  return value as unknown as SessionView
+  const session = value as unknown as SessionView
+  return { ...session, pending_question: session.pending_question ?? null, progress: session.progress ?? [] }
 }
 
 function requestIdentity(value: unknown): value is Record<string, unknown> & {
@@ -171,7 +210,12 @@ function requestIdentity(value: unknown): value is Record<string, unknown> & {
 
 function validMessageCommand(value: unknown): value is MessageCommand {
   return requestIdentity(value) && typeof value.text === "string" &&
-    language(value.language) && stringList(value.attachment_ids)
+    language(value.language) && stringList(value.attachment_ids) &&
+    (value.answer_to === undefined || validAnswerTo(value.answer_to))
+}
+
+function validAskCommand(value: unknown): value is AskCommand {
+  return requestIdentity(value) && typeof value.key === "string" && !!value.key
 }
 
 function validReviewCommand(value: unknown): value is ReviewCommand {
@@ -194,6 +238,9 @@ function parsePendingOperation(value: unknown): PendingOperation | null {
   }
   if (value.kind === "submit" && validSubmitCommand(value.payload)) {
     return { kind: "submit", payload: value.payload }
+  }
+  if (value.kind === "ask" && validAskCommand(value.payload)) {
+    return { kind: "ask", payload: value.payload }
   }
   return null
 }

@@ -439,4 +439,53 @@ describe("intake controller", () => {
     expect(controller.getSnapshot().pollingExhausted).toBe(true)
     controller.dispose()
   })
+
+  it("sends a quick reply with the question it answers", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("ar", CUSTOMER_PHONE)
+    await controller.send("اي", "ar", [], { message_id: "q1", key: "debited", choice: "yes" })
+    expect(vi.mocked(api.message).mock.calls[0]?.[1]).toMatchObject({
+      text: "اي",
+      attachment_ids: [],
+      answer_to: { message_id: "q1", key: "debited", choice: "yes" },
+    })
+  })
+
+  it("asks for a chosen detail through the ask operation", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("ar", CUSTOMER_PHONE)
+    await controller.ask("txn_ref")
+    expect(vi.mocked(api.ask).mock.calls[0]?.[1]).toMatchObject({ key: "txn_ref", expected_revision: 1 })
+  })
+
+  it("exposes the outgoing message and the activity while it is in flight", async () => {
+    const api = fakeApi()
+    let release!: (view: SessionView) => void
+    vi.mocked(api.message).mockImplementation(() => new Promise((resolve) => { release = resolve }))
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en", CUSTOMER_PHONE)
+    const sent = controller.send("hello", "en", [])
+    await vi.waitFor(() => expect(controller.getSnapshot().busy).toBe(true))
+    expect(controller.getSnapshot()).toMatchObject({ activity: "message", outgoing: { text: "hello" } })
+    release(emptySession({ revision: 2 }))
+    await sent
+    expect(controller.getSnapshot()).toMatchObject({ busy: false, outgoing: null })
+  })
+
+  it("keeps an unsent message after a lost connection and resends it", async () => {
+    const api = fakeApi()
+    vi.mocked(api.message).mockRejectedValueOnce(new TypeError("offline"))
+    vi.mocked(api.get).mockRejectedValueOnce(new TypeError("offline"))
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en", CUSTOMER_PHONE)
+    await controller.send("hello", "en", [])
+    expect(controller.getSnapshot().outgoing?.text).toBe("hello")
+    expect(controller.getSnapshot().error).toBeTruthy()
+    await controller.retry()
+    const calls = vi.mocked(api.message).mock.calls
+    expect(calls[1]?.[1].text).toBe("hello")
+    expect(calls[1]?.[1].request_id).toBe(calls[0]?.[1].request_id)
+  })
 })

@@ -7,6 +7,7 @@ import {
   parseSession,
 } from "./contracts"
 import type {
+  AskCommand,
   Attachment,
   Credentials,
   Language,
@@ -30,6 +31,7 @@ export interface IntakeApi {
   get(credentials: Credentials, signal?: AbortSignal): Promise<SessionView>
   message(credentials: Credentials, command: MessageCommand, signal?: AbortSignal): Promise<SessionView>
   review(credentials: Credentials, command: ReviewCommand, signal?: AbortSignal): Promise<SessionView>
+  ask(credentials: Credentials, command: AskCommand, signal?: AbortSignal): Promise<SessionView>
   retry(credentials: Credentials, requestId: string, expectedRevision: number, signal?: AbortSignal): Promise<SessionView>
   submit(credentials: Credentials, command: SubmitCommand, signal?: AbortSignal): Promise<Receipt>
   upload(
@@ -116,6 +118,15 @@ export function createIntakeApi(baseUrl = "/api/intake"): IntakeApi {
     },
     async review(credentials, command, signal) {
       const response = await fetch(sessionUrl(baseUrl, credentials, "/review"), {
+        method: "POST",
+        headers: authHeaders(credentials, true),
+        body: JSON.stringify(command),
+        signal,
+      })
+      return parseSession(await parseJson(response))
+    },
+    async ask(credentials, command, signal) {
+      const response = await fetch(sessionUrl(baseUrl, credentials, "/ask"), {
         method: "POST",
         headers: authHeaders(credentials, true),
         body: JSON.stringify(command),
