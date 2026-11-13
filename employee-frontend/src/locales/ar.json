@@ -271,6 +271,7 @@
       "recipient_outcome": "وصول المبلغ",
       "customer_phone": "هاتف الزبون",
       "recipient_phone": "هاتف المستلم",
+      "recipient_name": "اسم المستلم",
       "txn_ref": "رقم العملية",
       "exact_error": "نص الخطأ"
     }

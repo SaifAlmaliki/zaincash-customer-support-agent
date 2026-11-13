@@ -271,6 +271,7 @@
       "recipient_outcome": "Recipient received it",
       "customer_phone": "Customer phone",
       "recipient_phone": "Recipient phone",
+      "recipient_name": "Recipient name",
       "txn_ref": "Transaction reference",
       "exact_error": "Error text"
     }
