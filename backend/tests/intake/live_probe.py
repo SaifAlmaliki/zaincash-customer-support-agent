@@ -1,4 +1,4 @@
-"""Opt-in synthetic vision check: uv run python -m tests.intake.live_probe.
+"""Opt-in live checks: uv run python -m tests.intake.live_probe [transfers].
 
 Uses the configured provider, never run by pytest. Prints observations, timings
 and provider-reported cost only; no credentials or customer data are logged.
@@ -69,5 +69,39 @@ async def main():
         print(json.dumps(report, ensure_ascii=False))
 
 
+VAGUE = "حولت فلوس وما وصلت"
+COMPLETE = "حولت 50000 دينار لعلي حسين على رقم 07701234567 بتاريخ 2026-10-06 وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123"
+
+
+async def transfers():
+    settings = Settings()
+    model = IntakeModel(settings)
+    taxonomy = load_taxonomy(settings.taxonomy_path)
+    for name, text in (("vague", VAGUE), ("complete", COMPLETE)):
+        ctx = context([message(text)])
+        budget = ModelBudget(settings.intake_timeout_s, settings.intake_max_model_requests)
+        report = {"case": name, "model": settings.intake_model or settings.gemini_model}
+        started = time.monotonic()
+        try:
+            result = await model.analyze(ctx, [], budget)
+            merged = merge_analysis(ctx, result.value)
+            merged = merged.model_copy(update={"readiness": assess_readiness(merged, taxonomy)})
+            question = choose_question(merged, result.value.suggested_question, 1, taxonomy)
+            report["category"] = merged.category
+            report["facts"] = {key: {"status": item.status, "value": item.value, "normalized": item.normalized}
+                               for key, item in merged.facts.items()}
+            report["quality"] = merged.readiness.quality
+            report["next_question"] = None if question is None else {
+                "key": question.key, "text": question.text, "reason": question.reason,
+            }
+        except Exception as error:
+            report["error_type"] = type(error).__name__
+        report["latency_s"] = round(time.monotonic() - started, 3)
+        report["trace"] = budget.trace
+        print(json.dumps(report, ensure_ascii=False))
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys
+
+    asyncio.run(transfers() if sys.argv[1:] == ["transfers"] else main())
