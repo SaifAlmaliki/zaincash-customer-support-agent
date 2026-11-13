@@ -1,3 +1,4 @@
+import { normalizeCustomerPhone } from "./phone"
 import type { EvaluationReport, TicketInput } from "./types"
 
 function csvRows(text: string): string[][] {
@@ -71,12 +72,15 @@ export function parseTicketFile(
     const channel = row.channel || "app"
     if (!["app", "whatsapp", "call_note"].includes(channel))
       throw new Error(`Row ${index + 1} has an unknown channel.`)
+    const phone = normalizeCustomerPhone(String(row.customer_phone ?? ""))
+    if (!phone)
+      throw new Error(`Row ${index + 1} needs a valid customer phone (07XXXXXXXXX).`)
     return {
       external_id: id,
       text: message.trim(),
       channel,
       ...(row.received_at ? { received_at: String(row.received_at) } : {}),
-      customer_phone: row.customer_phone || null,
+      customer_phone: phone,
     }
   })
 }

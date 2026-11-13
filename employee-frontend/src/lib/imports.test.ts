@@ -4,7 +4,7 @@ import { parseTicketFile, validateEvaluation } from "./imports"
 describe("ticket uploads", () => {
   it("reads quoted CSV fields, BOM, escaped quotes and Arabic without splitting messages", () => {
     const text =
-      '\uFEFFexternal_id,text\r\nT-1,"حولت 50,000 دينار، وكتبت ""مستعجل"""\r\n'
+      '\uFEFFexternal_id,text,customer_phone\r\nT-1,"حولت 50,000 دينار، وكتبت ""مستعجل""",07701234567\r\n'
     expect(parseTicketFile(text, "tickets.csv")[0]).toMatchObject({
       external_id: "T-1",
       text: 'حولت 50,000 دينار، وكتبت "مستعجل"',
@@ -12,13 +12,21 @@ describe("ticket uploads", () => {
   })
   it("supports JSONL and message aliases", () => {
     expect(
-      parseTicketFile('{"message":"مرحبا"}\n{"text":"سؤال"}\n', "tickets.jsonl")
+      parseTicketFile(
+        '{"message":"مرحبا","customer_phone":"07701234567"}\n{"text":"سؤال","customer_phone":"07701234567"}\n',
+        "tickets.jsonl"
+      )
     ).toHaveLength(2)
+  })
+  it("requires and normalizes the customer phone", () => {
+    expect(() => parseTicketFile('[{"text":"one"}]', "t.json")).toThrow(/Row 1 needs a valid customer phone/)
+    expect(() => parseTicketFile('[{"text":"one","customer_phone":"0770"}]', "t.json")).toThrow(/Row 1/)
+    expect(parseTicketFile('[{"text":"one","customer_phone":"+964 770 123 4567"}]', "t.json")[0].customer_phone).toBe("07701234567")
   })
   it("rejects conflicting IDs, empty messages and malformed containers", () => {
     expect(() =>
       parseTicketFile(
-        '[{"id":"a","text":"one"},{"id":"a","text":"two"}]',
+        '[{"id":"a","text":"one","customer_phone":"07701234567"},{"id":"a","text":"two","customer_phone":"07701234567"}]',
         "t.json"
       )
     ).toThrow(/unique/i)

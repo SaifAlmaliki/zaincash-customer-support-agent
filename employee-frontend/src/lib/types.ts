@@ -4,13 +4,18 @@ export type TicketInput = {
   text: string
   received_at?: string
   channel: "app" | "whatsapp" | "call_note"
-  customer_phone?: string | null
+  customer_phone: string
 }
 export type Ticket = TicketInput & {
   id: number
   external_id: string
   received_at: string
-  display_name?: string
+}
+export type CustomerProfile = {
+  phone: string
+  created_at: string
+  ticket_count: number
+  results: Result[]
 }
 export type ExtractedField = {
   value: string | number | null

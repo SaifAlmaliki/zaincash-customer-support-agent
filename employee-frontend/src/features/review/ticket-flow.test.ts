@@ -61,7 +61,7 @@ function result(patch: Partial<Result> = {}, ticket: Partial<Result["ticket"]> =
       text: "The transfer failed",
       received_at: "2026-10-12T10:00:00Z",
       channel: "whatsapp",
-      customer_phone: null,
+      customer_phone: "07701234567",
       ...ticket,
     },
     category: "failed_transfer",

@@ -1,0 +1,42 @@
+import type { Result, Ticket } from "./types"
+
+export function resultFixture(id: number, patch: Partial<Result> = {}, ticket: Partial<Ticket> = {}): Result {
+  return {
+    id,
+    ticket_id: id,
+    run_id: 1,
+    ticket: {
+      id,
+      external_id: `T-${id}`,
+      text: `ticket ${id}`,
+      received_at: "2026-10-12T10:00:00Z",
+      channel: "app",
+      customer_phone: "07701234567",
+      ...ticket,
+    },
+    category: "failed_transfer",
+    category_confidence: 0.8,
+    category_probs: {},
+    priority: "P2",
+    priority_confidence: null,
+    flags: {},
+    classifier_path: "jev",
+    extracted: {},
+    lookup_status: "not_applicable",
+    matched_txn_ref: null,
+    team: "Payments Ops",
+    escalated: false,
+    escalation_reasons: [],
+    escalation_note: null,
+    draft_text: null,
+    final_text: null,
+    citations: [],
+    agent_trace: [],
+    status: "pending_review",
+    error: null,
+    latency_ms: 1,
+    cost_usd: 0,
+    updated_at: "2026-10-12T10:00:00Z",
+    ...patch,
+  }
+}

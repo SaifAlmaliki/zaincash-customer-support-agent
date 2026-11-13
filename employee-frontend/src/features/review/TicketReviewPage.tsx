@@ -318,7 +318,7 @@ export function TicketReviewPage() {
       </Link>
       <PageHeader
         title={result.ticket.external_id}
-        description={`${result.ticket.display_name || textCopy.customerTicket} · ${dateLabel(result.ticket.received_at)}, ${timeLabel(result.ticket.received_at)} ${textCopy.baghdad}`}
+        description={`${textCopy.customerTicket} · ${dateLabel(result.ticket.received_at)}, ${timeLabel(result.ticket.received_at)} ${textCopy.baghdad}`}
       >
         <PriorityBadge priority={result.priority} />
         <StatusBadge status={result.status} />

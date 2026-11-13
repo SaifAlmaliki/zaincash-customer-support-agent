@@ -21,7 +21,7 @@ function row(id: number, patch: Partial<Result> = {}): Result {
       text: `ticket ${id}`,
       received_at: "2026-10-12T10:00:00Z",
       channel: "app",
-      customer_phone: null,
+      customer_phone: "07701234567",
     },
     category: "failed_transfer",
     category_confidence: 0.8,
@@ -95,6 +95,17 @@ it("applies tab, team, category, and case-insensitive search together", () => {
   }), 0)
   expect(view.filtered.map((item) => item.id)).toEqual([1])
   expect(view.visible.map((item) => item.id)).toEqual([1])
+})
+
+it("finds a customer's tickets by phone in any accepted format", () => {
+  const mine = row(1)
+  const rows = [
+    { ...mine, ticket: { ...mine.ticket, customer_phone: "07809876543" } },
+    row(2),
+  ]
+  for (const search of ["07809876543", "+964 780 987 6543", "0780987"]) {
+    expect(projectQueue(rows, filters({ search }), 0).filtered.map((item) => item.id)).toEqual([1])
+  }
 })
 
 it("sorts by the existing priority ordering without mutating input rows", () => {

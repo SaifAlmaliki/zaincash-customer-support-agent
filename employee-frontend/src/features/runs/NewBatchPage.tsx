@@ -19,8 +19,10 @@ import { FilterSelect, PageHeader } from "@/components/shared/workspace-ui"
 import { useWorkspace } from "@/lib/workspace"
 import { fill, useCopy } from "@/lib/locale"
 import { parseTicketFile } from "@/lib/imports"
+import { normalizeCustomerPhone } from "@/lib/phone"
 import { api } from "@/lib/api"
 import type { TicketInput } from "@/lib/types"
+import { pastedTickets } from "./pasted-ticket"
 import { runStartError } from "./run-start-error"
 
 const exampleTickets: TicketInput[] = [
@@ -30,8 +32,16 @@ const exampleTickets: TicketInput[] = [
     received_at: "2026-10-07T09:30:00+03:00",
     customer_phone: "07809876543",
   },
-  { text: "ما دا يوصلني رمز التحقق حتى افتح حسابي", channel: "whatsapp" },
-  { text: "شكد عمولة التحويل لحساب بنكي؟", channel: "app" },
+  {
+    text: "ما دا يوصلني رمز التحقق حتى افتح حسابي",
+    channel: "whatsapp",
+    customer_phone: "07501112233",
+  },
+  {
+    text: "شكد عمولة التحويل لحساب بنكي؟",
+    channel: "app",
+    customer_phone: "07734445566",
+  },
 ]
 
 export function NewBatchPage() {
@@ -50,12 +60,8 @@ export function NewBatchPage() {
   const [busy, setBusy] = useState(false),
     [reading, setReading] = useState(false)
   const configured = workspace.health?.configured_modes.includes("jev")
-  const selected =
-    tab === "upload"
-      ? tickets
-      : message.trim()
-        ? [{ text: message, channel, customer_phone: phone || null }]
-        : []
+  const customerPhone = normalizeCustomerPhone(phone)
+  const selected = tab === "upload" ? tickets : pastedTickets(message, channel, phone)
   const ready =
     selected.length === 0
       ? text.readyNone
@@ -230,8 +236,14 @@ export function NewBatchPage() {
                       inputMode="tel"
                       placeholder={text.phonePlaceholder}
                       value={phone}
+                      required
+                      aria-required="true"
+                      aria-invalid={Boolean(phone.trim() && !customerPhone)}
                       onChange={(e) => setPhone(e.target.value)}
                     />
+                    {phone.trim() && !customerPhone ? (
+                      <small className="error-text" role="alert">{text.phoneInvalid}</small>
+                    ) : null}
                   </label>
                 </div>
               </TabsContent>

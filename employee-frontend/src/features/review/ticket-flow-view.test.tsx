@@ -25,7 +25,7 @@ function result(patch: Partial<Result> = {}): Result {
       text: "التحويل لم يصل",
       received_at: "2026-10-12T10:00:00Z",
       channel: "app",
-      customer_phone: null,
+      customer_phone: "07701234567",
     },
     category: "bill_payment",
     category_confidence: 1,

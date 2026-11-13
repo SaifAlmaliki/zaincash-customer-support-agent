@@ -44,15 +44,14 @@ import { useWorkspace } from "@/lib/workspace"
 import {
   categories,
   categoryLabel,
-  dateLabel,
   downloadJson,
   teamLabel,
   teams,
-  timeLabel,
 } from "@/lib/format"
 import { fill, useCopy } from "@/lib/locale"
 import type { Result } from "@/lib/types"
 import { projectQueue, type QueueTab } from "./queue-projection"
+import { TicketIdentity } from "./TicketIdentity"
 
 const EMPTY_RESULTS: Result[] = []
 
@@ -243,24 +242,7 @@ export function QueuePage() {
                     }}
                   >
                     <TableCell>
-                      <div className="ticket-identity">
-                        <span className={`ticket-avatar avatar-${index % 4}`}>
-                          {row.ticket.display_name ? (
-                            row.ticket.display_name.slice(0, 1)
-                          ) : (
-                            <Smartphone size={17} />
-                          )}
-                        </span>
-                        <div>
-                          <Link to={`/tickets/${row.id}`} className="ticket-id">
-                            {row.ticket.external_id}
-                          </Link>
-                          <small>
-                            {row.ticket.display_name ||
-                              `${dateLabel(row.ticket.received_at)}, ${timeLabel(row.ticket.received_at)}`}
-                          </small>
-                        </div>
-                      </div>
+                      <TicketIdentity ticket={row.ticket} index={index} />
                     </TableCell>
                     <TableCell>
                       <div className="ticket-subject">
@@ -394,7 +376,7 @@ export function QueuePage() {
                     to={`/tickets/${row.id}`}
                     key={row.id}
                   >
-                    <span>{row.ticket.external_id}</span>
+                    <span dir="ltr">{row.ticket.customer_phone}</span>
                     <strong>{categoryLabel(row.category)}</strong>
                     <small>
                       {row.escalation_reasons.includes("fraud_suspected")

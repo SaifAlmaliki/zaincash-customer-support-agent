@@ -44,7 +44,10 @@ export async function request<T>(
       if (typeof body.detail === "string") message = body.detail
       else if (Array.isArray(body.detail))
         message = body.detail
-          .map((error: { msg: string }) => error.msg)
+          .map((error: { msg: string; loc?: unknown[] }) => {
+            const index = error.loc?.[1] === "tickets" ? error.loc?.[2] : undefined
+            return typeof index === "number" ? `Ticket ${index + 1}: ${error.msg}` : error.msg
+          })
           .join(" ")
     } catch {
       /* Proxies may return HTML when the API is offline. */

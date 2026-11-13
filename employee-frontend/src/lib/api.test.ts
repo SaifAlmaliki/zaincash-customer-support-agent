@@ -46,9 +46,16 @@ it("starts every new run with Jev classification", async () => {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }),
   )
-  await api.startRun([{ text: "شكد العمولة", channel: "app" }])
+  await api.startRun([{ text: "شكد العمولة", channel: "app", customer_phone: "07701234567" }])
   const options = fetchMock.mock.calls[0][1]
   expect(JSON.parse(String(options?.body)).mode).toBe("jev")
+})
+
+it("names the ticket row in validation errors", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
+    detail: [{ loc: ["body", "tickets", 1, "customer_phone"], msg: "Value error, Enter a valid ZainCash phone number, for example 07701234567." }],
+  }), { status: 422 }))
+  await expect(api.startRun([])).rejects.toThrow("Ticket 2: Value error, Enter a valid ZainCash phone number")
 })
 
 it("sends the admin token and locks the session when it is rejected", async () => {

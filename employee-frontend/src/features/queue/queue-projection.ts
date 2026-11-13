@@ -1,3 +1,4 @@
+import { normalizeCustomerPhone } from "@/lib/phone"
 import type { Result } from "@/lib/types"
 
 export type QueueTab =
@@ -36,6 +37,7 @@ export function projectQueue(
     approved: rows.filter((row) => ["approved", "edited"].includes(row.status)).length,
     processing: rows.filter((row) => row.status === "processing").length,
   }
+  const phoneQuery = normalizeCustomerPhone(filters.search)
   const filtered = rows
     .filter((row) =>
       (filters.tab === "all" ||
@@ -44,9 +46,10 @@ export function projectQueue(
           : row.status === filters.tab)) &&
       (filters.team === "all" || row.team === filters.team) &&
       (filters.category === "all" || row.category === filters.category) &&
-      `${row.ticket.text} ${row.ticket.external_id} ${row.ticket.display_name || ""}`
+      (`${row.ticket.text} ${row.ticket.external_id} ${row.ticket.customer_phone}`
         .toLowerCase()
-        .includes(filters.search.toLowerCase()),
+        .includes(filters.search.toLowerCase()) ||
+        (phoneQuery !== null && row.ticket.customer_phone === phoneQuery)),
     )
     .sort((a, b) => (a.priority || "P9").localeCompare(b.priority || "P9"))
   const lastPage = Math.max(0, Math.ceil(filtered.length / pageSize) - 1)
