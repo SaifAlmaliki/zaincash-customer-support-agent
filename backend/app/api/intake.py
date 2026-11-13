@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 from app.api.intake_schemas import (
+    AskInput,
     CreateSessionInput,
     MessageInput,
     RemoveInput,
@@ -110,6 +111,12 @@ def remove_attachment(session_id: UUID, attachment_id: UUID, body: RemoveInput, 
 @router.post("/sessions/{session_id}/review")
 async def request_review(session_id: UUID, body: ReviewInput, request: Request):
     view = await request.app.state.intake.review(_credentials(request, session_id), body.model_dump())
+    return JSONResponse(_dump(view), status_code=_status(view, body.request_id))
+
+
+@router.post("/sessions/{session_id}/ask")
+async def ask_question(session_id: UUID, body: AskInput, request: Request):
+    view = await request.app.state.intake.ask(_credentials(request, session_id), body.model_dump())
     return JSONResponse(_dump(view), status_code=_status(view, body.request_id))
 
 

@@ -29,6 +29,9 @@ class IntakeService:
     async def review(self, credentials: Credentials, command: dict) -> SessionView:
         return await self._perform(credentials, "review", command)
 
+    async def ask(self, credentials: Credentials, command: dict) -> SessionView:
+        return await self._perform(credentials, "ask", command)
+
     async def retry(self, credentials: Credentials, request_id: UUID, expected_revision: int) -> SessionView:
         claimed = await run_in_threadpool(self.turns.retry, credentials, request_id, expected_revision)
         if isinstance(claimed, SessionView):
@@ -50,6 +53,8 @@ class IntakeService:
                 result = await self.graph.review(
                     claim.context, allow_partial=bool(claim.payload.get("allow_partial")), language=language
                 )
+            elif claim.kind == "ask":
+                result = self.graph.ask(claim.context, claim.payload["key"])
             else:
                 result = await self.graph.advance(claim.context, answer=claim.payload.get("answer_to"))
         except ModelUnavailable as exc:

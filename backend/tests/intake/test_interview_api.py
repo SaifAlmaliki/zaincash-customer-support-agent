@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.intake.contracts import Analysis, QuestionRecord
+from app.intake.contracts import Analysis, QuestionRecord, ReviewText
 from tests.intake.helpers import fact
 
 pytestmark = pytest.mark.integration
@@ -147,3 +147,60 @@ def test_attach_is_not_a_message_answer(intake_client):
     case = start(intake_client)
     pending = case["view"]["pending_question"]
     send(intake_client, case, "x", answer_to={"message_id": pending["message_id"], "key": "amount", "choice": "attach"}, status=422)
+
+
+COMPLETE = "حولت 50000 دينار لعلي حسين على رقم 07701234567 بتاريخ 2026-10-06 وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123"
+
+
+def summary(state, language):
+    return ReviewText(customer_text="التحويل ما وصل.", employee_text_ar="التحويل ما وصل.", fact_keys=list(state.facts))
+
+
+def complete_without_reference(turn):
+    source = user_message(turn)
+    return Analysis(language="ar", category="failed_transfer", updates=[
+        fact("issue", source.text, source), fact("amount", "50000", source), fact("date", "2026-10-06", source),
+        fact("debited", "انقطعت من رصيدي", source, normalized="yes"),
+        fact("recipient_outcome", "ما وصلتله", source, normalized="no"),
+        fact("recipient_phone", "07701234567", source), fact("recipient_name", "علي حسين", source),
+        fact("txn_ref", "", source, status="unknown"),
+    ])
+
+
+def reference_answer(turn):
+    source = user_message(turn)
+    return Analysis(language="ar", category="failed_transfer", updates=[fact("txn_ref", "ZC2410000123", source)])
+
+
+def ask(client, case, key, status=200):
+    response = client.post(f"/api/intake/sessions/{case['sid']}/ask", headers=case["headers"], json={
+        "request_id": str(uuid4()), "expected_revision": case["view"]["revision"], "key": key,
+    })
+    assert response.status_code == status, response.text
+    if status == 200:
+        case["view"] = response.json()
+    return response
+
+
+def test_customer_can_answer_a_detail_from_the_review(intake_client):
+    intake_client.model.analyses = [complete_without_reference, reference_answer]
+    intake_client.model.reviews = [summary, summary]
+    case = start(intake_client, COMPLETE.replace(" رقم العملية ZC2410000123", ""))
+    assert case["view"]["review"]["quality"] == "sufficient_context"
+    calls = len(intake_client.model.calls)
+    ask(intake_client, case, "txn_ref")
+    assert len(intake_client.model.calls) == calls
+    view = case["view"]
+    assert view["review"] is None and view["phase"] == "collecting"
+    assert view["messages"][-1]["text"] == "عدك رقم عملية أو مرجع؟"
+    assert view["pending_question"]["key"] == "txn_ref"
+    assert view["pending_question"]["choices"] == ["unknown", "attach"]
+    send(intake_client, case, "ZC2410000123")
+    assert case["view"]["review"]["facts"]["txn_ref"]["normalized"] == "ZC2410000123"
+
+
+def test_ask_rejects_a_detail_outside_the_plan(intake_client):
+    intake_client.model.analyses = [opening]
+    case = start(intake_client)
+    response = ask(intake_client, case, "card_symptom", status=422)
+    assert response.json()["detail"]["code"] == "invalid_evidence"

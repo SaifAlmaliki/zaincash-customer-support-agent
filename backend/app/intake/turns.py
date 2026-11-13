@@ -15,7 +15,7 @@ from app.intake.db_models import (
     IntakeSessionRow,
 )
 from app.intake.errors import ImageRejected, InvalidEvidence, RevisionConflict, TurnBusy
-from app.intake.policy import pending_question
+from app.intake.policy import pending_question, progress
 from app.intake.repository import (
     IntakeRepository,
     assert_same_operation,
@@ -64,6 +64,8 @@ class TurnStore:
                 if payload.get("answer_to") is not None:
                     self._check_answer(session, row, payload["answer_to"])
                 customer_message = self._append_customer_message(session, row, payload, now)
+            elif kind == "ask":
+                self._check_ask(row, payload.get("key"))
             elif kind != "review":
                 raise InvalidEvidence("Unsupported conversation operation.")
             row.revision += 1
@@ -245,6 +247,12 @@ class TurnStore:
             or pending.key != answer.get("key") or choice not in pending.choices or choice == "attach"
         ):
             raise RevisionConflict("Reload the current conversation.")
+
+    @staticmethod
+    def _check_ask(row: IntakeSessionRow, key) -> None:
+        state = IntakeState.model_validate(row.state)
+        if not key or key not in {item.key for item in progress(state)}:
+            raise InvalidEvidence("That detail cannot be asked here.")
 
     def _locked_attempt(self, session, claim: OperationClaim):
         row = session.scalar(select(IntakeSessionRow).where(IntakeSessionRow.id == claim.session_id).with_for_update())

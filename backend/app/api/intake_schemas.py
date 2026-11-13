@@ -37,6 +37,12 @@ class ReviewInput(IntakeBody):
     language: Literal["ar", "en"]
 
 
+class AskInput(IntakeBody):
+    request_id: UUID
+    expected_revision: int = Field(ge=0)
+    key: str = Field(min_length=1, max_length=64)
+
+
 class RetryInput(IntakeBody):
     expected_revision: int = Field(ge=0)
 

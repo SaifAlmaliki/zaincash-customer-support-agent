@@ -13,7 +13,7 @@ from app.intake.contracts import QuestionRecord, TurnContext, TurnResult
 from app.intake.errors import IntakeError, InvalidEvidence, ModelUnavailable
 from app.intake.evidence import merge_analysis
 from app.intake.model import ModelBudget
-from app.intake.policy import assess_readiness, choose_question
+from app.intake.policy import ask_for, assess_readiness, choose_question
 from app.intake.review import build_review
 from app.models_config.types import ModelChoice
 
@@ -71,6 +71,12 @@ class IntakeGraph:
         except IntakeError as exc:
             exc.trace = list(budget.trace or exc.trace)
             raise
+
+    def ask(self, context: TurnContext, key: str) -> TurnResult:
+        question = ask_for(context.state, key, context.revision + 1)
+        readiness = assess_readiness(context.state, self.taxonomy).model_copy(update={"next_key": key})
+        outcome = self._ask({"state": context.state.model_copy(update={"readiness": readiness}), "question": question})
+        return TurnResult(outcome["state"], outcome["assistant_text"], None, [])
 
     async def _review_current(self, context: TurnContext, *, allow_partial: bool, language: str, budget: ModelBudget) -> TurnResult:
         if not context.messages and not any(not item.removed for item in context.attachments):
