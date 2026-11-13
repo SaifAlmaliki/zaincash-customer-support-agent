@@ -1,190 +1,123 @@
 # ZainCash Support Pipeline
 
-Back-office automation for Iraqi Arabic support tickets. The pipeline classifies each ticket, extracts its details, finds the relevant transaction, routes it to a team, and prepares a grounded reply for human review.
+Back-office automation for Iraqi Arabic support tickets. Each ticket is classified, its details are extracted, the transaction is looked up, the ticket is routed to a team, and a reply is drafted from the knowledge base.
 
 Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation**.
 
-> **People stay in control.** The pipeline never sends replies, moves money, or changes accounts. Uncertain or unsafe outcomes are escalated with a reason.
+> **A person approves every reply.** The system never sends messages, moves money, or changes accounts. Anything uncertain or unsafe is escalated with a reason.
 
-## Architecture
-
-![Technical architecture of the local support pipeline](./docs/architecture.png)
-
-Two web apps and a CLI send tickets to one API. The API runs a LangGraph pipeline, then holds every result for a person to review.
+## How it works
 
 ```mermaid
 flowchart LR
-  intake["Customer intake :5174"]
-  workspace["Employee workspace :5173"]
-  cli["CLI batch"]
-  api["FastAPI :8000"]
-  pipeline["LangGraph pipeline"]
-  jev["Jev via TypeSafe"]
-  models["OpenRouter models"]
-  db[("PostgreSQL + pgvector :5433")]
-  review["Human review"]
-
-  intake --> api
-  workspace --> api
-  cli --> api
-  api --> pipeline
-  pipeline -->|classify| jev
-  pipeline -->|fill a missing field, draft the reply| models
-  pipeline -->|tickets, transactions, policy vectors| db
-  pipeline --> review
-  review -->|approve, edit, reject, reassign| db
+  intake["Customer intake app :5174"] --> api["API :8000"]
+  workspace["Employee workspace :5173"] --> api
+  api --> pipeline["Ticket pipeline"]
+  pipeline --> models["AI models<br/>OpenRouter (cloud) · Ollama (local) · TypeSafe Jev (cloud)"]
+  pipeline --> db[("PostgreSQL + pgvector :5433")]
+  pipeline --> review["Employee reviews"]
 ```
 
-Docker Compose runs the API and Postgres. The customer intake app and the employee workspace run separately with npm. Jev is the only classifier. Gemini is called only when a required field has no span. Claude writes the cited reply. Postgres stores tickets, the transaction lookup, and the policy embeddings.
+| Step | What happens | Default model |
+|---|---|---|
+| Intake | The customer describes the problem in a chat and can attach screenshots. | `anthropic/claude-sonnet-5.5` |
+| Classify | Category, priority, flags, and the text spans for each field. | `jev-1.13.0` (TypeSafe) |
+| Extract | Normalizes the fields. A model is asked only when a required field is missing. | `google/gemini-3.8-flash` |
+| Lookup | Matches the transaction in the database. | none |
+| Decide | Picks the team and priority from [`data/taxonomy.yaml`](data/taxonomy.yaml), or escalates. | none |
+| Draft | Searches the knowledge base, writes a cited Arabic reply, and runs safety checks. | `anthropic/claude-sonnet-5.5` · embeddings `openai/text-embedding-3-small` |
+| Review | An employee approves, edits, rejects, or reassigns. Nothing is sent automatically. | none |
 
-```mermaid
-flowchart TD
-  ticket["Ticket received"] --> prepare["Prepare text"]
-  prepare --> text{"Text present?"}
-  text -->|No| empty["Escalate empty ticket"]
-  text -->|Yes| jev["Jev classifies"]
-  jev --> extract["Verify and fill fields"]
-  extract --> lookup["Match the transaction"]
-  lookup --> decide["Apply routing rules"]
-  decide --> draft["Draft the reply and run guardrails"]
-  draft --> review["Person reviews"]
-  empty --> review
-```
+An empty ticket skips straight to review as an escalation.
 
-An empty ticket skips classification, lookup, and drafting, and is escalated. Every other ticket follows `prepare → jev_classify → extract → lookup → decide → draft`. The graph stops there. A person approves, edits, rejects, or reassigns. Nothing is sent.
+## Choosing models
 
-[Open the same diagrams as a standalone page](docs/pipeline-architecture.html).
+The defaults above come from `.env`. An admin can change the model of any step while the system runs:
 
-## How a ticket flows
+1. Set `ADMIN_TOKEN` in `.env` and restart the API.
+2. In the employee workspace, open **Admin → AI models** and enter the token.
+3. Click **Change model** on a step, pick a provider and a model, click **Test model**, then **Save**.
 
-| Step | What happens | Model | Code |
-|---|---|---|---|
-| Arrive | A customer submits intake, or an employee uploads tickets. | `anthropic/claude-sonnet-5.5` (`INTAKE_MODEL`) | `backend/app/intake/` |
-| Prepare | Normalize the text, mask card numbers, and find candidate spans. | None | `backend/app/pipeline/stage1_normalize/` |
-| Classify | Choose the category, priority, flags, and text spans. Jev is the only classifier. | `jev-1.13.0` (`JEV_MODEL`), through TypeSafe | `backend/app/pipeline/stage2_classify/jev.py` |
-| Extract | Normalize the spans Jev chose. Gemini is asked only when a required field has no span. A low-confidence Jev pick is kept. | `google/gemini-3.8-flash` (`GEMINI_MODEL` default), through OpenRouter, for a missing span only | `backend/app/pipeline/stage3_extract/extract.py` |
-| Lookup | Match the transaction. | None. SQLAlchemy and Postgres. | `backend/app/pipeline/stage4_lookup/` |
-| Decide | Assign the team and priority. If Jev is not confident, escalate and tell the reviewer: "the classifier was not confident." | None. Rules in [`data/taxonomy.yaml`](data/taxonomy.yaml). | `backend/app/pipeline/stage5_decide/rules.py` |
-| Draft | Retrieve policy chunks, write a cited reply, and run the guardrails. Jev checks credential wording. | Reply: `anthropic/claude-sonnet-5.5` (`ANTHROPIC_MODEL`). Retrieval: `openai/text-embedding-3-small` (`EMBEDDING_MODEL` default), 768 dimensions. | `backend/app/pipeline/stage6_draft/` |
-| Review | An agent approves, edits, rejects, or reassigns. Nothing is sent. | None | Employee workspace |
+What to know:
 
-The graph is `prepare → jev_classify → extract → lookup → decide → draft`. An empty `ANTHROPIC_MODEL` or `INTAKE_MODEL` uses `GEMINI_MODEL` for that step. `GEMINI_STRONG_MODEL` and `GEMINI_EMBED_MODEL` are not called.
-
-The table shows the `.env` defaults. An admin can change any step's provider and model at runtime in the workspace under **Admin → Models** (requires `ADMIN_TOKEN`). Saved choices are stored in Postgres and apply to new runs and new intake sessions without a restart.
-
-### Using local models (Ollama)
-
-1. Install and start Ollama, then pull models:
-   - `ollama pull qwen3:4b` for extraction and drafting (tools, structured output),
-   - `ollama pull nomic-embed-text` for embeddings (768 dimensions),
-   - a vision model such as `ollama pull gemma3:4b` for customer intake (`qwen3:4b` has no vision).
-2. Make Ollama reachable from the API and set `OLLAMA_BASE_URL`:
-   - API in Docker: `http://host.docker.internal:11434`.
-   - API in WSL with Ollama on Windows: either enable mirrored networking (`networkingMode=mirrored` in `%UserProfile%\.wslconfig`, then `wsl --shutdown`) and keep `http://localhost:11434`, or set the Windows environment variable `OLLAMA_HOST=0.0.0.0`, restart Ollama and use `http://<windows-host-ip>:11434` (`ip route show default` in WSL prints that IP).
-3. Set `ADMIN_TOKEN`, restart the API, open **Admin → Models**, and change a step. Every model must pass a live test before it is saved.
-
-Local models are slower; local steps use `LOCAL_AGENT_TIMEOUT_S` / `LOCAL_INTAKE_TIMEOUT_S`. `LOCAL_NUM_CTX` (default 16384) sets the context window for local models; larger values use more memory. When extract or draft runs locally, batches process `LOCAL_PIPELINE_CONCURRENCY` (default 2) tickets at a time. Jev classification always runs on TypeSafe, so the workspace shows **AI: Mixed** rather than **AI: Local**. Changing the embedding model re-indexes the knowledge base; new workspace batches are blocked until that finishes.
+- **Providers:** OpenRouter (cloud) and Ollama (local) for intake, extract, draft, and embeddings. Classification always uses Jev on TypeSafe.
+- **Only suitable models are listed.** Drafting needs tool calling, intake needs vision, and embeddings must be 768 dimensions. You can also type any model ID.
+- **A model is saved only after a live test passes.**
+- **Changes apply to new batches and new customer chats.** Customers never see a change, and a chat keeps one model from start to finish.
+- **No silent fallback.** If the chosen provider is down, the step fails and the ticket goes to a person with the reason. Nothing switches to another provider on its own.
+- **Changing the embedding model re-indexes the knowledge base.** New batches wait until it finishes, and the switch cannot start while a batch is running.
+- The top bar shows **AI: Local**, **AI: Cloud**, or **AI: Mixed**, so everyone can see where ticket data goes. Each run page lists the models it used.
 
 ## Quick start
 
-### 1. Configure the environment
-
 You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter key.
 
-```bash
-cp .env.example .env
-```
+1. **Configure.** Run `cp .env.example .env`, then set `TYPESAFE_API_KEY`, `OPENROUTER_API_KEY`, and `ADMIN_TOKEN`. Copy each file in `secrets/` from its `.example` version, removing the `.example` suffix.
+2. **Start the database and API:**
+   ```bash
+   docker compose up --build -d
+   ```
+3. **Start the employee workspace:**
+   ```bash
+   cd employee-frontend && npm ci && npm run dev
+   ```
+4. **Start the customer intake app** (optional):
+   ```bash
+   cd users-frontend && npm ci && npm --workspace web run dev
+   ```
 
-Set `TYPESAFE_API_KEY` and `OPENROUTER_API_KEY` in `.env`. The model for each step is in the table above; `.env.example` already contains those IDs.
-
-Copy every file in `secrets/` from its `.example` counterpart, removing the `.example` suffix. Compose builds `DATABASE_URL` from those files; do not put that URL in `.env`.
-
-### 2. Start Postgres and the API
-
-From the repository root:
-
-```bash
-docker compose up --build
-```
-
-Wait until both containers are healthy. Use `docker compose up --build -d` to run them in the background.
-
-### 3. Start the employee workspace
-
-In a second terminal:
-
-```bash
-cd employee-frontend
-npm ci
-npm run dev
-```
-
-### 4. Start customer intake (optional)
-
-In a third terminal:
-
-```bash
-cd users-frontend
-npm ci
-npm --workspace web run dev
-```
-
-Restart the API after changing model settings in `.env`; admin changes apply without a restart.
-
-| Application | Address |
+| App | Address |
 |---|---|
 | Employee workspace | http://localhost:5173 |
 | Customer intake | http://localhost:5174 |
-| API | http://localhost:8000 |
-| API documentation | http://localhost:8000/api/docs |
+| API docs | http://localhost:8000/api/docs |
 | PostgreSQL | `localhost:5433` |
+
+After you change `.env`, restart the API (`docker compose up -d --build api`). Changes made on the admin page apply without a restart.
+
+## Local models with Ollama
+
+1. Pull the models:
+   ```bash
+   ollama pull qwen3:4b          # extract and draft
+   ollama pull nomic-embed-text  # embeddings (768 dimensions)
+   ollama pull gemma3:4b         # intake (needs vision; qwen3:4b has none)
+   ```
+2. Make Ollama reachable from the API and set `OLLAMA_BASE_URL` in `.env`:
+   - **Ollama on Windows, API in WSL or Docker inside WSL:** set the Windows user variable `OLLAMA_HOST=0.0.0.0:11434`, restart Ollama, and use `http://<windows-ip>:11434`. Run `ip route show default` in WSL to get the IP. Alternatively, enable WSL mirrored networking and use `http://localhost:11434`.
+   - **Docker Desktop:** `http://host.docker.internal:11434`.
+3. Choose the Ollama models on **Admin → AI models**.
+
+Local models are slower. The settings `LOCAL_AGENT_TIMEOUT_S`, `LOCAL_INTAKE_TIMEOUT_S`, `LOCAL_NUM_CTX` (context window), and `LOCAL_PIPELINE_CONCURRENCY` (tickets processed at once) control them. Because Jev runs in the cloud, an all-Ollama setup shows **AI: Mixed**.
 
 ## Try the demo
 
-1. Open **Knowledge base** and upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md). Wait for **Indexed**. Do not also upload the copies in `data/test-kb/ar/`.
-2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing with Jev-only classification.
-3. Inspect the transfer, general question, fraud escalation, and out-of-scope result. Edit a reply and choose **Save & approve**.
+1. Open **Knowledge base**, upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md), and wait for **Indexed**.
+2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing.
+3. Open the results. Edit a reply and choose **Save & approve**.
 
-The demo data is synthetic. Files in `data/kb/` are fictional guidance, not real ZainCash policies or promises.
-
-See the [full demo walkthrough](docs/demo-readiness.md).
+The demo data and the files in `data/kb/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).
 
 ## Checks
 
-Backend, from `backend/`:
-
 ```bash
-uv run pytest -q
-uv run ruff check app tests
+cd backend && uv run pytest -q && uv run ruff check app tests
+cd employee-frontend && npm test && npm run lint && npm run build
 ```
 
-Employee frontend, from `employee-frontend/`:
+Backend integration tests use the separate `support_test` database. To process a file of tickets from the command line:
 
 ```bash
-npm test
-npm run lint
-npm run build
-```
-
-PostgreSQL integration tests use the separate `support_test` database.
-
-Run a Jev-only CLI batch from the repository root:
-
-```bash
-uv --directory backend run support run-batch \
-  ../data/demo/rag_tickets.jsonl --out ../out/run.json
+uv --directory backend run support run-batch ../data/demo/rag_tickets.jsonl --out ../out/run.json
 ```
 
 ## More documentation
 
-- [Architecture and ticket flow](docs/pipeline-architecture.html)
-- [Demo readiness and remaining work](docs/demo-readiness.md)
-- [Full design specification](docs/superpowers/specs/2026-10-07-support-pipeline-design.md)
-- [RAG verification record](docs/verification/2026-10-17-rag-drafting.md)
-- [Customer-intake verification record](docs/verification/2026-10-18-customer-intake.md)
-
-The review workspace and RAG drafting flow are implemented. Held-out evaluation, broader packaging/CI, and formal disclosure work remain.
+- [Demo walkthrough and open work](docs/demo-readiness.md)
+- [Pipeline design](docs/superpowers/specs/2026-10-07-support-pipeline-design.md)
+- [Admin model configuration design](docs/superpowers/specs/2026-11-12-admin-model-config-design.md)
+- Verification records: [RAG drafting](docs/verification/2026-10-17-rag-drafting.md), [customer intake](docs/verification/2026-10-18-customer-intake.md)
 
 ## License
 
-This project is proprietary. The [license](LICENSE) allows a recipient to read and study the source and ask the copyright holder questions. Publishing, selling, sharing it outside that recipient, and reusing it require Saif Almaliki's prior written approval.
+This project is proprietary. The [license](LICENSE) lets a recipient read and study the source and ask the copyright holder questions. Publishing, selling, sharing it outside that recipient, or reusing it requires Saif Almaliki's prior written approval.
