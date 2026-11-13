@@ -11,3 +11,7 @@ it("maps admin API errors to readable messages", () => {
   expect(adminErrorMessage(new ApiError("Model test failed: x", 422), en.models)).toBe("Model test failed: x")
   expect(adminErrorMessage(42, en.models)).toBe(en.models.genericError)
 })
+
+it("explains a backend without the admin API instead of showing Not Found", () => {
+  expect(adminErrorMessage(new ApiError("Not Found", 404), en.models)).toBe(en.models.apiMissing)
+})

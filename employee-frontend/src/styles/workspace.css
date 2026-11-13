@@ -2813,6 +2813,33 @@ html[dir="rtl"] .workspace-toast {
   gap: 12px;
   margin-top: 12px;
 }
+.secret-field {
+  position: relative;
+  display: block;
+}
+.secret-field input {
+  padding-inline-end: 38px;
+}
+.secret-toggle {
+  position: absolute;
+  inset-inline-end: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.secret-toggle:hover,
+.secret-toggle:focus-visible {
+  color: var(--foreground);
+  background: var(--muted);
+}
 .switch-card,
 .audit-card {
   margin-bottom: 20px;

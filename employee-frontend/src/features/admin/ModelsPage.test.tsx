@@ -41,6 +41,17 @@ it("asks for the admin token before showing models", () => {
   expect(html).not.toContain("Lock admin settings")
 })
 
+it("asks only for the token and lets the admin reveal it", () => {
+  setLocale("en")
+  const html = page()
+  expect(html).not.toContain("Your name")
+  expect(html.match(/<input/g)).toHaveLength(1)
+  expect(html).toContain('type="password"')
+  expect(html).toContain('aria-label="Show token"')
+  setLocale("ar")
+  expect(page()).toContain('aria-label="إظهار الرمز"')
+})
+
 it("shows the lock button and loads models once unlocked", () => {
   setLocale("en")
   setAdminSession({ token: "secret", name: "Sara" })
