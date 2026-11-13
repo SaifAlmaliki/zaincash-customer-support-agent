@@ -62,6 +62,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const unsent =
     session?.attachments.filter((item) => !item.removed && !item.message_id) ??
     []
+  const awaitingResend = Boolean(snapshot.outgoing) && !snapshot.busy
   const canSend =
     Boolean(
       session &&
@@ -69,6 +70,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
       (draft.trim() || unsent.length)
     ) &&
     !snapshot.busy &&
+    !awaitingResend &&
     session?.turn_status !== "processing"
   const hasContent = Boolean(
     session?.messages.length ||
@@ -80,7 +82,8 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     pending &&
     session?.phase === "collecting" &&
     session.turn_status === "idle" &&
-    !snapshot.busy
+    !snapshot.busy &&
+    !awaitingResend
   )
   const hint = composerHint(interactive && pending ? pending.answer_kind : null, text)
   const outgoing = snapshot.outgoing
