@@ -76,7 +76,7 @@ def intake_client(tmp_path):
 
 @pytest.fixture
 def reviewed(intake_client):
-    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     sid = created["credentials"]["session_id"]
     headers = {"Authorization": f"Bearer {created['credentials']['token']}"}
     response = intake_client.post(f"/api/intake/sessions/{sid}/messages", headers=headers, json={

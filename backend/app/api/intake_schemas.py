@@ -13,6 +13,7 @@ class IntakeBody(BaseModel):
 
 class CreateSessionInput(IntakeBody):
     language: Literal["ar", "en"]
+    customer_phone: str = Field(min_length=1, max_length=32)
 
 
 class MessageInput(IntakeBody):

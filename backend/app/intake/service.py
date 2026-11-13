@@ -17,8 +17,8 @@ class IntakeService:
         self.graph = graph
         self.store = store
 
-    def create(self, language: str):
-        return self.repo.create(language)
+    def create(self, language: str, customer_phone: str):
+        return self.repo.create(language, customer_phone)
 
     def get(self, credentials: Credentials) -> SessionView:
         return self.repo.get(credentials)

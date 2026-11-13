@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app.config import Settings
 from app.db.models import CustomerRow, TicketRow
 from app.db.session import init_db
-from app.intake.contracts import Fact, Message
+from app.intake.contracts import Fact, IntakeState, Message
 from app.intake.db_models import IntakeMessageRow, IntakeSessionRow
 
 
@@ -21,11 +21,28 @@ def repo(intake_db):
 def test_only_token_owner_can_resume(repo):
     from app.intake.contracts import Credentials
     from app.intake.errors import NotOwned
-    owner, original = repo.create("ar")
-    stranger, _ = repo.create("en")
+    owner, original = repo.create("ar", "07701234567")
+    stranger, _ = repo.create("en", "07701234567")
     assert repo.get(owner).id == original.id
     with pytest.raises(NotOwned):
         repo.get(Credentials(session_id=owner.session_id, token=stranger.token))
+
+
+def test_session_belongs_to_the_signed_in_customer(repo, intake_db):
+    credentials, view = repo.create("ar", "+964 770 123 4567")
+    assert view.customer_phone == "07701234567"
+    with intake_db[1]() as session:
+        row = session.get(IntakeSessionRow, credentials.session_id)
+        assert row.customer_phone == "07701234567"
+        assert session.get(CustomerRow, "07701234567") is not None
+        known = IntakeState.model_validate(row.state).facts["customer_phone"]
+        assert (known.status, known.value, known.normalized) == ("known", "07701234567", "07701234567")
+
+
+def test_invalid_phone_cannot_start_a_session(repo):
+    from app.intake.errors import InvalidCustomerPhone
+    with pytest.raises(InvalidCustomerPhone):
+        repo.create("ar", "0770")
 
 
 def test_changed_payload_cannot_reuse_operation_identity():
@@ -41,7 +58,7 @@ def test_changed_payload_cannot_reuse_operation_identity():
 
 def test_token_is_hashed_and_absent_from_the_view(repo, intake_db):
     import hashlib
-    credentials, view = repo.create("ar")
+    credentials, view = repo.create("ar", "07701234567")
     assert "token" not in view.model_dump(mode="json")
     with intake_db[1]() as session:
         row = session.get(IntakeSessionRow, credentials.session_id)
@@ -51,7 +68,7 @@ def test_token_is_hashed_and_absent_from_the_view(repo, intake_db):
 
 
 def test_messages_keep_sequence_and_unicode(repo, intake_db):
-    credentials, _ = repo.create("ar")
+    credentials, _ = repo.create("ar", "07701234567")
     now = datetime.now(UTC)
     with intake_db[1]() as session:
         session.add(IntakeMessageRow(
@@ -79,7 +96,7 @@ def test_contracts_reject_extra_keys():
 
 
 def test_message_sequence_is_unique(repo, intake_db):
-    credentials, _ = repo.create("en")
+    credentials, _ = repo.create("en", "07701234567")
     now = datetime.now(UTC)
     with pytest.raises(IntegrityError):
         with intake_db[1]() as session:

@@ -114,6 +114,7 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
         status = {
             "not_owned": 404, "revision_conflict": 409, "operation_conflict": 409, "turn_busy": 409,
             "stale_review": 409, "image_rejected": 422, "invalid_evidence": 422, "model_unavailable": 503,
+            "invalid_phone": 422,
         }.get(error.code, 400)
         return JSONResponse(status_code=status, content={"detail": {"code": error.code, "message": error.message}})
 

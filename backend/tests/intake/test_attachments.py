@@ -33,14 +33,14 @@ def store(intake_db, tmp_path, repo):
 
 
 def test_image_bytes_are_decoded_not_trusted(store, repo):
-    credentials, view = repo.create("ar")
+    credentials, view = repo.create("ar", "07701234567")
     with pytest.raises(ImageRejected):
         store.upload(credentials, uuid4(), view.revision, "receipt.png", b"<svg>not a PNG</svg>")
     assert repo.get(credentials).attachments == []
 
 
 def test_forged_extension_uses_the_decoded_format(store, repo):
-    credentials, view = repo.create("ar")
+    credentials, view = repo.create("ar", "07701234567")
     attachment, updated = store.upload(credentials, uuid4(), view.revision, "notes.jpg.exe", png_bytes())
     assert attachment.mime_type == "image/png"
     assert updated.attachments[0].mime_type == "image/png"
@@ -55,7 +55,7 @@ def test_limits_frames_and_truncated_images_are_rejected(intake_db, tmp_path, re
         "intake_max_image_pixels": 16,
     })
     limited = AttachmentStore(settings, intake_db[1])
-    credentials, view = repo.create("en")
+    credentials, view = repo.create("en", "07701234567")
     with pytest.raises(ImageRejected):
         limited.upload(credentials, uuid4(), view.revision, "big.png", png_bytes())
     settings = settings.model_copy(update={"intake_max_image_bytes": 5 * 1024 * 1024})
@@ -72,7 +72,7 @@ def test_limits_frames_and_truncated_images_are_rejected(intake_db, tmp_path, re
 
 
 def test_replay_does_not_duplicate_and_changed_bytes_conflict(store, repo, tmp_path):
-    credentials, view = repo.create("ar")
+    credentials, view = repo.create("ar", "07701234567")
     request_id = uuid4()
     first, after = store.upload(credentials, request_id, view.revision, "../../etc/passwd.png", png_bytes())
     again, replayed = store.upload(credentials, request_id, view.revision, "../../etc/passwd.png", png_bytes())
@@ -87,8 +87,8 @@ def test_replay_does_not_duplicate_and_changed_bytes_conflict(store, repo, tmp_p
 
 
 def test_cross_session_read_and_removal(store, repo):
-    owner, view = repo.create("ar")
-    stranger, _ = repo.create("en")
+    owner, view = repo.create("ar", "07701234567")
+    stranger, _ = repo.create("en", "07701234567")
     attachment, view = store.upload(owner, uuid4(), view.revision, "shot.png", png_bytes())
     with pytest.raises(NotOwned):
         store.read(stranger, attachment.id)
@@ -105,7 +105,7 @@ def test_remove_replays_physical_unlink_without_revision_change(store, repo, tmp
 
     from app.intake.db_models import IntakeOperationRow
 
-    owner, view = repo.create("ar")
+    owner, view = repo.create("ar", "07701234567")
     attachment, view = store.upload(owner, uuid4(), view.revision, "shot.png", png_bytes())
     request_id = uuid4()
     original_unlink = Path.unlink
@@ -140,7 +140,7 @@ def test_remove_replays_physical_unlink_without_revision_change(store, repo, tmp
 
 def test_active_turn_rejects_upload(store, repo, intake_db):
     from app.intake.db_models import IntakeSessionRow
-    credentials, view = repo.create("ar")
+    credentials, view = repo.create("ar", "07701234567")
     with intake_db[1]() as session:
         row = session.get(IntakeSessionRow, credentials.session_id)
         row.turn_status = "processing"
@@ -155,7 +155,7 @@ def test_concurrent_uploads_stop_at_the_session_cap(intake_db, tmp_path, repo):
     from app.intake.attachments import AttachmentStore
     settings = intake_db[0].model_copy(update={"intake_upload_dir": str(tmp_path), "intake_max_images_per_session": 10})
     store = AttachmentStore(settings, intake_db[1])
-    credentials, _ = repo.create("ar")
+    credentials, _ = repo.create("ar", "07701234567")
 
     def attempt(index):
         while True:
@@ -176,7 +176,7 @@ def test_concurrent_uploads_stop_at_the_session_cap(intake_db, tmp_path, repo):
 
 
 def test_changed_invalid_bytes_conflict_before_decoding_replay(store, repo):
-    owner, view = repo.create("en")
+    owner, view = repo.create("en", "07701234567")
     request_id = uuid4()
     store.upload(owner, request_id, view.revision, "shot.png", png_bytes())
     with pytest.raises(OperationConflict):
@@ -184,7 +184,7 @@ def test_changed_invalid_bytes_conflict_before_decoding_replay(store, repo):
 
 
 def test_decoder_decompression_limit_is_a_safe_image_rejection(store, repo, monkeypatch):
-    owner, view = repo.create("en")
+    owner, view = repo.create("en", "07701234567")
     content = png_bytes()
     monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 10)
     with pytest.raises(ImageRejected):

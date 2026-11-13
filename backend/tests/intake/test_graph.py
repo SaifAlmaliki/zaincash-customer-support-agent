@@ -10,7 +10,7 @@ from tests.intake.test_attachments import png_bytes
 
 
 def test_review_after_failed_analysis_still_interprets_the_saved_message(intake_client):
-    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     sid = created["session"]["id"]
     headers = {"Authorization": f"Bearer {created['credentials']['token']}"}
     intake_client.model.analyses = [ModelUnavailable()]
@@ -34,7 +34,7 @@ def test_validation_failure_retains_usage_audit(intake_client):
 
     app = intake_client.app
     app.state.intake.graph.model = IntakeModel(app.state.settings, runnable_factory=lambda schema: Ungrounded())
-    owner, view = app.state.intake.repo.create("en")
+    owner, view = app.state.intake.repo.create("en", "07701234567")
     response = intake_client.post(f"/api/intake/sessions/{owner.session_id}/messages", headers={"Authorization": f"Bearer {owner.token}"}, json={
         "request_id": str(uuid4()), "expected_revision": view.revision, "text": "Help", "language": "en", "attachment_ids": [],
     }).json()
@@ -50,7 +50,7 @@ def test_validation_failure_retains_usage_audit(intake_client):
 
 def test_reinspection_keeps_current_images_and_new_observations(intake_client):
     service = intake_client.app.state.intake
-    owner, view = service.repo.create("en")
+    owner, view = service.repo.create("en", "07701234567")
     old_image, view = service.store.upload(owner, uuid4(), view.revision, "old.png", png_bytes())
     # A successful first turn records one source; the next explicitly reinspects it.
     headers = {"Authorization": f"Bearer {owner.token}"}

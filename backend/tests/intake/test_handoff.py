@@ -112,7 +112,7 @@ def _message(client, case, text, attachments=()):
 def complete_conversation(intake_client):
     intake_client.model.analyses = [_opening, _amount("5000"), _amount("50000"), _dated]
     intake_client.model.reviews = [_review, _review, _review, _review]
-    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     case = {
         "sid": created["credentials"]["session_id"],
         "headers": {"Authorization": f"Bearer {created['credentials']['token']}"},
@@ -166,6 +166,9 @@ def test_review_to_employee_handoff(intake_client, complete_conversation):
     assert detail["status"] != "processing"
     run = intake_client.get(f"/api/runs/{items[0]['run_id']}").json()
     assert run["mode"] == "jev"
+    assert detail["ticket"]["customer_phone"] == "07701234567"
+    assert detail["intake"]["facts"]["customer_phone"]["normalized"] == "07701234567"
+    assert "07701234567" in detail["ticket"]["text"]
 
 
 def test_english_general_inquiry_asks_no_transaction_questions(intake_client):
@@ -187,7 +190,7 @@ def test_english_general_inquiry_asks_no_transaction_questions(intake_client):
 
     intake_client.model.analyses = [analyze]
     intake_client.model.reviews = [review]
-    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     headers = {"Authorization": f"Bearer {created['credentials']['token']}"}
     response = intake_client.post(
         f"/api/intake/sessions/{created['credentials']['session_id']}/messages",
@@ -227,7 +230,7 @@ def test_model_failure_retries_into_one_submission(intake_client):
 
     intake_client.model.analyses = [ModelUnavailable("down"), analyze]
     intake_client.model.reviews = [review]
-    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     sid = created["credentials"]["session_id"]
     headers = {"Authorization": f"Bearer {created['credentials']['token']}"}
     request_id = str(uuid4())

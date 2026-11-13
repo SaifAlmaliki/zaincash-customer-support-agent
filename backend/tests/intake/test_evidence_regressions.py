@@ -41,7 +41,6 @@ def test_amount_uses_supported_value_not_first_number_in_quote():
     ("amount", "500000", "50000", "amount 50000"),
     ("txn_ref", "123", None, "reference 123456"),
     ("currency", "USD", None, "amount 50000 IQD"),
-    ("customer_phone", "07701234567", None, "I sent to recipient 07701234567"),
 ])
 def test_unrelated_or_role_swapped_precise_value_is_rejected(key, value, normalized, text):
     source = message(text)
@@ -105,9 +104,12 @@ def test_full_payment_card_question_uses_safe_fallback():
     assert "card" not in result.text
 
 
-def test_two_phone_numbers_do_not_lose_their_roles():
+def test_model_cannot_set_or_change_the_signed_in_phone():
     source = message("My number is 07701234567; recipient number is 07801234567")
-    with pytest.raises(InvalidEvidence):
-        merge_analysis(context([source]), proposal(fact("customer_phone", "07801234567", source)))
-    result = merge_analysis(context([source]), proposal(fact("customer_phone", "07701234567", source)))
-    assert result.facts["customer_phone"].normalized == "07701234567"
+    signed_in = Fact(key="customer_phone", status="known", value="07709999999", normalized="07709999999")
+    result = merge_analysis(context([source], [signed_in]), proposal(
+        fact("customer_phone", "07701234567", source),
+        fact("recipient_phone", "07801234567", source),
+    ))
+    assert result.facts["customer_phone"] == signed_in
+    assert result.facts["recipient_phone"].normalized == "07801234567"

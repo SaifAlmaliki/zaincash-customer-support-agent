@@ -50,3 +50,8 @@ class ModelUnavailable(IntakeError):
 class StaleReview(IntakeError):
     code = "stale_review"
     public_message = "Review the latest summary before submitting."
+
+
+class InvalidCustomerPhone(IntakeError):
+    code = "invalid_phone"
+    public_message = "Enter a valid ZainCash phone number, for example 07701234567."

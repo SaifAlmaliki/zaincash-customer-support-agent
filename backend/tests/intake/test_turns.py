@@ -19,7 +19,7 @@ def turns(intake_db):
 
 
 def test_recovered_attempt_cannot_publish_stale_output(repo, turns):
-    owner, view = repo.create("en")
+    owner, view = repo.create("en", "07701234567")
     request_id = uuid4()
     old = turns.claim(owner, "message", request_id, view.revision,
                       {"text": "Transfer failed", "language": "en", "attachment_ids": []})
@@ -35,7 +35,7 @@ def test_recovered_attempt_cannot_publish_stale_output(repo, turns):
 def test_review_publication_revision_matches_the_session(repo, turns):
     from app.intake.contracts import ReviewSnapshot
     from tests.intake.helpers import grounded_review
-    owner, view = repo.create("en")
+    owner, view = repo.create("en", "07701234567")
     claimed = turns.claim(owner, "message", uuid4(), view.revision, {
         "text": "What is the transfer fee?", "language": "en", "attachment_ids": [],
     })

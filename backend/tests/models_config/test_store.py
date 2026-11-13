@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy.engine import make_url
 
 from app.config import Settings
+from app.db.models import CustomerRow
 from app.db.session import make_engine, make_sessionmaker, reset_db
 from app.intake.db_models import IntakeSessionRow
 from app.models_config.db_models import ModelSettingRow
@@ -88,7 +89,10 @@ def test_intake_pin_keeps_the_first_model_for_a_session(env):
     store = _store(settings, sf)
     session_id = uuid.uuid4()
     with sf.begin() as session:
-        session.add(IntakeSessionRow(id=session_id, token_hash="h" * 64, state={}))
+        session.add(CustomerRow(phone="07701234567"))
+        session.flush()
+        session.add(IntakeSessionRow(id=session_id, token_hash="h" * 64, state={},
+                                     customer_phone="07701234567"))
     store.save(Step.INTAKE, ModelChoice("ollama", "gemma3:4b"), changed_by="Sara", latency_ms=1)
     first, timeout = store.intake_pin(session_id)
     assert first == ModelChoice("ollama", "gemma3:4b") and timeout == 150
@@ -102,7 +106,10 @@ def test_unusable_intake_pin_is_replaced_with_the_current_choice(env, caplog):
     store = _store(settings, sf)
     session_id = uuid.uuid4()
     with sf.begin() as session:
+        session.add(CustomerRow(phone="07701234567"))
+        session.flush()
         session.add(IntakeSessionRow(id=session_id, token_hash="h" * 64, state={},
+                                     customer_phone="07701234567",
                                      model_choice={"provider": "retired", "model": "x", "options": {}}))
     choice, _timeout = store.intake_pin(session_id)
     current = store.choice(Step.INTAKE)

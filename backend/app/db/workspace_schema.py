@@ -18,8 +18,16 @@ def _nullable(connection, table: str, column: str) -> str | None:
     ), {"table": table, "column": column})
 
 
+def _table_exists(connection, table: str) -> bool:
+    return connection.scalar(text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = :table"
+    ), {"table": table}) is not None
+
+
 def assert_customer_schema(connection) -> None:
     if _nullable(connection, "tickets", "customer_phone") == "YES":
+        raise LegacySchemaError(LEGACY_SCHEMA_MESSAGE)
+    if _table_exists(connection, "intake_sessions") and _nullable(connection, "intake_sessions", "customer_phone") is None:
         raise LegacySchemaError(LEGACY_SCHEMA_MESSAGE)
 
 

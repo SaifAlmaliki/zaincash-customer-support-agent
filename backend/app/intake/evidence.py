@@ -9,23 +9,10 @@ from app.intake.errors import InvalidEvidence
 from app.intake.policy import HIGH_VALUE, field_is_resolved
 from app.pipeline.stage1_normalize.candidates import normalize_phone, parse_amount
 
-_PRECISE = {"txn_ref", "amount", "customer_phone", "recipient_phone", "exact_error", "date"}
+_PRECISE = {"txn_ref", "amount", "recipient_phone", "exact_error", "date"}
 _GROUPING = re.compile(r"(?<=\d)[,.\s\u066c\u060c](?=\d{3}(?!\d))")
 _CURRENCIES = {"IQD": ("iqd", "دينار", "د.ع"), "USD": ("usd", "دولار", "$")}
 _CORRECTION = re.compile(r"\b(i meant|correction|correct(?:ed|ion)?|actually|instead|not .+ but)\b|أقصد|اقصد|تصحيح|الصحيح|قصدي|مو .+ وإنما", re.I)
-_OWN_PHONE = re.compile(r"\b(my|mine|own|customer)\b|رقمي|هاتفي|حسابي|رقم الزبون|رقم العميل", re.I)
-_OTHER_PHONE = re.compile(r"\b(recipient|receiver|sent to|his|her|their)\b|المستلم|المستفيد|حولت للرقم|رقمه|رقمها", re.I)
-
-
-def _own_phone_quote(value: str, quote: str) -> bool:
-    text = _compact(quote)
-    match = re.search(re.escape(value), text)
-    if match is None:
-        return False
-    prefix = text[:match.start()]
-    own = list(_OWN_PHONE.finditer(prefix))
-    other = list(_OTHER_PHONE.finditer(prefix))
-    return bool(own) and (not other or own[-1].start() > other[-1].start())
 
 
 def _compact(value: str) -> str:
@@ -72,18 +59,7 @@ def _normalize_precise(fact: Fact, messages: dict) -> Fact:
         if fact.normalized and _compact(fact.normalized) != str(parsed[0]):
             raise InvalidEvidence("Normalized amount does not match the reported text.")
         return fact.model_copy(update={"normalized": str(parsed[0])})
-    if fact.key in {"customer_phone", "recipient_phone"}:
-        if fact.key == "customer_phone" and not any(_own_phone_quote(value, quote) for quote in quotes):
-            # A bare answer to our own account-phone question is also grounded
-            # in customer evidence; a recipient report alone is not.
-            ordered = sorted(messages.values(), key=lambda item: item.created_at)
-            own_answer = any(
-                index > 0 and item in sources and not _OTHER_PHONE.search(item.text) and ordered[index - 1].role == "assistant"
-                and re.search(r"your.*(?:phone|number|account)|هاتف حسابك|رقمك", ordered[index - 1].text, re.I)
-                for index, item in enumerate(ordered)
-            )
-            if not own_answer:
-                raise InvalidEvidence("Confirm which number belongs to the customer.")
+    if fact.key == "recipient_phone":
         parsed = normalize_phone(value)
         if parsed is None:
             return fact.model_copy(update={"normalized": None})
@@ -178,10 +154,14 @@ def merge_analysis(context: TurnContext, analysis, *, visible_image_ids=None) ->
 
     facts = dict(context.state.facts)
     for update in analysis.updates:
+        if update.key == "customer_phone":
+            continue  # set from the phone the customer signed in with
         checked = checked_update(update, facts.get(update.key))
         facts[checked.key] = _apply(facts.get(checked.key), checked, messages)
     issues = {item.key: item for item in context.state.additional_issues}
     for issue in analysis.additional_issues:
+        if issue.key == "customer_phone":
+            continue
         checked = checked_update(issue, issues.get(issue.key))
         issues[issue.key] = _apply(issues.get(issue.key), checked, messages)
     needed = [

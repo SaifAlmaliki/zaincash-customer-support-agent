@@ -7,7 +7,7 @@ from app.intake.contracts import Fact, IntakeState, Question, Readiness
 from app.taxonomy import Taxonomy
 
 HIGH_VALUE = ("txn_ref", "exact_error", "repeats", "attempted_steps", "app_version")
-PRECISE = {"amount", "customer_phone", "recipient_phone", "date", "txn_ref"}
+PRECISE = {"amount", "recipient_phone", "date", "txn_ref"}
 _ALIASES = {
     "login": "login_access",
     "card": "card_issue",
@@ -45,7 +45,6 @@ _ASK = {
         "debited": "Was the amount taken from your wallet?",
         "recipient_outcome": "Did the other person receive the money?",
         "recipient_phone": "What number did you send the money to?",
-        "customer_phone": "Which phone number is on your ZainCash account?",
         "txn_ref": "Do you have a transaction or reference number?",
         "exact_error": "What exact error appeared?",
         "failed_step": "Which step failed?",
@@ -70,7 +69,6 @@ _ASK = {
         "debited": "انخصم المبلغ من محفظتك؟",
         "recipient_outcome": "وصلت الفلوس للشخص الثاني؟",
         "recipient_phone": "على أي رقم حولت الفلوس؟",
-        "customer_phone": "شنو رقم هاتف حسابك بزين كاش؟",
         "txn_ref": "عدك رقم عملية أو مرجع؟",
         "exact_error": "شنو نص الخطأ اللي طلع؟",
         "failed_step": "بأي خطوة صار الفشل؟",

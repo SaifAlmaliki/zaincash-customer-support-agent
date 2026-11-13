@@ -12,7 +12,7 @@ from app.main import create_app
 
 
 def create(client):
-    result = client.post("/api/intake/sessions", json={"language": "en"}).json()
+    result = client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     return result["session"]["id"], {"Authorization": f"Bearer {result['credentials']['token']}"}
 
 
@@ -108,7 +108,7 @@ def test_actual_app_restart_reconciles_failed_placeholder(intake_client, reviewe
 
 def test_stale_attempt_audit_is_retained_once_with_attempt_identity(intake_client):
     repo, turns = intake_client.app.state.intake.repo, intake_client.app.state.intake.turns
-    owner, view = repo.create("en")
+    owner, view = repo.create("en", "07701234567")
     claim = turns.claim(owner, "message", uuid4(), view.revision, command("What is the fee?"))
     turns.recover_interrupted()
     fresh = turns.retry(owner, claim.request_id, repo.get(owner).revision)

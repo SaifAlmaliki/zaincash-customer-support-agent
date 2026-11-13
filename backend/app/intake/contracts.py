@@ -161,6 +161,7 @@ class SessionView(IntakeModel):
     revision: int
     phase: Phase
     language: Language
+    customer_phone: str
     turn_status: TurnStatus
     active_request_id: UUID | None = None
     messages: list[Message] = Field(default_factory=list)

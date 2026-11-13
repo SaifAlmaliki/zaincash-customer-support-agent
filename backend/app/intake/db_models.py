@@ -16,6 +16,7 @@ class IntakeSessionRow(Base):
     __tablename__ = "intake_sessions"
     id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     token_hash: Mapped[str] = mapped_column(String(64))
+    customer_phone: Mapped[str] = mapped_column(String(11), ForeignKey("customers.phone"), index=True)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     phase: Mapped[str] = mapped_column(String(32), default="collecting")
     turn_status: Mapped[str] = mapped_column(String(32), default="idle")

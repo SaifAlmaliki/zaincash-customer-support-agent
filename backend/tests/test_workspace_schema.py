@@ -29,3 +29,10 @@ def test_nullable_ticket_phone_stops_startup_with_a_reset_instruction(engine):
         connection.execute(text("ALTER TABLE tickets ALTER COLUMN customer_phone DROP NOT NULL"))
     with pytest.raises(LegacySchemaError, match="docker compose down -v"):
         upgrade_workspace_schema(engine)
+
+
+def test_intake_sessions_without_a_customer_phone_stop_startup(engine):
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE intake_sessions DROP COLUMN customer_phone"))
+    with pytest.raises(LegacySchemaError):
+        upgrade_workspace_schema(engine)

@@ -10,11 +10,14 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.customers.phone import InvalidPhone, normalize_customer_phone
+from app.customers.repository import ensure_customers
 from app.db.models import TicketResultRow, TicketRow
 from app.intake.contracts import (
     Attachment,
     Credentials,
     CustomerReview,
+    Fact,
     IntakeState,
     Message,
     Readiness,
@@ -30,7 +33,7 @@ from app.intake.db_models import (
     IntakeSessionRow,
     IntakeSubmissionRow,
 )
-from app.intake.errors import NotOwned, OperationConflict
+from app.intake.errors import InvalidCustomerPhone, NotOwned, OperationConflict
 
 
 def operation_fingerprint(kind: str, payload: dict) -> str:
@@ -57,11 +60,14 @@ def processing_status(result_status: str) -> str:
     return "ready_for_employee"
 
 
-def initial_state(language: str) -> IntakeState:
+def initial_state(language: str, customer_phone: str) -> IntakeState:
+    # The signed-in phone is the customer's identity, so it is known before the first message.
     return IntakeState(
         language=language,
         category="other",
-        facts={},
+        facts={"customer_phone": Fact(
+            key="customer_phone", status="known", value=customer_phone, normalized=customer_phone,
+        )},
         additional_issues=[],
         additional_needed=[],
         questions=[],
@@ -160,6 +166,7 @@ def session_view(session: Session, row: IntakeSessionRow) -> SessionView:
         revision=row.revision,
         phase=row.phase,
         language=row.language,
+        customer_phone=row.customer_phone,
         turn_status=row.turn_status,
         active_request_id=row.active_request_id,
         messages=load_messages(session, row.id),
@@ -191,21 +198,27 @@ class IntakeRepository:
     def __init__(self, session_factory: sessionmaker) -> None:
         self._sf = session_factory
 
-    def create(self, language: str) -> tuple[Credentials, SessionView]:
+    def create(self, language: str, customer_phone: str) -> tuple[Credentials, SessionView]:
         if language not in {"ar", "en"}:
             raise ValueError("language must be ar or en")
+        try:
+            phone = normalize_customer_phone(customer_phone)
+        except InvalidPhone:
+            raise InvalidCustomerPhone() from None
         token, token_hash = new_access_token()
         session_id = uuid.uuid4()
         now = datetime.now(UTC)
         with self._sf() as session:
+            ensure_customers(session, [phone])
             session.add(IntakeSessionRow(
                 id=session_id,
                 token_hash=token_hash,
+                customer_phone=phone,
                 revision=0,
                 phase="collecting",
                 turn_status="idle",
                 language=language,
-                state=initial_state(language).model_dump(mode="json"),
+                state=initial_state(language, phone).model_dump(mode="json"),
                 review=None,
                 active_request_id=None,
                 error_code=None,

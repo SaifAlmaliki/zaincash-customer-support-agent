@@ -86,13 +86,9 @@ class SubmissionService:
 
     def _create(self, session, row, request_id, fingerprint, payload, snapshot: ReviewSnapshot) -> SubmissionResult:
         now = datetime.now(UTC)
-        phone_fact = snapshot.facts.get("customer_phone")
-        phone = None
-        if phone_fact is not None and phone_fact.status == "known":
-            phone = (phone_fact.normalized or phone_fact.value or "").strip()[:32] or None
         ticket = Ticket(
             external_id=f"INTAKE-{row.id.hex}", text=snapshot.ticket_text_ar, received_at=now,
-            channel="app", customer_phone=phone,
+            channel="app", customer_phone=row.customer_phone,
         )
         stored = upsert_tickets(session, [ticket], source="intake")[0]
         run_id = create_run(

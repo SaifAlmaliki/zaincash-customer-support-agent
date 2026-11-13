@@ -57,7 +57,7 @@ def _safe_dispatch(app, submission) -> None:
 
 @router.post("/sessions", status_code=201)
 def create_session(body: CreateSessionInput, request: Request):
-    credentials, view = request.app.state.intake.create(body.language)
+    credentials, view = request.app.state.intake.create(body.language, body.customer_phone)
     return {"credentials": _dump(credentials), "session": _dump(view)}
 
 

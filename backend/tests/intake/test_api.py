@@ -1,8 +1,21 @@
 from uuid import uuid4
 
 
+def test_session_requires_a_valid_customer_phone(intake_client):
+    assert intake_client.post("/api/intake/sessions", json={"language": "en"}).status_code == 422
+    invalid = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "12345"})
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "invalid_phone"
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "٠٧٧٠١٢٣٤٥٦٧"})
+    assert created.status_code == 201
+    assert created.json()["session"]["customer_phone"] == "07701234567"
+    sid = created.json()["credentials"]["session_id"]
+    headers = {"Authorization": f"Bearer {created.json()['credentials']['token']}"}
+    assert intake_client.get(f"/api/intake/sessions/{sid}", headers=headers).json()["customer_phone"] == "07701234567"
+
+
 def test_message_replay_is_single_turn(intake_client):
-    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     sid, token = created["credentials"]["session_id"], created["credentials"]["token"]
     headers = {"Authorization": f"Bearer {token}"}
     url = f"/api/intake/sessions/{sid}/messages"
@@ -17,7 +30,7 @@ def test_message_replay_is_single_turn(intake_client):
 
 
 def test_missing_token_and_stale_revision(intake_client):
-    created = intake_client.post("/api/intake/sessions", json={"language": "ar"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "ar", "customer_phone": "07701234567"}).json()
     sid = created["credentials"]["session_id"]
     missing = intake_client.get(f"/api/intake/sessions/{sid}")
     assert missing.status_code == 401
@@ -29,7 +42,7 @@ def test_missing_token_and_stale_revision(intake_client):
 
 
 def test_resume_uses_a_new_service_state(intake_client):
-    created = intake_client.post("/api/intake/sessions", json={"language": "en"}).json()
+    created = intake_client.post("/api/intake/sessions", json={"language": "en", "customer_phone": "07701234567"}).json()
     headers = {"Authorization": f"Bearer {created['credentials']['token']}"}
     sid = created["credentials"]["session_id"]
     sent = intake_client.post(f"/api/intake/sessions/{sid}/messages", headers=headers, json={
