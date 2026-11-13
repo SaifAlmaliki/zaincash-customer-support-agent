@@ -118,7 +118,16 @@ def run_batch_cmd(
 ) -> None:
     """Run the pipeline over a batch of tickets and print the run summary."""
     settings = _command_settings()
-    tickets = load_tickets(path)[: limit or None]
+    try:
+        tickets = load_tickets(path)[: limit or None]
+    except ValueError as exc:
+        typer.echo(f"Input error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+    missing = [t.external_id for t in tickets if not t.customer_phone]
+    if missing and not no_db:
+        typer.echo("Input error: every stored ticket needs a customer phone. Missing for: "
+                   f"{', '.join(missing[:10])}. Add customer_phone or use --no-db.", err=True)
+        raise typer.Exit(code=2)
     try:
         if no_db:
             outcomes, summary = _run_in_memory(settings, mode.value, tickets, transactions)

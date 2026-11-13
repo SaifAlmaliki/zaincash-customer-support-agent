@@ -213,7 +213,7 @@ def evidence_client(kb_env, request):
         upload(client, "سياسة الدعم: راجع طلب العميل ولا تطلب أسراره.".encode(), "one.md")
         upload(client, "سياسة ثانية: انتظر مراجعة فريق الدعم.".encode(), "two.md")
         response = client.post("/api/runs", json={"mode": "jev", "tickets": [
-            {"external_id": "evidence", "text": "شلون أطلب مساعدة؟"},
+            {"external_id": "evidence", "text": "شلون أطلب مساعدة؟", "customer_phone": "07701234567"},
         ]})
         assert response.status_code == 202, response.text
         result_id = client.get("/api/results").json()["items"][0]["id"]

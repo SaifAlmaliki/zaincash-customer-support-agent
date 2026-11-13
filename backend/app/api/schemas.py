@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.customers.phone import InvalidPhone, normalize_customer_phone
 from app.datetime import BAGHDAD
 from app.pipeline.stage1_normalize.normalize import sanitize_for_storage
 
@@ -15,7 +16,15 @@ class TicketInput(BaseModel):
     text: str = Field(min_length=1, max_length=6000)
     received_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     channel: Literal["app", "whatsapp", "call_note"] = "app"
-    customer_phone: str | None = Field(default=None, max_length=32)
+    customer_phone: str = Field(max_length=32)
+
+    @field_validator("customer_phone")
+    @classmethod
+    def canonical_phone(cls, value):
+        try:
+            return normalize_customer_phone(value)
+        except InvalidPhone as exc:
+            raise ValueError(str(exc)) from None
 
     @field_validator("text")
     @classmethod

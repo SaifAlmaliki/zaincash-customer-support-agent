@@ -1,4 +1,4 @@
-"""Load judge/user ticket files: .jsonl, .json (a list or {"tickets": [...]}), and .csv (UTF-8 with or without a BOM)."""
+"""Load judge/user ticket files: .jsonl, .json (a list or {"tickets": [...]}), and .csv (UTF-8 with or without a BOM). Rows may omit customer_phone; storing such a ticket is rejected later."""
 from __future__ import annotations
 
 import csv
@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from app.customers.phone import InvalidPhone, normalize_customer_phone
 from app.datetime import BAGHDAD, parse_dt
 from app.pipeline.contracts import Ticket
 from app.pipeline.stage1_normalize.normalize import sanitize_for_storage
@@ -40,7 +41,11 @@ def load_tickets(path: str | Path, *, now: datetime | None = None) -> list[Ticke
         if external_id in seen:
             continue
         seen.add(external_id)
-        phone = str(row.get("customer_phone") or "").strip() or None
+        raw_phone = str(row.get("customer_phone") or "").strip()
+        try:
+            phone = normalize_customer_phone(raw_phone) if raw_phone else None
+        except InvalidPhone as exc:
+            raise ValueError(f"Row {i} ({external_id}): {exc}") from None
         tickets.append(Ticket(
             external_id=external_id,
             text=sanitize_for_storage(str(row.get("text") or row.get("message") or "")),

@@ -102,7 +102,8 @@ def test_run_start_locks_the_switch_table_before_its_first_write(env):
 
     with _client(settings, sf) as client:
         statements.clear()
-        response = client.post("/api/runs", json={"tickets": [{"external_id": "x", "text": "شكد العمولة"}]})
+        response = client.post("/api/runs", json={"tickets": [
+            {"external_id": "x", "text": "شكد العمولة", "customer_phone": "07701234567"}]})
         assert response.status_code == 202, response.text
     lock = next(i for i, sql in enumerate(statements) if sql.startswith("LOCK TABLE embedding_switch IN SHARE MODE"))
     first_write = next(i for i, sql in enumerate(statements) if sql.startswith(("INSERT", "UPDATE")))
@@ -129,7 +130,8 @@ def test_runs_are_blocked_while_a_switch_runs_and_restart_recovers(env):
     app = create_app(settings, session_factory=sf, model_registry=fake_registry(settings))
     app.state.recover_embedding_switches = False  # keep the row running for the first assertion
     with TestClient(app) as client:
-        blocked = client.post("/api/runs", json={"tickets": [{"external_id": "x", "text": "شكد العمولة"}]})
+        blocked = client.post("/api/runs", json={"tickets": [
+            {"external_id": "x", "text": "شكد العمولة", "customer_phone": "07701234567"}]})
         assert blocked.status_code == 409 and blocked.json()["detail"] == "knowledge_switch_in_progress"
     with TestClient(create_app(settings, session_factory=sf, model_registry=fake_registry(settings))) as client:
         view = client.get("/api/admin/models/embed/switch", headers=HEADERS).json()

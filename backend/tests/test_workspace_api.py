@@ -15,6 +15,8 @@ from tests.fakes import FakeClassifier, make_output
 
 pytestmark = pytest.mark.integration
 
+PHONE = "07701234567"
+
 
 @pytest.fixture
 def client():
@@ -37,13 +39,13 @@ def client():
 
 
 def start_run(client, tickets=None):
-    response = client.post("/api/runs", json={"tickets": tickets or [
+    tickets = tickets or [
         {"external_id": "case-1", "text": "شكد عمولة التحويل؟",
          "received_at": datetime.now(UTC).isoformat()},
-    ]})
+    ]
+    response = client.post("/api/runs", json={"tickets": [{"customer_phone": PHONE, **t} for t in tickets]})
     assert response.status_code == 202, response.text
     return response.json()["id"]
-
 
 def test_batch_and_queue_expose_real_results(client):
     run_id = start_run(client)
@@ -178,7 +180,7 @@ def test_batch_failure_is_isolated_and_conflicting_ids_rejected(client):
     assert run["processed"] == 2
     assert run["counts"]["by_status"]["failed"] == 1
     response = client.post("/api/runs", json={"mode": "jev", "tickets": [
-        {"external_id": "ok", "text": "different content"},
+        {"external_id": "ok", "text": "different content", "customer_phone": PHONE},
     ]})
     assert response.status_code == 409
 
@@ -221,7 +223,7 @@ def test_concurrent_conflicting_insert_is_rechecked_after_upsert(client, monkeyp
 
     monkeypatch.setattr(runs, "upsert_tickets", racing_upsert)
     response = client.post("/api/runs", json={"mode": "jev", "tickets": [
-        {"external_id": "race-id", "text": "Original losing message"},
+        {"external_id": "race-id", "text": "Original losing message", "customer_phone": PHONE},
     ]})
     assert response.status_code == 409
     assert client.get("/api/runs").json() == []
@@ -259,7 +261,7 @@ def test_only_jev_mode_is_configured_and_retired_modes_are_rejected(client):
     assert health.json()["configured_modes"] == ["jev"]
     assert "test-router-secret" not in health.text and "test-jev-secret" not in health.text
     response = client.post("/api/runs", json={"mode": "gemini", "tickets": [
-        {"external_id": "retired-mode", "text": "شكد عمولة التحويل؟"},
+        {"external_id": "retired-mode", "text": "شكد عمولة التحويل؟", "customer_phone": PHONE},
     ]})
     assert response.status_code == 422
 
@@ -267,7 +269,7 @@ def test_only_jev_mode_is_configured_and_retired_modes_are_rejected(client):
 def test_api_reports_missing_typesafe_key(client):
     client.app.state.testing_pipeline = False
     response = client.post("/api/runs", json={"mode": "jev", "tickets": [
-        {"external_id": "missing-key", "text": "مرحبا"},
+        {"external_id": "missing-key", "text": "مرحبا", "customer_phone": PHONE},
     ]})
     assert response.status_code == 503
     assert "TYPESAFE_API_KEY" in response.json()["detail"]
@@ -299,3 +301,20 @@ def test_health_reports_ai_locality_and_runs_record_provider_refs():
         run_id = start_run(client)
         assert client.get(f"/api/runs/{run_id}").json()["model_ids"]["draft"] == "ollama:qwen3:4b"
     engine.dispose()
+
+
+def test_runs_require_and_normalize_the_customer_phone(client):
+    missing = client.post("/api/runs", json={"tickets": [{"external_id": "no-phone", "text": "مرحبا"}]})
+    assert missing.status_code == 422
+    invalid = client.post("/api/runs", json={"tickets": [
+        {"external_id": "bad", "text": "مرحبا", "customer_phone": "12345"},
+    ]})
+    assert invalid.status_code == 422
+    assert "valid ZainCash phone number" in invalid.text
+    start_run(client, [{"external_id": "formatted", "text": "شكد العمولة؟", "customer_phone": "+964 780 987 6543"}])
+    assert client.get("/api/results").json()["items"][0]["ticket"]["customer_phone"] == "07809876543"
+    # The same number written differently is the same ticket content, not a conflict.
+    again = client.post("/api/runs", json={"tickets": [
+        {"external_id": "formatted", "text": "شكد العمولة؟", "customer_phone": "0780 987 6543"},
+    ]})
+    assert again.status_code == 202, again.text

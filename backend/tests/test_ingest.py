@@ -14,7 +14,23 @@ def test_jsonl_fixture_loads():
     tickets = load_tickets(FIXTURES / "sample_tickets.jsonl", now=NOW)
     assert [t.external_id for t in tickets] == ["S-001", "S-002", "S-003", "S-004", "S-005"]
     assert tickets[0].customer_phone == "07809876543"
-    assert tickets[4].customer_phone is None and tickets[4].channel == "whatsapp"
+    assert tickets[4].customer_phone == "07734445566" and tickets[4].channel == "whatsapp"
+
+
+def test_phones_are_canonical_and_missing_phones_stay_empty(tmp_path):
+    p = tmp_path / "phones.jsonl"
+    p.write_text('{"external_id": "A", "text": "x", "customer_phone": "+964 780 987 6543"}\n'
+                 '{"external_id": "B", "text": "y"}\n', encoding="utf-8")
+    a, b = load_tickets(p, now=NOW)
+    assert a.customer_phone == "07809876543"
+    assert b.customer_phone is None
+
+
+def test_invalid_phone_names_the_row(tmp_path):
+    p = tmp_path / "bad.jsonl"
+    p.write_text('{"external_id": "A", "text": "x", "customer_phone": "12345"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="Row 1 \\(A\\).*valid ZainCash phone number"):
+        load_tickets(p, now=NOW)
 
 
 def test_csv_with_bom_and_missing_columns(tmp_path):
