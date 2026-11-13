@@ -49,7 +49,7 @@ def test_review_keeps_optional_facts_and_displays_missing_material_fields():
     ctx = context([source], [fact("issue", "transfer failed", source), fact("txn_ref", "DEMO-2410000123", source),
                              fact("exact_error", "E-12", source)], category="failed_transfer")
     text = ReviewText(customer_text="Transfer failed", employee_text_ar="فشل التحويل",
-                      fact_keys=["issue", "actual", "expected", "date", "amount", "debited", "recipient_outcome"])
+                      fact_keys=["issue", "actual", "expected", "date", "amount", "debited", "recipient_outcome", "recipient_phone"])
     review = build_review(ctx, ctx.state, text, publication=1, language="en")
     assert "DEMO-2410000123" in review.ticket_text_ar
     assert "E-12" in review.ticket_text_ar
@@ -71,3 +71,13 @@ def test_number_punctuation_is_not_part_of_the_value_but_reference_prefix_is():
     validate_review_numbers(state, ReviewText(customer_text="Amount 50,000.", employee_text_ar="المبلغ 50000.", fact_keys=[]))
     with pytest.raises(InvalidEvidence):
         validate_review_numbers(state, ReviewText(customer_text="Reference OTHER-2410000123", employee_text_ar="المبلغ 50000", fact_keys=[]))
+
+
+def test_review_lists_ask_once_details_for_the_employee():
+    source = message("Transfer failed")
+    ctx = context([source], [fact("issue", "transfer failed", source)], category="failed_transfer")
+    text = ReviewText(customer_text="Transfer failed", employee_text_ar="فشل التحويل",
+                      fact_keys=["issue", "amount", "date", "debited", "recipient_outcome", "recipient_phone"])
+    review = build_review(ctx, ctx.state, text, publication=1, language="en")
+    assert review.facts["recipient_name"].status == "missing"
+    assert "- اسم المستلم: غير متوفر" in review.ticket_text_ar

@@ -32,11 +32,21 @@ def test_unknown_material_fact_is_not_sufficient(taxonomy):
         key="amount", status="unknown", value=None,
         evidence=[EvidenceRef(kind="message", source_id=source.id, quote=source.text)],
     )
+    unknown_name = Fact(
+        key="recipient_name", status="unknown", value=None,
+        evidence=[EvidenceRef(kind="message", source_id=source.id, quote=source.text)],
+    )
+    unknown_ref = Fact(
+        key="txn_ref", status="unknown", value=None,
+        evidence=[EvidenceRef(kind="message", source_id=source.id, quote=source.text)],
+    )
     turn = context(
         [source],
         [fact("issue", source.text, source), fact("actual", source.text, source), fact("expected", source.text, source),
          fact("date", "أمس", source, normalized="2026-10-17"), fact("debited", "yes", source),
-         fact("recipient_outcome", "no", source), unknown],
+         fact("recipient_outcome", "no", source),
+         fact("recipient_phone", "07701234567", source, normalized="07701234567"),
+         unknown, unknown_name, unknown_ref],
         category="failed_transfer",
     )
     readiness = assess_readiness(turn.state, taxonomy)
@@ -66,13 +76,12 @@ def test_complete_transfer_is_sufficient(taxonomy):
     from app.intake.policy import assess_readiness
     from tests.intake.helpers import context, fact, message
     source = message("حولت 50000 أمس وانخصم وما وصل")
-    keys = {
-        "issue": source.text, "actual": "ما وصل", "expected": "يوصل", "date": "أمس",
-        "amount": "50000", "debited": "yes", "recipient_outcome": "not received",
-    }
     facts = [
-        fact(key, value, source, normalized="2026-10-17" if key == "date" else "50000" if key == "amount" else None)
-        for key, value in keys.items()
+        fact("issue", source.text, source), fact("date", "أمس", source, normalized="2026-10-17"),
+        fact("amount", "50000", source, normalized="50000"), fact("debited", "yes", source),
+        fact("recipient_outcome", "not received", source),
+        fact("recipient_phone", "07701234567", source, normalized="07701234567"),
+        fact("recipient_name", "علي", source), fact("txn_ref", "ZC1", source, normalized="ZC1"),
     ]
     readiness = assess_readiness(context([source], facts, category="failed_transfer").state, taxonomy)
     assert readiness.quality == "sufficient_context"

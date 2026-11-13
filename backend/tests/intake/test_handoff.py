@@ -14,7 +14,7 @@ from tests.intake.helpers import fact
 
 pytestmark = pytest.mark.integration
 
-_MATERIAL = ["issue", "actual", "expected", "date", "amount", "debited", "recipient_outcome"]
+_MATERIAL = ["issue", "actual", "expected", "date", "amount", "debited", "recipient_outcome", "recipient_phone"]
 
 
 def _user(turn):
@@ -33,6 +33,9 @@ def _opening(turn):
             fact("date", "", source, status="unknown"),
             fact("debited", "", source, status="unknown"),
             fact("recipient_outcome", "", source, status="unknown"),
+            fact("recipient_phone", "", source, status="unknown"),
+            fact("recipient_name", "", source, status="unknown"),
+            fact("txn_ref", "", source, status="unknown"),
         ],
         additional_issues=[],
         suggested_question=Question(

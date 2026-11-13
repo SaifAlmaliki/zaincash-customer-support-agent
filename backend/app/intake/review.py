@@ -7,7 +7,7 @@ from uuid import uuid4
 from app.intake.contracts import Fact, IntakeState, ReviewSnapshot, ReviewText, TurnContext
 from app.intake.dates import canonical_digits
 from app.intake.errors import InvalidEvidence
-from app.intake.policy import material_keys
+from app.intake.policy import ask_once_keys, material_keys
 
 _GROUPING = re.compile(r"(?<=\d)[,.\s\u066c\u060c](?=\d{3}(?!\d))")
 _TOKEN = re.compile(r"[\w+\-]*\d[\w:/.,+\-]*")
@@ -15,6 +15,7 @@ _LABELS = {
     "issue": "المشكلة", "actual": "ما حدث", "expected": "المتوقع", "date": "التاريخ",
     "amount": "المبلغ", "currency": "العملة", "debited": "خصم من المحفظة",
     "recipient_outcome": "وصول المبلغ", "recipient_phone": "رقم المستلم",
+    "recipient_name": "اسم المستلم",
     "customer_phone": "رقم الزبون", "txn_ref": "رقم العملية", "exact_error": "نص الخطأ",
     "failed_step": "خطوة الفشل", "device": "الجهاز", "app_version": "إصدار التطبيق",
     "agent_location": "موقع الوكيل", "merchant": "المتجر", "biller": "الجهة",
@@ -88,7 +89,7 @@ def build_review(context: TurnContext, state: IntakeState, text: ReviewText, *, 
     required = material_keys(state.category, taxonomy)
     if not set(required).issubset(set(text.fact_keys)):
         raise InvalidEvidence("The summary is missing a material detail.")
-    ordered = list(dict.fromkeys([*required, *state.facts, *state.additional_needed]))
+    ordered = list(dict.fromkeys([*required, *ask_once_keys(state.category), *state.facts, *state.additional_needed]))
     facts = {key: state.facts.get(key, Fact(key=key, status="missing")) for key in ordered}
     state = state.model_copy(update={"facts": facts})
     quality = "sufficient_context" if state.readiness.quality == "sufficient_context" else "partial_context"

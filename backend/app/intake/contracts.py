@@ -15,6 +15,8 @@ TurnStatus = Literal["idle", "processing", "retryable_failure"]
 Quality = Literal["collecting", "sufficient_context", "partial_context"]
 ReviewQuality = Literal["sufficient_context", "partial_context"]
 ProcessingStatus = Literal["processing", "ready_for_employee", "needs_attention"]
+AnswerKind = Literal["yes_no", "amount", "phone", "reference", "date", "text"]
+Choice = Literal["yes", "no", "unknown", "attach"]
 
 
 def _aware(value: datetime) -> datetime:
@@ -49,11 +51,19 @@ class Question(IntakeModel):
     basis_revision: int
 
 
+class AskedQuestion(Question):
+    answer_kind: AnswerKind = "text"
+    choices: list[Choice] = Field(default_factory=list)
+    attempt: int = 1
+
+
 class QuestionRecord(IntakeModel):
     key: str
     basis_revision: int
     message_id: UUID
     outcome: Literal["asked", "answered", "unknown"]
+    reason: str = ""
+    attempt: int = 1
 
 
 class Message(IntakeModel):
