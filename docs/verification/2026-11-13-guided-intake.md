@@ -6,7 +6,13 @@ What was built: a per-category required and ask-once field plan with one re-ask 
 
 ## Final automated checks
 
-Each command was run through WSL from PowerShell with its exit code captured explicitly (`cmd > log 2>&1; echo EXIT=$?` in a script file, so PowerShell could not rewrite `$?`). An earlier pass that piped output through `tail` was not reliable for exit codes; the table below is from the re-run with explicit codes. Exit codes are in the table; summary lines come from the saved logs. The intake test fixtures assert the database is `support_test` (`backend/tests/intake/conftest.py`), so those tests do not run against the development `support` database.
+Each command was run through WSL from PowerShell with its exit code captured explicitly. The exit codes came from a temporary script (`/tmp/gi-gates.sh`, outside the repository); the script and its logs were **not preserved**. Per gate the pattern was:
+
+```bash
+<command> > /tmp/gi-<name>.log 2>&1; echo "<NAME>_EXIT=$?"; tail -1 /tmp/gi-<name>.log
+```
+
+for example `~/.local/bin/uv --directory backend run pytest -q --tb=short > /tmp/gi-pytest.log 2>&1; echo "PYTEST_EXIT=$?"`. Putting this in a script file stops PowerShell from rewriting `$?` before WSL sees it. An earlier pass that piped output through `tail` was not reliable for exit codes; the table below is from the re-run with explicit codes. Summary lines come from the run's output. The intake test fixtures assert the database is `support_test` (`backend/tests/intake/conftest.py`), so those tests do not run against the development `support` database.
 
 | Working directory | Command | Exit | Result |
 |---|---|---:|---|
@@ -38,6 +44,38 @@ One run was needed; the prompt was **not** changed. Model, as printed by the pro
 |---|---|---:|---:|
 | Vague ("حولت فلوس وما وصلت") | `category` = `failed_transfer`; `recipient_outcome` known with normalized `no`; `quality` = `collecting`; `next_question.key` = `debited` (not `expected` or `recipient_outcome`) | 2.989s | $0.010836 |
 | Complete (50000 IQD to Ali Hussain, phone, date, reference, debited, not received) | `quality` = `sufficient_context`; `next_question` = `null`; facts include `recipient_name` = علي حسين, `recipient_phone` = 07701234567, `txn_ref` = ZC2410000123, `debited` = `yes`, `recipient_outcome` = `no`, plus amount 50000 IQD and date 2026-10-06 | 6.054s | $0.019416 |
+
+### Live probe output (facts only)
+
+Copied from the probe's printed JSON for the single run above, with `trace` (usage, cost, latency details) and all other fields omitted. The `facts` objects list `status`, `value` and `normalized` per key exactly as printed.
+
+**vague**
+
+```json
+{"category": "failed_transfer", "quality": "collecting",
+ "next_question": {"key": "debited", "text": "المبلغ انقطع من رصيدك بمحفظة زين كاش؟", "reason": "حتى نعرف إذا الفلوس طلعت من محفظتك."},
+ "facts": {
+  "issue": {"status": "known", "value": "حولت فلوس وما وصلت", "normalized": null},
+  "recipient_outcome": {"status": "known", "value": "ما وصلت", "normalized": "no"}}}
+```
+
+**complete**
+
+```json
+{"category": "failed_transfer", "quality": "sufficient_context", "next_question": null,
+ "facts": {
+  "issue": {"status": "known", "value": "حولت 50000 دينار لعلي حسين وانقطعت من رصيدي بس ما وصلتله", "normalized": null},
+  "actual": {"status": "known", "value": "انقطعت من رصيدي بس ما وصلتله", "normalized": null},
+  "expected": {"status": "known", "value": "توصل الفلوس للمستلم", "normalized": null},
+  "amount": {"status": "known", "value": "50000", "normalized": "50000"},
+  "currency": {"status": "known", "value": "دينار", "normalized": "IQD"},
+  "recipient_name": {"status": "known", "value": "علي حسين", "normalized": null},
+  "recipient_phone": {"status": "known", "value": "07701234567", "normalized": "07701234567"},
+  "date": {"status": "known", "value": "2026-10-06", "normalized": "2026-10-06"},
+  "debited": {"status": "known", "value": "انقطعت من رصيدي", "normalized": "yes"},
+  "recipient_outcome": {"status": "known", "value": "ما وصلتله", "normalized": "no"},
+  "txn_ref": {"status": "known", "value": "ZC2410000123", "normalized": "ZC2410000123"}}}
+```
 
 Both expectations held. This is a small smoke check on two messages, not a quality benchmark or proof of Iraqi-dialect fluency.
 
