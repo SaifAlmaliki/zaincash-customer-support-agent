@@ -6,33 +6,33 @@ What was built: a per-category required and ask-once field plan with one re-ask 
 
 ## Final automated checks
 
-All commands completed successfully. Backend tests ran serially against the guarded `support_test` database; the development `support` database was not reset.
+Each command was run through WSL from PowerShell with its exit code captured explicitly (`cmd > log 2>&1; echo EXIT=$?` in a script file, so PowerShell could not rewrite `$?`). An earlier pass that piped output through `tail` was not reliable for exit codes; the table below is from the re-run with explicit codes. Exit codes are in the table; summary lines come from the saved logs. The intake test fixtures assert the database is `support_test` (`backend/tests/intake/conftest.py`), so those tests do not run against the development `support` database.
 
-| Working directory | Command | Result |
-|---|---|---|
-| Repository root | `uv --directory backend run pytest -q --tb=short` | **979 passed**, 111.85s |
-| Repository root | `uv --directory backend run ruff check app tests` | `All checks passed!` |
-| `users-frontend/` | `npm --workspace web run test` | **141 passed** (8 files) |
-| `users-frontend/` | `npm --workspace web run typecheck` | Passed |
-| `users-frontend/` | `npm --workspace web run lint` | Passed |
-| `users-frontend/` | `npm --workspace web run build` | Passed |
-| `employee-frontend/` | `npm run test` | **124 passed** |
-| `employee-frontend/` | `npm run typecheck` | Passed |
-| `employee-frontend/` | `npm run lint` | Passed |
-| `employee-frontend/` | `npm run build` | Passed |
+| Working directory | Command | Exit | Result |
+|---|---|---:|---|
+| Repository root | `uv --directory backend run pytest -q --tb=short` | 0 | `979 passed in 111.04s (0:01:51)` |
+| Repository root | `uv --directory backend run ruff check app tests` | 0 | `All checks passed!` |
+| `users-frontend/` | `npm --workspace web run test` | 0 | `Test Files 8 passed (8)`, `Tests 141 passed (141)` |
+| `users-frontend/` | `npm --workspace web run typecheck` | 0 | no errors |
+| `users-frontend/` | `npm --workspace web run lint` | 0 | no errors |
+| `users-frontend/` | `npm --workspace web run build` | 0 | built |
+| `employee-frontend/` | `npm run test` | 0 | `Test Files 24 passed (24)`, `Tests 124 passed (124)` |
+| `employee-frontend/` | `npm run typecheck` | 0 | no errors |
+| `employee-frontend/` | `npm run lint` | 0 | no errors |
+| `employee-frontend/` | `npm run build` | 0 | built |
 
-PowerShell invoked these through WSL (`uv` at `/home/cvzmh_saif/.local/bin/uv`). `git stash list` was empty; nothing was stashed or reverted.
+`git stash list` was empty (0 entries); nothing was stashed or reverted. The first pass (before the re-run) showed the same counts: 979, 141 and 124 passed.
 
 ## Live transfer probe
 
-Command (paid provider calls, synthetic data; keys are never printed):
+Command (paid provider calls; the names, phone number and reference in the probe messages are synthetic test fixtures; keys are never printed):
 
 ```bash
 SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
 uv --directory backend run python -m tests.intake.live_probe transfers
 ```
 
-One run was needed; the prompt was **not** changed. Model: `anthropic/claude-sonnet-5.5` (the configured model), one provider request per case.
+One run was needed; the prompt was **not** changed. Model, as printed by the probe: `anthropic/claude-sonnet-5.5`; one provider request per case (one trace entry each).
 
 | Case | Outcome | Latency | Cost (provider-reported) |
 |---|---|---:|---:|
@@ -43,11 +43,12 @@ Both expectations held. This is a small smoke check on two messages, not a quali
 
 ## Existing-test expectation changes from Task 1
 
-The new field plan makes `recipient_phone` required for `failed_transfer` and adds ask-once details (`recipient_name`, `txn_ref`, and others). Tests that treated those fields as absent or unnecessary were updated rather than weakened:
+Stated from the diff of commit 47288d9 (`git show 47288d9 -- backend/tests/intake/test_policy.py test_review.py test_handoff.py`). The stated reason for all of them is that the new field plan makes `recipient_phone` required for `failed_transfer` and adds ask-once details (`recipient_name`, `txn_ref`); this reason is from the task plan and the commit's intent ("plan required and ask-once details per problem type"), not separately re-derived.
 
-- `tests/intake/test_policy.py::test_unknown_material_fact_is_not_sufficient` and `::test_complete_transfer_is_sufficient`: a "complete" transfer now has to include `recipient_phone`, and the unknown-fact example reflects the new required set.
-- `tests/intake/test_review.py` line 52: the expected `fact_keys` now include `recipient_phone`, since the review lists every collected or required key for a transfer.
-- `tests/intake/test_handoff.py`: the `_MATERIAL` fixture gains `recipient_phone`, and the opening transcript now records `recipient_phone`, `recipient_name` and `txn_ref` as unknown, because the plan asks for them.
+- `tests/intake/test_policy.py::test_unknown_material_fact_is_not_sufficient`: the fixture now supplies a known `recipient_phone` and adds unknown `recipient_name` and `txn_ref` facts alongside the unknown `amount`.
+- `tests/intake/test_policy.py::test_complete_transfer_is_sufficient`: the fact set was rewritten to `issue`, `date`, `amount`, `debited`, `recipient_outcome`, `recipient_phone`, `recipient_name` and `txn_ref`; the earlier `actual` and `expected` facts are no longer in the fixture.
+- `tests/intake/test_review.py` (line 52): the `fact_keys` list gains `recipient_phone`. The same commit also adds `test_review_lists_ask_once_details_for_the_employee`, which expects `recipient_name` to appear as missing in the employee ticket text.
+- `tests/intake/test_handoff.py`: `_MATERIAL` gains `recipient_phone`, and the opening facts add unknown `recipient_phone`, `recipient_name` and `txn_ref`.
 
 ## Remaining limits
 
