@@ -5,7 +5,8 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import OperationalError
 
 from app.config import Settings
-from app.db.models import RunRow, TicketResultRow, TicketRow
+from app.customers.phone import InvalidPhone
+from app.db.models import CustomerRow, RunRow, TicketResultRow, TicketRow
 from app.db.repository import (
     SqlTransactionRepo,
     create_run,
@@ -22,6 +23,8 @@ from app.pipeline.stage4_lookup.lookup import txn_from_dict
 from tests.helpers import BAGHDAD, make_ticket
 
 pytestmark = pytest.mark.integration
+
+PHONE = "07701234567"
 
 
 @pytest.fixture
@@ -41,17 +44,37 @@ def _count(s, model):
 
 def test_upsert_tickets_is_idempotent(sf):
     with sf() as s:
-        a = upsert_tickets(s, [make_ticket("x", external_id="A"), make_ticket("y", external_id="B")],
+        a = upsert_tickets(s, [make_ticket("x", external_id="A", customer_phone=PHONE),
+                                make_ticket("y", external_id="B", customer_phone=PHONE)],
                            source="dataset")
-        b = upsert_tickets(s, [make_ticket("changed", external_id="A")], source="dataset")
+        b = upsert_tickets(s, [make_ticket("changed", external_id="A", customer_phone=PHONE)], source="dataset")
         s.commit()
         assert a[0].id == b[0].id and a[0].id is not None
         assert _count(s, TicketRow) == 2
 
 
+def test_upsert_tickets_stores_one_canonical_customer(sf):
+    with sf() as s:
+        stored = upsert_tickets(s, [
+            make_ticket("x", external_id="A", customer_phone="+964 770 123 4567"),
+            make_ticket("y", external_id="B", customer_phone="٠٧٧٠١٢٣٤٥٦٧"),
+        ], source="dataset")
+        s.commit()
+        assert [t.customer_phone for t in stored] == [PHONE, PHONE]
+        assert list(s.scalars(select(CustomerRow.phone))) == [PHONE]
+        assert set(s.scalars(select(TicketRow.customer_phone))) == {PHONE}
+
+
+@pytest.mark.parametrize("phone", [None, "", "12345", "07701234567x"])
+def test_upsert_tickets_rejects_a_missing_or_invalid_phone(sf, phone):
+    with sf() as s:
+        with pytest.raises(InvalidPhone, match="Ticket A"):
+            upsert_tickets(s, [make_ticket("x", external_id="A", customer_phone=phone)], source="dataset")
+
+
 def test_rerun_is_idempotent(sf):
     with sf() as s:
-        [t] = upsert_tickets(s, [make_ticket("x", external_id="A")], source="dataset")
+        [t] = upsert_tickets(s, [make_ticket("x", external_id="A", customer_phone=PHONE)], source="dataset")
         run_id = create_run(s, mode="jev", prompt_version="v1", model_ids={"jev": "jev-1.13.0"})
         first = TicketOutcome(ticket=t, status="pending_review",
                               decision=Decision("General Care", "P4", False, (), ""))

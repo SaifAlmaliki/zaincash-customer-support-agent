@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from app.config import Settings
-from app.db.models import TicketRow
+from app.db.models import CustomerRow, TicketRow
 from app.db.session import init_db
 from app.intake.contracts import Fact, Message
 from app.intake.db_models import IntakeMessageRow, IntakeSessionRow
@@ -94,8 +94,11 @@ def test_message_sequence_is_unique(repo, intake_db):
 def test_repeated_init_db_keeps_existing_tickets(intake_db):
     settings, factory = intake_db
     with factory() as session:
+        session.add(CustomerRow(phone="07701234567"))
+        session.flush()
         session.add(TicketRow(
-            external_id="keep-me", channel="app", text="موجود", received_at=datetime.now(UTC), source="upload",
+            external_id="keep-me", channel="app", customer_phone="07701234567", text="موجود",
+            received_at=datetime.now(UTC), source="upload",
         ))
         session.commit()
     init_db(factory.kw["bind"])

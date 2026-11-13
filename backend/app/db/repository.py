@@ -9,6 +9,8 @@ from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.customers.phone import InvalidPhone, normalize_customer_phone
+from app.customers.repository import ensure_customers
 from app.datetime import parse_dt
 from app.db.models import IncidentRow, RunRow, TicketResultRow, TicketRow, TransactionRow
 from app.pipeline.contracts import Ticket, TicketOutcome, TxnRecord
@@ -16,10 +18,19 @@ from app.pipeline.graph import RunSummary
 from app.pipeline.io.serialize import outcome_to_row
 
 
+def _ticket_phone(ticket: Ticket) -> str:
+    try:
+        return normalize_customer_phone(ticket.customer_phone)
+    except InvalidPhone as exc:
+        raise InvalidPhone(f"Ticket {ticket.external_id}: {exc}") from None
+
+
 def upsert_tickets(session: Session, tickets: Sequence[Ticket], *, source: str,
                    batch_id: str | None = None) -> list[Ticket]:
     if not tickets:
         return []
+    tickets = [replace(t, customer_phone=_ticket_phone(t)) for t in tickets]
+    ensure_customers(session, [t.customer_phone for t in tickets])
     rows = [{"external_id": t.external_id, "channel": t.channel, "customer_phone": t.customer_phone,
              "text": t.text, "received_at": t.received_at, "source": source, "batch_id": batch_id}
             for t in tickets]

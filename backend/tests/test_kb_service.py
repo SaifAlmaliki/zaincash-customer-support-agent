@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db.document_models import UploadedDocument
-from app.db.models import RunRow, TicketResultRow, TicketRow
+from app.db.models import CustomerRow, RunRow, TicketResultRow, TicketRow
 from app.db.session import init_db, make_engine, make_sessionmaker, reset_db
 from app.kb.documents import DocumentValidationError, document_view, store_document
 from app.kb.embeddings import EmbeddingError, OpenRouterEmbedder
@@ -176,8 +176,10 @@ async def test_schema_initialization_is_idempotent_and_delete_preserves_ticket_e
     passage = (await knowledge.search("تحويل")).passages[0]
     snapshot = asdict(passage)
     with sf.begin() as session:
+        session.add(CustomerRow(phone="07701234567"))
+        session.flush()
         ticket = TicketRow(external_id="evidence", text="تحويل", source="paste",
-                           received_at=datetime.now(UTC))
+                           customer_phone="07701234567", received_at=datetime.now(UTC))
         run = RunRow(mode="jev", prompt_version="test")
         session.add_all([ticket, run])
         session.flush()
