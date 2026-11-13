@@ -7,7 +7,7 @@ import { IntakeController } from "./controller"
 import { IntakePage } from "./IntakePage"
 import { memoryStorage } from "./session"
 import { CUSTOMER_PHONE, attachment, emptySession as sharedEmptySession, fakeApi as sharedFakeApi, review } from "./test/fixtures"
-import type { Choice, PendingQuestion, SessionView } from "./types"
+import type { Choice, PendingQuestion, ProgressItem, SessionView } from "./types"
 import { ThemeProvider } from "@/components/theme-provider"
 
 function pageReadiness(): SessionView["readiness"] {
@@ -389,4 +389,34 @@ it("keeps typed text and disables quick replies while an unsent message waits fo
   await waitFor(() => expect(api.message).toHaveBeenCalledTimes(2))
   expect(vi.mocked(api.message).mock.calls[1]?.[1].request_id).toBe(vi.mocked(api.message).mock.calls[0]?.[1].request_id)
   expect(input).toHaveValue("second")
+})
+
+const transferProgress: ProgressItem[] = [
+  { key: "issue", tier: "required", status: "known", display: "Transfer failed" },
+  { key: "amount", tier: "required", status: "known", display: "50000" },
+  { key: "debited", tier: "required", status: "known", display: "yes" },
+  { key: "recipient_phone", tier: "required", status: "missing", display: null },
+  { key: "txn_ref", tier: "ask_once", status: "unknown", display: null },
+]
+const firstMessage = { id: "m1", role: "user" as const, text: "Transfer failed", language: "en" as const, created_at: "2026-10-18T09:00:00Z", attachment_ids: [] }
+
+it("shows interview progress with the collected values", async () => {
+  const user = userEvent.setup()
+  const { controller } = await collectingController("en", { progress: transferProgress, messages: [firstMessage] })
+  render(<IntakePage controller={controller} />)
+  await user.click(await screen.findByRole("button", { name: "Details: 3 of 4" }))
+  const list = screen.getByRole("list", { name: "Details: 3 of 4" })
+  expect(within(list).getByText("Amount · 50000")).toBeVisible()
+  expect(within(list).getByText("Funds deducted · Yes")).toBeVisible()
+  expect(within(list).getByText("Recipient number")).toBeVisible()
+  expect(within(list).getByText("Reference · Not known")).toBeVisible()
+})
+
+it("requests an early review from the progress strip", async () => {
+  const user = userEvent.setup()
+  const { controller, api } = await collectingController("en", { progress: transferProgress, messages: [firstMessage] })
+  render(<IntakePage controller={controller} />)
+  expect(within(screen.getByRole("banner")).queryByRole("button", { name: "Review what I have" })).not.toBeInTheDocument()
+  await user.click(screen.getByRole("button", { name: "Review what I have" }))
+  expect(vi.mocked(api.review).mock.calls[0]?.[1]).toMatchObject({ allow_partial: true, language: "en" })
 })

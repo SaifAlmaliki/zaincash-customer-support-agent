@@ -72,6 +72,9 @@ export type IntakeCopy = {
   notSent: string
   resend: string
   empty: string
+  progressLabel: string
+  stillNeeded: string
+  notKnown: string
 }
 
 export const copy: Record<Language, IntakeCopy> = { ar, en }

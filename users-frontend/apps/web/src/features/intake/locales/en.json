@@ -92,5 +92,8 @@
   "submitting": "Submitting the ticket…",
   "notSent": "Not sent",
   "resend": "Try again",
-  "empty": "Describe what happened, or attach a screenshot of the error."
+  "empty": "Describe what happened, or attach a screenshot of the error.",
+  "progressLabel": "Details: {done} of {total}",
+  "stillNeeded": "still needed",
+  "notKnown": "Not known"
 }
