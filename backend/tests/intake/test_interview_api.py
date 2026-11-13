@@ -149,6 +149,22 @@ def test_attach_is_not_a_message_answer(intake_client):
     send(intake_client, case, "x", answer_to={"message_id": pending["message_id"], "key": "amount", "choice": "attach"}, status=422)
 
 
+def test_quick_reply_with_attachments_or_blank_text_is_rejected(intake_client):
+    intake_client.model.analyses = [opening]
+    case = start(intake_client)
+    pending = case["view"]["pending_question"]
+    answer = {"message_id": pending["message_id"], "key": "amount", "choice": "unknown"}
+    messages = len(case["view"]["messages"])
+    body = {"request_id": str(uuid4()), "expected_revision": case["view"]["revision"], "language": "ar", "answer_to": answer}
+    url = f"/api/intake/sessions/{case['sid']}/messages"
+    with_file = intake_client.post(url, headers=case["headers"], json={**body, "text": "x", "attachment_ids": [str(uuid4())]})
+    blank = intake_client.post(url, headers=case["headers"], json={**body, "text": "   ", "attachment_ids": []})
+    assert with_file.status_code == 422 and blank.status_code == 422
+    current = intake_client.get(f"/api/intake/sessions/{case['sid']}", headers=case["headers"]).json()
+    assert len(current["messages"]) == messages
+    assert current["revision"] == case["view"]["revision"]
+
+
 COMPLETE = "حولت 50000 دينار لعلي حسين على رقم 07701234567 بتاريخ 2026-10-06 وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123"
 
 

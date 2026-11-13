@@ -172,3 +172,27 @@ def test_model_suggestion_is_used_within_the_current_round(taxonomy):
     assert question.text == "على أي رقم حولت؟"
     assert question.reason == "حتى نلگه التحويل."
     assert question.answer_kind == "phone"
+
+
+def _transfer_state():
+    source = message("حولت فلوس وما وصلت")
+    return context([source], [fact("issue", source.text, source)], category="failed_transfer").state
+
+
+def test_secret_asking_suggestion_falls_back_to_the_template(taxonomy):
+    state = _transfer_state()
+    suggested = Question(key="recipient_phone", text="شنو رمز السر مالك؟", reason="حتى نلگه التحويل.", basis_revision=0)
+    question = choose_question(state, suggested, 2, taxonomy)
+    assert question.key == "recipient_phone"
+    assert question.text != suggested.text
+    assert "رمز" not in question.text
+
+
+@pytest.mark.parametrize("reason", ["We need your PIN to find it.", "نحتاج رمز السر حتى نلگه التحويل."])
+def test_secret_asking_reason_falls_back_to_the_template_reason(taxonomy, reason):
+    state = _transfer_state()
+    suggested = Question(key="recipient_phone", text="على أي رقم حولت؟", reason=reason, basis_revision=0)
+    question = choose_question(state, suggested, 2, taxonomy)
+    assert question.text == "على أي رقم حولت؟"
+    assert question.reason == ask_for(state, "recipient_phone", 2).reason
+    assert question.reason != reason

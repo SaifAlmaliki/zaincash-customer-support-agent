@@ -278,8 +278,10 @@ def choose_question(state: IntakeState, suggested: Question | None, revision: in
         if asks_for_secret(suggested.text):
             return _template(state, suggested.key, revision, current_round + 1, reword=True)
         fallback = _template(state, suggested.key, revision, current_round + 1, reword=False)
-        return _question(suggested.key, suggested.text, suggested.reason.strip() or fallback.reason,
-                         revision, current_round + 1)
+        reason = suggested.reason.strip()
+        if asks_for_secret(reason):
+            reason = fallback.reason
+        return _question(suggested.key, suggested.text, reason or fallback.reason, revision, current_round + 1)
     return _template(state, candidates[0], revision, current_round + 1, reword=True)
 
 

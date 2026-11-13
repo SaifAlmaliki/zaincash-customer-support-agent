@@ -18,4 +18,7 @@ def quick_answer(context: TurnContext, key: str, choice: str) -> Analysis:
         update = Fact(key=key, status="known", value=source.text, normalized=choice, evidence=evidence)
     else:
         raise InvalidEvidence("Choose one of the offered answers.")
-    return Analysis(language=source.language, category=context.state.category, updates=[update])
+    return Analysis(
+        language=source.language, category=context.state.category, updates=[update],
+        additional_needed=list(context.state.additional_needed),
+    )

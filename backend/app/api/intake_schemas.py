@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class IntakeBody(BaseModel):
@@ -29,6 +29,13 @@ class MessageInput(IntakeBody):
     language: Literal["ar", "en"]
     attachment_ids: list[UUID] = Field(default_factory=list)
     answer_to: AnswerTo | None = None
+
+    @model_validator(mode="after")
+    def quick_reply_is_text_only(self):
+        if self.answer_to is not None and (self.attachment_ids or not self.text.strip()):
+            raise ValueError("A quick reply needs text and no attachments.")
+        return self
+
 
 class ReviewInput(IntakeBody):
     request_id: UUID
