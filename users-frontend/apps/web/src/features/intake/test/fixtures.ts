@@ -2,12 +2,15 @@ import { vi } from "vitest"
 import type { IntakeApi } from "../api"
 import type { Attachment, CustomerReview, SessionView } from "../types"
 
+export const CUSTOMER_PHONE = "07701234567"
+
 export function emptySession(overrides: Partial<SessionView> = {}): SessionView {
   return {
     id: "session-1",
     revision: 1,
     phase: "collecting",
     language: "en",
+    customer_phone: CUSTOMER_PHONE,
     turn_status: "idle",
     active_request_id: null,
     messages: [],

@@ -6,7 +6,7 @@ import type { IntakeApi } from "./api"
 import { IntakeController } from "./controller"
 import { IntakePage } from "./IntakePage"
 import { memoryStorage } from "./session"
-import { attachment, emptySession as sharedEmptySession, fakeApi as sharedFakeApi, review } from "./test/fixtures"
+import { CUSTOMER_PHONE, attachment, emptySession as sharedEmptySession, fakeApi as sharedFakeApi, review } from "./test/fixtures"
 import type { SessionView } from "./types"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -30,14 +30,14 @@ function fakeApi(overrides: Partial<SessionView> = {}): IntakeApi {
 async function readyController(language: "ar" | "en") {
   const api = fakeApi({ phase: "review_ready", language, review })
   const controller = new IntakeController(api, memoryStorage())
-  await controller.initialize(language)
+  await controller.initialize(language, CUSTOMER_PHONE)
   return { controller, api }
 }
 
 async function collectingController(language: "ar" | "en", overrides: Partial<SessionView> = {}) {
   const api = fakeApi({ phase: "collecting", language, ...overrides })
   const controller = new IntakeController(api, memoryStorage())
-  await controller.initialize(language)
+  await controller.initialize(language, CUSTOMER_PHONE)
   return { controller, api }
 }
 
@@ -237,7 +237,7 @@ it("labels conflicting and inapplicable facts on the confirmation surface", asyn
     date: { key: "date", status: "not_applicable", value: null, normalized: null, evidence: [] },
   } } })
   const controller = new IntakeController(api, memoryStorage())
-  await controller.initialize("en")
+  await controller.initialize("en", CUSTOMER_PHONE)
   render(<IntakePage controller={controller} />)
   expect(screen.getByText("Conflicting: 50000", { exact: true })).toBeVisible()
   expect(screen.getByText("Not applicable")).toBeVisible()

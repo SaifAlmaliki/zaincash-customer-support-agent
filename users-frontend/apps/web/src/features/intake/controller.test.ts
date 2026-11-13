@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { IntakeRequestError, type IntakeApi } from "./api"
 import { IntakeController } from "./controller"
 import { browserSessionStorage, memoryStorage, type SessionStorage } from "./session"
-import { attachment, emptySession, fakeApi as sharedFakeApi, review as sharedReview } from "./test/fixtures"
+import { CUSTOMER_PHONE, attachment, emptySession, fakeApi as sharedFakeApi, review as sharedReview } from "./test/fixtures"
 import type { SessionView } from "./types"
 
 const review = { ...sharedReview, facts: {} }
@@ -19,11 +19,61 @@ function fakeApi(overrides: Partial<SessionView> = {}): IntakeApi {
 }
 
 describe("intake controller", () => {
+  it("asks for the phone before creating a session", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("ar")
+    expect(controller.getSnapshot().needsPhone).toBe(true)
+    expect(api.create).not.toHaveBeenCalled()
+    await controller.initialize("ar", CUSTOMER_PHONE)
+    expect(api.create).toHaveBeenCalledWith("ar", CUSTOMER_PHONE, expect.any(AbortSignal))
+    expect(controller.getSnapshot().needsPhone).toBe(false)
+    expect(controller.getSnapshot().session?.customer_phone).toBe(CUSTOMER_PHONE)
+  })
+
+  it("keeps the phone screen open when the server rejects the number", async () => {
+    const api = fakeApi()
+    vi.mocked(api.create).mockRejectedValueOnce(new IntakeRequestError("Enter a valid ZainCash phone number, for example 07701234567.", 422, "invalid_phone"))
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("ar")
+    await controller.initialize("ar", CUSTOMER_PHONE)
+    expect(controller.getSnapshot()).toMatchObject({ needsPhone: true, phoneError: "invalid", session: null })
+  })
+
+  it("starts a new report for the same customer", async () => {
+    const api = fakeApi()
+    const controller = new IntakeController(api, memoryStorage())
+    await controller.initialize("en", CUSTOMER_PHONE)
+    await controller.startNew("en")
+    expect(vi.mocked(api.create).mock.calls[1]?.[1]).toBe(CUSTOMER_PHONE)
+  })
+
+  it("changing the number forgets the saved session and asks again", async () => {
+    const api = fakeApi()
+    const storage = memoryStorage()
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("en", CUSTOMER_PHONE)
+    await controller.changeNumber()
+    expect(storage.load()).toBeNull()
+    expect(controller.getSnapshot()).toMatchObject({ needsPhone: true, session: null })
+    expect(controller.access()).toBeNull()
+  })
+
+  it("returns to the phone screen when the saved session no longer exists", async () => {
+    const storage = memoryStorage({ credentials: { session_id: "gone", token: "token" }, pending: null })
+    const api = fakeApi()
+    vi.mocked(api.get).mockRejectedValueOnce(new IntakeRequestError("Conversation not found.", 404, "not_owned"))
+    const controller = new IntakeController(api, storage)
+    await controller.initialize("ar")
+    expect(controller.getSnapshot()).toMatchObject({ needsPhone: true, session: null, error: null })
+    expect(storage.load()).toBeNull()
+  })
+
   it("initializes when the browser denies access to localStorage itself", async () => {
     const denied = vi.spyOn(window, "localStorage", "get").mockImplementation(() => { throw new DOMException("Denied", "SecurityError") })
     try {
       const controller = new IntakeController(fakeApi(), browserSessionStorage())
-      await controller.initialize("en")
+      await controller.initialize("en", CUSTOMER_PHONE)
       expect(controller.getSnapshot().session?.id).toBe("session-1")
       expect(controller.getSnapshot().resumeUnavailable).toBe(true)
     } finally { denied.mockRestore() }
@@ -32,7 +82,7 @@ describe("intake controller", () => {
   it("coalesces a double send into one logical message", async () => {
     const api = fakeApi()
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     await Promise.all([controller.send("same", "en", []), controller.send("same", "en", [])])
     expect(api.message).toHaveBeenCalledTimes(1)
   })
@@ -40,8 +90,8 @@ describe("intake controller", () => {
     const api = fakeApi()
     const storage: SessionStorage = { load: () => null, save: () => { throw new Error("quota") }, clear: () => undefined }
     const controller = new IntakeController(api, storage)
-    await controller.initialize("ar")
-    await controller.initialize("ar")
+    await controller.initialize("ar", CUSTOMER_PHONE)
+    await controller.initialize("ar", CUSTOMER_PHONE)
     expect(api.create).toHaveBeenCalledTimes(1)
   })
 
@@ -49,7 +99,7 @@ describe("intake controller", () => {
     const api = fakeApi()
     vi.mocked(api.create).mockRejectedValueOnce(new TypeError("offline"))
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("ar")
+    await controller.initialize("ar", CUSTOMER_PHONE)
     await controller.retry()
     expect(controller.getSnapshot().session?.id).toBe("session-1")
   })
@@ -58,7 +108,7 @@ describe("intake controller", () => {
     const api = fakeApi()
     const storage = memoryStorage()
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     vi.mocked(api.message).mockImplementationOnce(async (_credentials, body) => {
       vi.mocked(api.get).mockResolvedValue(emptySession({ revision: 2, turn_status: "retryable_failure", active_request_id: body.request_id }))
       throw new TypeError("offline")
@@ -91,7 +141,7 @@ describe("intake controller", () => {
       }),
     )
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
 
     await controller.retry()
 
@@ -107,7 +157,7 @@ describe("intake controller", () => {
   it("does not replace a new draft with an uncertain prior message", async () => {
     const api = fakeApi()
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     vi.mocked(api.message).mockRejectedValueOnce(new TypeError("offline"))
     await controller.send("first", "en", [])
     await controller.send("new correction", "en", [])
@@ -119,7 +169,7 @@ describe("intake controller", () => {
     const api = fakeApi()
     const storage = memoryStorage()
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     vi.mocked(api.message).mockRejectedValueOnce(new IntakeRequestError("Reload", 409, "revision_conflict"))
     vi.mocked(api.get).mockResolvedValue(emptySession({ revision: 7 }))
     await controller.send("old", "en", [])
@@ -133,7 +183,7 @@ describe("intake controller", () => {
   it("reattaching a removed file starts a fresh upload operation", async () => {
     const api = fakeApi()
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     const file = new File(["image"], "error.png")
     await controller.upload(file, "upload-reattach-1")
     await controller.remove("att-1")
@@ -144,7 +194,7 @@ describe("intake controller", () => {
   it("retry reuses an uncertain upload identity and file", async () => {
     const api = fakeApi()
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     vi.mocked(api.upload).mockRejectedValueOnce(new TypeError("offline"))
     const file = new File(["image"], "error.png")
     await expect(controller.upload(file, "upload-retry")).rejects.toThrow()
@@ -159,7 +209,7 @@ describe("intake controller", () => {
     let release!: (view: SessionView) => void
     vi.mocked(api.get).mockImplementationOnce(() => new Promise((resolve) => { release = resolve }))
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     await vi.advanceTimersByTimeAsync(2000)
     vi.mocked(api.get).mockResolvedValue(emptySession({ revision: 5 }))
     await controller.refresh()
@@ -172,7 +222,7 @@ describe("intake controller", () => {
   it("does not mutate a submitted report", async () => {
     const api = fakeApi({ phase: "submitted" })
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     await controller.send("late", "en", [])
     await controller.requestReview(true, "en")
     await controller.upload(new File(["x"], "x.png"), "upload-submitted")
@@ -187,7 +237,7 @@ describe("intake controller", () => {
     const api = fakeApi()
     const storage = memoryStorage()
     const controller = new IntakeController(api, storage)
-    await Promise.all([controller.initialize("ar"), controller.initialize("ar")])
+    await Promise.all([controller.initialize("ar", CUSTOMER_PHONE), controller.initialize("ar", CUSTOMER_PHONE)])
     expect(api.create).toHaveBeenCalledTimes(1)
     expect(storage.load()?.credentials.session_id).toBe("session-1")
   })
@@ -195,7 +245,7 @@ describe("intake controller", () => {
   it("retries a lost submission response with the original request ID", async () => {
     const api = fakeApi({ phase: "review_ready", revision: 2, review })
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     vi.mocked(api.submit).mockRejectedValueOnce(new TypeError("connection lost"))
     await controller.submit()
     const original = vi.mocked(api.submit).mock.calls[0]?.[1].request_id
@@ -218,7 +268,7 @@ describe("intake controller", () => {
     })
     const api = fakeApi({ phase: "review_ready", revision: 2, review })
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     expect(api.create).not.toHaveBeenCalled()
     await controller.retry()
     expect(vi.mocked(api.submit).mock.calls[0]?.[1].request_id).toBe("saved-request")
@@ -230,7 +280,7 @@ describe("intake controller", () => {
     vi.mocked(api.review).mockRejectedValueOnce(new IntakeRequestError("Reload the current conversation.", 409, "revision_conflict"))
     vi.mocked(api.get).mockResolvedValue(current)
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     await controller.requestReview(true, "en")
     expect(controller.getSnapshot().session?.review?.text).toBe("Updated on the other tab.")
     expect(controller.getSnapshot().error).toMatch(/Reload/)
@@ -250,7 +300,7 @@ describe("intake controller", () => {
     })
     const api = fakeApi()
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     await controller.retry()
     expect(vi.mocked(api.message).mock.calls[0]?.[1]).toEqual(payload)
   })
@@ -265,7 +315,7 @@ describe("intake controller", () => {
         }),
     )
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     const file = new File([new Uint8Array([1, 2])], "error.png", { type: "image/png" })
     const uploaded = controller.upload(file, "upload-revision")
     const sent = controller.send("hello", "en", ["att-1"])
@@ -298,7 +348,7 @@ describe("intake controller", () => {
     }
     const api = fakeApi()
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     expect(controller.getSnapshot().session?.id).toBe("session-1")
     expect(controller.getSnapshot().resumeUnavailable).toBe(true)
     expect(controller.getSnapshot().error).not.toMatch(/token/i)
@@ -314,7 +364,7 @@ describe("intake controller", () => {
     }
     const api = fakeApi()
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
 
     await controller.startNew("en")
 
@@ -334,7 +384,7 @@ describe("intake controller", () => {
     }
     const api = fakeApi()
     const controller = new IntakeController(api, storage)
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     vi.mocked(api.create).mockRejectedValueOnce(new TypeError("offline"))
 
     await controller.startNew("en")
@@ -356,7 +406,7 @@ describe("intake controller", () => {
         }),
     )
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     const sent = controller.send("old report", "en", [])
     await vi.waitFor(() => expect(api.message).toHaveBeenCalled())
     const started = controller.startNew("en")
@@ -370,7 +420,7 @@ describe("intake controller", () => {
     const api = fakeApi()
     vi.mocked(api.create).mockRejectedValueOnce(new IntakeRequestError("The conversation could not be updated. Try again.", 404, "intake_error"))
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     expect(controller.getSnapshot().session).toBeNull()
     expect(controller.getSnapshot().error).toMatch(/could not be updated/i)
   })
@@ -382,7 +432,7 @@ describe("intake controller", () => {
     vi.mocked(api.create).mockResolvedValue({ credentials: { session_id: "session-1", token: "token" }, session })
     vi.mocked(api.get).mockResolvedValue(session)
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     await vi.advanceTimersByTimeAsync(2000)
     expect(api.get).toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(70_000)

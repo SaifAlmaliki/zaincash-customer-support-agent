@@ -36,6 +36,8 @@ const populated = emptySession({
 })
 
 const malformed: Array<[string, unknown]> = [
+  ["customer phone", { ...populated, customer_phone: 4 }],
+  ["missing customer phone", { ...populated, customer_phone: "" }],
   ["active request ID", { ...populated, active_request_id: 4 }],
   ["error code", { ...populated, error_code: 4 }],
   ["message language", { ...populated, messages: [{ ...populated.messages[0]!, language: "fr" }] }],

@@ -21,6 +21,8 @@ export type ControllerState = {
   uploads: Record<string, number>
   resumeUnavailable: boolean
   pollingExhausted: boolean
+  needsPhone: boolean
+  phoneError: "invalid" | "failed" | null
 }
 
 function emptyState(): ControllerState {
@@ -31,6 +33,8 @@ function emptyState(): ControllerState {
     uploads: {},
     resumeUnavailable: false,
     pollingExhausted: false,
+    needsPhone: false,
+    phoneError: null,
   }
 }
 
@@ -64,6 +68,7 @@ export class IntakeController {
   private pollGeneration = 0
   private pollAbort: AbortController | null = null
   private language: Language = "ar"
+  private phone: string | null = null
   private pendingUpload: { clientId: string; file: File } | null = null
   private pendingRemoval: { attachmentId: string; request_id: string; expected_revision: number } | null = null
   private readonly uploadIds = new Map<string, string>()
@@ -91,8 +96,9 @@ export class IntakeController {
     return this.api
   }
 
-  async initialize(language: Language) {
+  async initialize(language: Language, phone?: string) {
     this.language = language
+    if (phone) this.phone = phone
     if (this.credentials && this.snapshot.session) return
     if (!this.initPromise) {
       const generation = this.generation
@@ -150,6 +156,7 @@ export class IntakeController {
     this.abortCurrent()
     return this.enqueue(async () => {
       if (generation !== this.generation) return
+      this.phone = this.snapshot.session?.customer_phone ?? this.phone
       this.credentials = null
       this.pending = null
       this.uploadIds.clear()
@@ -178,6 +185,35 @@ export class IntakeController {
     })
   }
 
+  async changeNumber() {
+    this.generation += 1
+    const generation = this.generation
+    this.stopPoll()
+    this.abortCurrent()
+    return this.enqueue(async () => {
+      if (generation !== this.generation) return
+      this.credentials = null
+      this.pending = null
+      this.phone = null
+      this.uploadIds.clear()
+      this.pendingUpload = null
+      this.pendingRemoval = null
+      this.initPromise = null
+      let resumeFailure: string | null = null
+      try {
+        this.storage.clear()
+      } catch {
+        resumeFailure = RESUME_UNAVAILABLE
+      }
+      this.replace({
+        ...emptyState(),
+        needsPhone: true,
+        resumeUnavailable: resumeFailure !== null,
+        error: resumeFailure,
+      })
+    })
+  }
+
   async refresh() {
     return this.enqueue(async () => {
       const generation = this.generation
@@ -200,6 +236,12 @@ export class IntakeController {
     } catch (error) {
       if (generation !== this.generation) return
       if (error instanceof DOMException && error.name === "AbortError") return
+      if (this.snapshot.needsPhone) {
+        const invalid = error instanceof IntakeRequestError && error.code === "invalid_phone"
+        if (invalid) this.phone = null
+        this.replace({ ...this.snapshot, busy: false, phoneError: invalid ? "invalid" : "failed" })
+        return
+      }
       this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
     }
   }
@@ -214,15 +256,38 @@ export class IntakeController {
     if (saved?.credentials) {
       this.credentials = saved.credentials
       this.pending = saved.pending
-      await this.reload(generation)
+      try {
+        await this.reload(generation)
+      } catch (error) {
+        if (!(error instanceof IntakeRequestError && error.code === "not_owned")) throw error
+        if (generation !== this.generation) return
+        // The saved conversation is gone (for example after a database reset).
+        this.credentials = null
+        this.pending = null
+        try { this.storage.clear() } catch { /* The phone screen still opens. */ }
+        this.replace({ ...this.snapshot, session: null, busy: false, error: null, needsPhone: true, phoneError: null })
+      }
       return
     }
+    if (!this.phone) {
+      this.replace({ ...this.snapshot, busy: false, needsPhone: true, phoneError: null })
+      return
+    }
+    this.replace({ ...this.snapshot, busy: true, phoneError: null })
     const signal = this.nextSignal()
-    const created = await this.api.create(language, signal)
+    const created = await this.api.create(language, this.phone, signal)
     if (generation !== this.generation) return
     this.credentials = created.credentials
     this.pending = null
-    this.replace({ ...this.snapshot, session: created.session, busy: false, error: null, pollingExhausted: false })
+    this.replace({
+      ...this.snapshot,
+      session: created.session,
+      busy: false,
+      error: null,
+      pollingExhausted: false,
+      needsPhone: false,
+      phoneError: null,
+    })
     this.persist()
     this.watch(created.session)
   }

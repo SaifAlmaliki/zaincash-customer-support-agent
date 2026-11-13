@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { createIntakeApi, IntakeRequestError, parseReceipt, parseSession } from "./api"
-import { emptySession } from "./test/fixtures"
+import { CUSTOMER_PHONE, emptySession } from "./test/fixtures"
 
 const session = emptySession()
 
@@ -38,7 +38,7 @@ describe("intake api", () => {
     vi.stubGlobal("fetch", fetchMock)
     const api = createIntakeApi("http://intake.test/api/intake")
 
-    await expect(api.create("en")).rejects.toBeInstanceOf(IntakeRequestError)
+    await expect(api.create("en", CUSTOMER_PHONE)).rejects.toBeInstanceOf(IntakeRequestError)
   })
 
   it("uploads with progress and without a manual multipart content type", async () => {

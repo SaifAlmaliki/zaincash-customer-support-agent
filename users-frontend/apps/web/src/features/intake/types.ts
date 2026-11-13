@@ -70,6 +70,7 @@ export type SessionView = {
   revision: number
   phase: Phase
   language: Language
+  customer_phone: string
   turn_status: TurnStatus
   active_request_id: string | null
   messages: IntakeMessage[]

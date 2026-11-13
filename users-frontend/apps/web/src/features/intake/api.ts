@@ -26,7 +26,7 @@ export type UploadResult = {
 }
 
 export interface IntakeApi {
-  create(language: Language, signal?: AbortSignal): Promise<{ credentials: Credentials; session: SessionView }>
+  create(language: Language, customerPhone: string, signal?: AbortSignal): Promise<{ credentials: Credentials; session: SessionView }>
   get(credentials: Credentials, signal?: AbortSignal): Promise<SessionView>
   message(credentials: Credentials, command: MessageCommand, signal?: AbortSignal): Promise<SessionView>
   review(credentials: Credentials, command: ReviewCommand, signal?: AbortSignal): Promise<SessionView>
@@ -85,11 +85,11 @@ async function parseJson(response: Response): Promise<unknown> {
 
 export function createIntakeApi(baseUrl = "/api/intake"): IntakeApi {
   return {
-    async create(language, signal) {
+    async create(language, customerPhone, signal) {
       const response = await fetch(`${baseUrl}/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language }),
+        body: JSON.stringify({ language, customer_phone: customerPhone }),
         signal,
       })
       const body = await parseJson(response)

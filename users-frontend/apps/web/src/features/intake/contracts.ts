@@ -147,6 +147,7 @@ export function parseSession(value: unknown): SessionView {
   if (!isRecord(value) || typeof value.id !== "string" || !revision(value.revision) ||
       !["collecting", "review_ready", "submitted"].includes(String(value.phase)) ||
       !language(value.language) ||
+      typeof value.customer_phone !== "string" || !value.customer_phone ||
       !["idle", "processing", "retryable_failure"].includes(String(value.turn_status)) ||
       !nullableString(value.active_request_id) ||
       !Array.isArray(value.messages) || !value.messages.every(validMessage) ||

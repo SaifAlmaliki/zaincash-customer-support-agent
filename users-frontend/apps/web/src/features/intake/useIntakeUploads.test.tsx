@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import type { IntakeApi, UploadResult } from "./api"
 import { IntakeController } from "./controller"
 import { memoryStorage } from "./session"
-import { attachment, emptySession, fakeApi } from "./test/fixtures"
+import { CUSTOMER_PHONE, attachment, emptySession, fakeApi } from "./test/fixtures"
 import { useIntakeUploads } from "./useIntakeUploads"
 
 function uploadResult(): UploadResult {
@@ -44,7 +44,7 @@ describe("useIntakeUploads", () => {
     const api = fakeApi()
     const pending = deferredUploads(api)
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     const ids = ["client-one", "client-two"]
     const { result } = renderHook(() =>
       useIntakeUploads(controller, () => ids.shift()!),
@@ -90,7 +90,7 @@ describe("useIntakeUploads", () => {
     const api = fakeApi()
     vi.mocked(api.upload).mockRejectedValueOnce(new TypeError("offline"))
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     const ids = ["client-one", "client-two"]
     const { result } = renderHook(() =>
       useIntakeUploads(controller, () => ids.shift()!),
@@ -115,7 +115,7 @@ describe("useIntakeUploads", () => {
     const api = fakeApi()
     const pending = deferredUploads(api)
     const controller = new IntakeController(api, memoryStorage())
-    await controller.initialize("en")
+    await controller.initialize("en", CUSTOMER_PHONE)
     const ids = ["client-one", "client-two"]
     const { result, unmount } = renderHook(() =>
       useIntakeUploads(controller, () => ids.shift()!),
