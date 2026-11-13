@@ -1,0 +1,25 @@
+- generic [ref=f1e4]:
+  - banner [ref=f1e5]:
+    - paragraph [ref=f1e8]: زين كاش
+    - generic [ref=f1e9]:
+      - button "تقرير جديد" [ref=f1e20]
+      - group "داخل بالرقم" [ref=f1e21]:
+        - generic [ref=f1e23]: "07809876543"
+        - button "تغيير الرقم" [ref=f1e24]
+      - group "اللغة" [ref=f1e10]:
+        - button "العربية" [pressed] [ref=f1e11]: ع
+        - button "English" [ref=f1e12]: EN
+  - paragraph [ref=f1e13]
+  - main [ref=f1e14]:
+    - button "أرفق لقطات" [ref=f1e25]
+    - generic [ref=f1e26]:
+      - log "المحادثة" [ref=f1e27]:
+        - generic [ref=f1e31]:
+          - generic [ref=f1e32]: الدعم
+          - text: اكتب شنو صار، أو أرفق لقطة للخطأ.
+      - generic [ref=f1e35]:
+        - textbox "رسالتك" [ref=f1e37]:
+          - /placeholder: اكتب رسالتك…
+        - generic [ref=f1e38]:
+          - generic [ref=f1e39]: أرفق لقطات
+          - button "إرسال" [disabled]

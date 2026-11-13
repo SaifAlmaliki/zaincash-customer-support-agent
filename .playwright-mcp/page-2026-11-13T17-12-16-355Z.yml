@@ -1,0 +1,49 @@
+- generic [ref=f1e4]:
+  - banner [ref=f1e5]:
+    - paragraph [ref=f1e8]: زين كاش
+    - generic [ref=f1e9]:
+      - button "تقرير جديد" [ref=f1e20]
+      - group "داخل بالرقم" [ref=f1e21]:
+        - generic [ref=f1e23]: "07809876543"
+        - button "تغيير الرقم" [ref=f1e24]
+      - group "اللغة" [ref=f1e10]:
+        - button "العربية" [pressed] [ref=f1e11]: ع
+        - button "English" [ref=f1e12]: EN
+  - paragraph [ref=f1e13]: شنو رقم المستلم اللي حولتله؟
+  - main [ref=f1e14]:
+    - button "أرفق لقطات" [ref=f1e25]
+    - generic [ref=f1e26]:
+      - log "المحادثة" [ref=f1e27]:
+        - generic [ref=f1e28]:
+          - generic [ref=f1e44]:
+            - generic [ref=f1e45]: أنت
+            - text: حولت فلوس وما وصلت
+          - generic [ref=f1e48]:
+            - generic [ref=f1e49]: الدعم
+            - text: المبلغ انقطع من رصيدك بعد ما حولت؟
+          - generic [ref=f1e64]:
+            - generic [ref=f1e65]: أنت
+            - text: اي
+          - generic [ref=f1e68]:
+            - generic [ref=f1e69]: الدعم
+            - text: شكد المبلغ؟
+          - generic [ref=f1e77]:
+            - generic [ref=f1e78]: أنت
+            - text: 50000 دينار
+          - generic [ref=f1e79]:
+            - generic [ref=f1e81]:
+              - generic [ref=f1e82]: الدعم
+              - text: شنو رقم المستلم اللي حولتله؟
+            - generic [ref=f1e83]:
+              - paragraph [ref=f1e84]: "ليش نسأل: حتى نگدر نحدد التحويل بشكل أدق."
+              - group "ردود سريعة" [ref=f1e85]:
+                - button "ما أعرف" [ref=f1e86]
+      - generic [ref=f1e59]:
+        - 'button "التفاصيل: 4 من 6" [ref=f1e87]'
+        - button "راجع المعلومات الحالية" [ref=f1e61]
+      - generic [ref=f1e35]:
+        - textbox "رسالتك" [active] [ref=f1e37]:
+          - /placeholder: 07XXXXXXXXX
+        - generic [ref=f1e38]:
+          - generic [ref=f1e39]: أرفق لقطات
+          - button "إرسال" [disabled]

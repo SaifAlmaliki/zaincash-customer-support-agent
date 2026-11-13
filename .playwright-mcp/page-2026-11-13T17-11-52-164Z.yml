@@ -1,0 +1,39 @@
+- generic [ref=f1e4]:
+  - banner [ref=f1e5]:
+    - paragraph [ref=f1e8]: زين كاش
+    - generic [ref=f1e9]:
+      - button "تقرير جديد" [ref=f1e20]
+      - group "داخل بالرقم" [ref=f1e21]:
+        - generic [ref=f1e23]: "07809876543"
+        - button "تغيير الرقم" [ref=f1e24]
+      - group "اللغة" [ref=f1e10]:
+        - button "العربية" [pressed] [ref=f1e11]: ع
+        - button "English" [ref=f1e12]: EN
+  - paragraph [ref=f1e13]: المبلغ انقطع من رصيدك بعد ما حولت؟
+  - main [ref=f1e14]:
+    - button "أرفق لقطات" [ref=f1e25]
+    - generic [ref=f1e26]:
+      - log "المحادثة" [ref=f1e27]:
+        - generic [ref=f1e28]:
+          - generic [ref=f1e44]:
+            - generic [ref=f1e45]: أنت
+            - text: حولت فلوس وما وصلت
+          - generic [ref=f1e46]:
+            - generic [ref=f1e48]:
+              - generic [ref=f1e49]: الدعم
+              - text: المبلغ انقطع من رصيدك بعد ما حولت؟
+            - generic [ref=f1e50]:
+              - paragraph [ref=f1e51]: "ليش نسأل: حتى نعرف إذا الفلوس طلعت من محفظتك."
+              - group "ردود سريعة" [ref=f1e52]:
+                - button "اي" [ref=f1e53]
+                - button "لا" [ref=f1e54]
+                - button "ما أعرف" [ref=f1e55]
+      - generic [ref=f1e59]:
+        - 'button "التفاصيل: 2 من 6" [ref=f1e60]'
+        - button "راجع المعلومات الحالية" [ref=f1e61]
+      - generic [ref=f1e35]:
+        - textbox "رسالتك" [active] [ref=f1e37]:
+          - /placeholder: اكتب رسالتك…
+        - generic [ref=f1e38]:
+          - generic [ref=f1e39]: أرفق لقطات
+          - button "إرسال" [disabled]

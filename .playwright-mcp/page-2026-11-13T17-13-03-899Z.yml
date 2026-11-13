@@ -1,0 +1,62 @@
+- generic [ref=f2e4]:
+  - banner [ref=f2e5]:
+    - paragraph [ref=f2e8]: زين كاش
+    - generic [ref=f2e9]:
+      - button "تقرير جديد" [ref=f2e10]
+      - group "داخل بالرقم" [ref=f2e33]:
+        - generic [ref=f2e35]: "07809876543"
+        - button "تغيير الرقم" [ref=f2e36]
+      - group "اللغة" [ref=f2e11]:
+        - button "العربية" [pressed] [ref=f2e12]: ع
+        - button "English" [ref=f2e13]: EN
+  - paragraph [ref=f2e14]: إذا عندك رقم العملية (المرجع) من إيصال التحويل، اكتبه لو ارسل لقطة شاشة للإيصال.
+  - main [ref=f2e15]:
+    - button "أرفق لقطة الوصل أرفق لقطات" [ref=f2e84]
+    - generic [ref=f2e17]:
+      - log "المحادثة" [ref=f2e18]:
+        - generic [ref=f2e19]:
+          - generic [ref=f2e39]:
+            - generic [ref=f2e40]: أنت
+            - text: حولت فلوس وما وصلت
+          - generic [ref=f2e43]:
+            - generic [ref=f2e44]: الدعم
+            - text: المبلغ انقطع من رصيدك بعد ما حولت؟
+          - generic [ref=f2e47]:
+            - generic [ref=f2e48]: أنت
+            - text: اي
+          - generic [ref=f2e51]:
+            - generic [ref=f2e52]: الدعم
+            - text: شكد المبلغ؟
+          - generic [ref=f2e55]:
+            - generic [ref=f2e56]: أنت
+            - text: 50000 دينار
+          - generic [ref=f2e59]:
+            - generic [ref=f2e60]: الدعم
+            - text: شنو رقم المستلم اللي حولتله؟
+          - generic [ref=f2e73]:
+            - generic [ref=f2e74]: أنت
+            - text: "07701234567"
+          - generic [ref=f2e77]:
+            - generic [ref=f2e78]: الدعم
+            - text: متى صار التحويل تقريباً؟ اليوم لو يوم ثاني؟
+          - generic [ref=f2e87]:
+            - generic [ref=f2e88]: أنت
+            - text: 2026-10-06
+          - generic [ref=f2e89]:
+            - generic [ref=f2e91]:
+              - generic [ref=f2e92]: الدعم
+              - text: إذا عندك رقم العملية (المرجع) من إيصال التحويل، اكتبه لو ارسل لقطة شاشة للإيصال.
+            - generic [ref=f2e93]:
+              - paragraph [ref=f2e94]: "ليش نسأل: حتى نگدر نلگه العملية بسرعة."
+              - group "ردود سريعة" [ref=f2e95]:
+                - button "ما عندي رقم" [ref=f2e96]
+                - generic [ref=f2e97]: أرفق لقطة الوصل
+      - generic [ref=f2e68]:
+        - 'button "التفاصيل: 6 من 6" [ref=f2e98]'
+        - button "راجع المعلومات الحالية" [ref=f2e70]
+      - generic [ref=f2e26]:
+        - textbox "رسالتك" [active] [ref=f2e28]:
+          - /placeholder: مثلاً ZC2410000123
+        - generic [ref=f2e29]:
+          - generic [ref=f2e30]: أرفق لقطات
+          - button "إرسال" [disabled]

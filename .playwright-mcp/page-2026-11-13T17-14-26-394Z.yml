@@ -1,0 +1,31 @@
+- generic [ref=f2e4]:
+  - banner [ref=f2e5]:
+    - paragraph [ref=f2e8]: ZainCash
+    - generic [ref=f2e9]:
+      - button "Start a new report" [ref=f2e162]
+      - group "Signed in as" [ref=f2e174]:
+        - generic [ref=f2e176]: "07809876543"
+        - button "Change number" [ref=f2e177]
+      - group "Language" [ref=f2e165]:
+        - button "العربية" [ref=f2e12]: ع
+        - button "English" [pressed] [ref=f2e13]: EN
+  - paragraph [ref=f2e14]
+  - main [ref=f2e15]:
+    - button "Attach screenshots" [disabled] [ref=f2e178]
+    - generic [ref=f2e17]:
+      - log "Conversation" [ref=f2e166]:
+        - generic [ref=f2e19]:
+          - generic [ref=f2e181]:
+            - generic [ref=f2e182]: Support
+            - text: Describe what happened, or attach a screenshot of the error.
+          - generic [ref=f2e194]:
+            - generic [ref=f2e195]: You
+            - text: I sent 50000 IQD to Ali Hussein on 07701234567 on 2026-10-06. It was deducted from my balance but he did not receive it. Reference ZC2410000123
+          - img "Support is typing…" [ref=f2e198]
+      - status [ref=f2e204]: Sending…
+      - generic [ref=f2e185]:
+        - textbox "Your message" [active] [ref=f2e187]:
+          - /placeholder: Send a message…
+        - generic [ref=f2e188]:
+          - generic [ref=f2e189]: Attach screenshots
+          - button "Send" [disabled]

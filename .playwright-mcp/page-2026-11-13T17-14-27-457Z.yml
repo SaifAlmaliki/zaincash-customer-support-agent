@@ -1,0 +1,71 @@
+- generic [ref=f2e4]:
+  - banner [ref=f2e5]:
+    - paragraph [ref=f2e8]: ZainCash
+    - generic [ref=f2e9]:
+      - button "Start a new report" [ref=f2e162]
+      - group "Signed in as" [ref=f2e174]:
+        - generic [ref=f2e176]: "07809876543"
+        - button "Change number" [ref=f2e177]
+      - group "Language" [ref=f2e165]:
+        - button "العربية" [ref=f2e12]: ع
+        - button "English" [pressed] [ref=f2e13]: EN
+  - paragraph [ref=f2e14]: Please review the details before submitting.
+  - main [ref=f2e15]:
+    - button "Attach screenshots" [ref=f2e178]
+    - generic [ref=f2e17]:
+      - log "Conversation" [ref=f2e166]:
+        - generic [ref=f2e19]:
+          - generic [ref=f2e207]:
+            - generic [ref=f2e208]: You
+            - text: I sent 50000 IQD to Ali Hussein on 07701234567 on 2026-10-06. It was deducted from my balance but he did not receive it. Reference ZC2410000123
+          - generic [ref=f2e211]:
+            - generic [ref=f2e212]: Support
+            - text: Please review the details before submitting.
+          - region "Review your report" [ref=f2e213]:
+            - heading "Review your report" [level=2] [ref=f2e214]
+            - paragraph [ref=f2e215]: Details complete
+            - paragraph [ref=f2e216]: On 2026-10-06, a transfer of 50000 IQD was sent to Ali Hussein (recipient phone 07701234567) under transaction reference ZC2410000123. The amount was deducted from the sender's balance, but the recipient did not receive it, although the expected result was that the recipient would receive the money. The sender's phone number is 07809876543, and the problem has not been resolved.
+            - heading "What we know" [level=3] [ref=f2e217]
+            - generic [ref=f2e218]:
+              - generic [ref=f2e219]:
+                - term [ref=f2e220]: Issue
+                - definition [ref=f2e221]: Sent 50000 IQD to Ali Hussein; deducted from balance but recipient did not receive it
+              - generic [ref=f2e222]:
+                - term [ref=f2e223]: Amount
+                - definition [ref=f2e224]: "50000"
+              - generic [ref=f2e225]:
+                - term [ref=f2e226]: Date
+                - definition [ref=f2e227]: 2026-10-06
+              - generic [ref=f2e228]:
+                - term [ref=f2e229]: Funds deducted
+                - definition [ref=f2e230]: "Yes"
+              - generic [ref=f2e231]:
+                - term [ref=f2e232]: Recipient outcome
+                - definition [ref=f2e233]: "No"
+              - generic [ref=f2e234]:
+                - term [ref=f2e235]: Recipient number
+                - definition [ref=f2e236]: "07701234567"
+              - generic [ref=f2e237]:
+                - term [ref=f2e238]: Recipient name
+                - definition [ref=f2e239]: Ali Hussein
+              - generic [ref=f2e240]:
+                - term [ref=f2e241]: Reference
+                - definition [ref=f2e242]: ZC2410000123
+              - generic [ref=f2e243]:
+                - term [ref=f2e244]: Expected outcome
+                - definition [ref=f2e245]: Recipient receives the transferred money
+              - generic [ref=f2e246]:
+                - term [ref=f2e247]: What happened
+                - definition [ref=f2e248]: It was deducted from my balance but he did not receive it
+              - generic [ref=f2e249]:
+                - term [ref=f2e250]: Currency
+                - definition [ref=f2e251]: IQD
+            - generic [ref=f2e252]:
+              - button "Continue conversation" [ref=f2e253]
+              - button "Submit ticket" [ref=f2e254]
+      - generic [ref=f2e185]:
+        - textbox "Your message" [active] [ref=f2e187]:
+          - /placeholder: Send a message…
+        - generic [ref=f2e188]:
+          - generic [ref=f2e189]: Attach screenshots
+          - button "Send" [disabled]

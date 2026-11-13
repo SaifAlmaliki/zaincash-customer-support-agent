@@ -1,0 +1,22 @@
+- generic [ref=f2e4]:
+  - banner [ref=f2e5]:
+    - paragraph [ref=f2e8]: زين كاش
+    - generic [ref=f2e9]:
+      - button "تقرير جديد" [ref=f2e10]
+      - group "اللغة" [ref=f2e11]:
+        - button "العربية" [pressed] [ref=f2e12]: ع
+        - button "English" [ref=f2e13]: EN
+  - paragraph [ref=f2e14]
+  - main [ref=f2e15]:
+    - button "أرفق لقطات" [ref=f2e16]
+    - generic [ref=f2e17]:
+      - log "المحادثة" [ref=f2e18]:
+        - generic [ref=f2e22]:
+          - generic [ref=f2e23]: الدعم
+          - text: اكتب شنو صار، أو أرفق لقطة للخطأ.
+      - generic [ref=f2e26]:
+        - textbox "رسالتك" [ref=f2e28]:
+          - /placeholder: اكتب رسالتك…
+        - generic [ref=f2e29]:
+          - generic [ref=f2e30]: أرفق لقطات
+          - button "إرسال" [disabled]
