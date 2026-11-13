@@ -115,11 +115,15 @@ Local models are slower. The settings `LOCAL_AGENT_TIMEOUT_S`, `LOCAL_INTAKE_TIM
 
 ## Try the demo
 
-1. Open **Knowledge base**, upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md), and wait for **Indexed**.
+1. Index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf). That folder is the only policy reference:
+   ```bash
+   uv --directory backend run support ingest-kb ../data/kb-pdf
+   ```
+   Wait until each file is **Indexed**.
 2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing. Every ticket in a batch file needs a `customer_phone`. The customer intake app asks for the phone number before the chat starts.
 3. Open the results. Edit a reply and choose **Save & approve**.
 
-The demo data and the files in `data/kb/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).
+The demo data and the files in `data/kb-pdf/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).
 
 ## Checks
 

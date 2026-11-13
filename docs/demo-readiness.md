@@ -8,8 +8,7 @@ Customer intake, audited and repaired **2026-10-18**, submits one customer-revie
 
 | Layer | Observed status |
 |---|---|
-| Corpus | 12 fictional Markdown policies, one per taxonomy category; 12 live indexed documents / 12 passages retained. |
-| Arabic judge pack | [13 localized sources](../data/test-kb/README.md), including recovered temporary doc2, plus a [single-upload bundle](../data/test-kb/judge-demo.ar.md). New copies: offline parser/integrity validated only; earlier live evidence below refers to the original bytes. |
+| Corpus | Current reference is the 12 fictional PDFs in [`data/kb-pdf`](../data/kb-pdf), one per taxonomy category. The 2026-10-17 live check indexed the earlier Markdown copies (12 documents / 12 passages). |
 | Automated | **689 backend tests** (69.23s) and Ruff freshly passed under the controller; **25 frontend tests**, lint and build passed on the same final UI code per the final-fix report, not a controller frontend rerun. The [verification record](verification/2026-10-17-rag-drafting.md) retains the historical Task 8 665/21 table. Providers are controlled fakes in automated tests; PostgreSQL integration uses only `support_test`. |
 | Real retrieval | OpenRouter `openai/text-embedding-3-small`, 768 dimensions. Intended policy ranked first for three supported Arabic queries; physics query returned zero passages. |
 | Real drafting | `google/gemini-3.8-flash`; supported general/transfer drafts passed checks, fraud stayed P1/escalated, unsupported topic received a refusal and `no_kb_support`. |
@@ -17,11 +16,11 @@ Customer intake, audited and repaired **2026-10-18**, submits one customer-revie
 | Reliability | One transfer attempt timed out at the 30-second drafting budget; unchanged-settings retry succeeded. Preserve failed run 41/result 60 alongside successful run 42/result 61. |
 | Guardrails | Live warnings using “تجنب مشاركة” and “تجنب تماماً مشاركة” exposed false positives; focused tests reproduced both and the local negation fix passed. Original failure evidence remains immutable. |
 
-All `data/kb/` material is **fictional demo guidance**, not real ZainCash policy, fees, limits, reimbursement promises, response deadlines or account access. All ticket/transaction examples are synthetic. Nothing moves funds, changes an account or sends a reply.
+All `data/kb-pdf/` material is **fictional demo guidance**, not real ZainCash policy, fees, limits, reimbursement promises, response deadlines or account access. All ticket/transaction examples are synthetic. Nothing moves funds, changes an account or sends a reply.
 
 ## Repeatable local walkthrough
 
-For the judge presentation, use the [Arabic pack walkthrough](../data/test-kb/README.md): upload **either** `data/test-kb/judge-demo.ar.md` **or** the 13 files in `data/test-kb/ar/`. Skip the `ingest-kb ../data/kb` command below when using that pack. Do not ingest all of `data/test-kb/`; its guide, provenance and negative samples are not valid KB inputs. The commands below retain the original 12-policy smoke path for reproducibility; the Arabic pack has its own [provenance manifest](../data/test-kb/provenance.json).
+The only policy reference is [`data/kb-pdf`](../data/kb-pdf): twelve PDFs, one per taxonomy category. Index that folder. Do not add a second copy of the same policies.
 
 From the repository root in WSL, configure keys using `.env`/environment through backend `Settings`. Do not display key values. Keep the selected model unless intentionally changing it. Check `ss -ltnp` before starting servers; use free ports and preserve existing processes. The commands below use the normal documented ports when free:
 
@@ -33,7 +32,7 @@ uv --directory backend sync
 uv --directory backend run support seed-db \
   --transactions tests/fixtures/sample_transactions.jsonl \
   --incidents tests/fixtures/sample_incidents.jsonl
-uv --directory backend run support ingest-kb ../data/kb
+uv --directory backend run support ingest-kb ../data/kb-pdf
 uv --directory backend run uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -66,7 +65,7 @@ Final-fix boundary behavior (automated evidence; scoped re-review approved and c
 
 - API drafting uses the smaller of 30 seconds and the remaining 180-second ticket budget, reserving 100 ms for the final handoff. Outer expiry retains completed classification, extraction, lookup, fraud escalation, draft evidence and measured costs; genuine caller cancellation still propagates. The draft node is not retried.
 - Unexpected retrieval/database faults produce failed results with a safe original exception-type diagnostic, distinct from ordinary `kb_unavailable`. CLI settings validation, including invalid `EMBED_DIM`, reports known field names only and exits 2.
-- Review rendering tolerates malformed historical traces while retaining raw audit JSON. Original hashed `data/kb/*.md` sources now have explicit LF checkout attributes, matching the Arabic pack's provenance requirements.
+- Review rendering tolerates malformed historical traces while retaining raw audit JSON. The policy reference is now `data/kb-pdf/`; the earlier Markdown copies and the Arabic judge pack were the same fictional policies and have been removed.
 
 ## Known limitations and remaining work
 
