@@ -84,6 +84,8 @@ docker compose down -v
 docker compose up --build -d
 ```
 
+`docker compose down -v` also deletes uploaded knowledge-base documents, saved admin model choices and all tickets, runs and reviews.
+
 Then load the demo data: in pgAdmin (database `support`, `localhost:5433`), run `docker/db/cleanup.sql` and then `docker/db/seed_demo.sql`.
 
 ## Local models with Ollama

@@ -23,6 +23,14 @@ describe("ticket uploads", () => {
     expect(() => parseTicketFile('[{"text":"one","customer_phone":"0770"}]', "t.json")).toThrow(/Row 1/)
     expect(parseTicketFile('[{"text":"one","customer_phone":"+964 770 123 4567"}]', "t.json")[0].customer_phone).toBe("07701234567")
   })
+  it("lists every row without a valid phone", () => {
+    expect(() =>
+      parseTicketFile('[{"text":"one"},{"text":"two","customer_phone":"0770"},{"text":"three","customer_phone":"07701234567"}]', "t.json")
+    ).toThrow("Rows 1, 2 need a valid customer phone (07XXXXXXXXX).")
+    expect(() =>
+      parseTicketFile('[{"text":"one","customer_phone":"07701234567"},{"text":"two"}]', "t.json")
+    ).toThrow("Row 2 needs a valid customer phone (07XXXXXXXXX).")
+  })
   it("rejects conflicting IDs, empty messages and malformed containers", () => {
     expect(() =>
       parseTicketFile(

@@ -30,6 +30,22 @@ it("lists the customer's tickets with links to each review", () => {
   expect(html).toContain("S-009")
 })
 
+it("uses the singular for a one-ticket customer", () => {
+  setLocale("en")
+  const html = renderToStaticMarkup(
+    <MemoryRouter>
+      <CustomerProfileView customer={{
+        phone: "07809876543",
+        created_at: "2026-10-07T09:30:00+03:00",
+        ticket_count: 1,
+        results: [resultFixture(11, {}, { external_id: "S-001", customer_phone: "07809876543" })],
+      }} />
+    </MemoryRouter>,
+  )
+  expect(html).toContain("1 ticket")
+  expect(html).not.toContain("1 tickets")
+})
+
 it("shows a localized state for a malformed phone without loading", () => {
   setLocale("ar")
   const html = renderToStaticMarkup(

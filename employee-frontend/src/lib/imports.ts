@@ -56,7 +56,8 @@ export function parseTicketFile(
   if (rows.length > 500)
     throw new Error("A batch can contain up to 500 tickets.")
   const ids = new Set<string>()
-  return rows.map((row, index) => {
+  const badPhoneRows: number[] = []
+  const tickets = rows.map((row, index) => {
     if (!row || typeof row !== "object")
       throw new Error(`Row ${index + 1} must be a ticket object.`)
     const message = row.text ?? row.message
@@ -73,16 +74,20 @@ export function parseTicketFile(
     if (!["app", "whatsapp", "call_note"].includes(channel))
       throw new Error(`Row ${index + 1} has an unknown channel.`)
     const phone = normalizeCustomerPhone(String(row.customer_phone ?? ""))
-    if (!phone)
-      throw new Error(`Row ${index + 1} needs a valid customer phone (07XXXXXXXXX).`)
+    if (!phone) badPhoneRows.push(index + 1)
     return {
       external_id: id,
       text: message.trim(),
       channel,
       ...(row.received_at ? { received_at: String(row.received_at) } : {}),
-      customer_phone: phone,
+      customer_phone: phone as string,
     }
   })
+  if (badPhoneRows.length === 1)
+    throw new Error(`Row ${badPhoneRows[0]} needs a valid customer phone (07XXXXXXXXX).`)
+  if (badPhoneRows.length > 1)
+    throw new Error(`Rows ${badPhoneRows.join(", ")} need a valid customer phone (07XXXXXXXXX).`)
+  return tickets
 }
 
 export function validateEvaluation(data: unknown): EvaluationReport {

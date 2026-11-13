@@ -224,7 +224,8 @@
   "customer": {
     "back": "العودة إلى الطابور",
     "since": "زبون منذ {date}",
-    "ticketCount": "{count} تذاكر",
+    "ticketCountOne": "تذكرة واحدة",
+    "ticketCountMany": "{count} تذاكر",
     "colTicket": "التذكرة",
     "colIssue": "المشكلة والرسالة",
     "colPriority": "الأولوية",
@@ -492,7 +493,7 @@
     "channelCall": "ملاحظة اتصال",
     "phone": "هاتف الزبون",
     "phonePlaceholder": "07…",
-    "phoneInvalid": "اكتب رقم زين كاش صحيحاً، مثل 07701234567.",
+    "phoneInvalid": "اكتب رقم زين كاش صحيح، مثل 07701234567.",
     "readyNone": "لا توجد تذاكر جاهزة",
     "readyOne": "تذكرة واحدة جاهزة",
     "readyMany": "{count} تذاكر جاهزة",

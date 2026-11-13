@@ -224,7 +224,8 @@
   "customer": {
     "back": "Back to queue",
     "since": "Customer since {date}",
-    "ticketCount": "{count} tickets",
+    "ticketCountOne": "1 ticket",
+    "ticketCountMany": "{count} tickets",
     "colTicket": "Ticket",
     "colIssue": "Issue & message",
     "colPriority": "Priority",

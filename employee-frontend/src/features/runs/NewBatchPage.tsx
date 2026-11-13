@@ -241,7 +241,7 @@ export function NewBatchPage() {
                       aria-invalid={Boolean(phone.trim() && !customerPhone)}
                       onChange={(e) => setPhone(e.target.value)}
                     />
-                    {phone.trim() && !customerPhone ? (
+                    {message.trim() && !customerPhone ? (
                       <small className="error-text" role="alert">{text.phoneInvalid}</small>
                     ) : null}
                   </label>

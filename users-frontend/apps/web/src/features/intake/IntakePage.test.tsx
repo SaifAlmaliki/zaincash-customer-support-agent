@@ -204,6 +204,7 @@ it("asks for the phone number in Iraqi Arabic before the chat", async () => {
   const phone = await screen.findByRole("textbox", { name: "رقم هاتفك بزين كاش" })
   expect(document.documentElement).toHaveAttribute("lang", "ar")
   expect(document.documentElement).toHaveAttribute("dir", "rtl")
+  expect(phone).toHaveFocus()
   await user.type(phone, "0770")
   await user.click(screen.getByRole("button", { name: "استمرار" }))
   expect(screen.getByRole("alert")).toHaveTextContent("اكتب رقم زين كاش صحيح، مثل 07701234567.")

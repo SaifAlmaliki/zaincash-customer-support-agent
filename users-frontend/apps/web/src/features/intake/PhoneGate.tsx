@@ -44,6 +44,7 @@ export function PhoneGate({
         dir="ltr"
         inputMode="tel"
         autoComplete="tel"
+        autoFocus
         placeholder="07XXXXXXXXX"
         value={value}
         aria-invalid={Boolean(error)}

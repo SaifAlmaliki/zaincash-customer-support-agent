@@ -41,6 +41,10 @@ function CustomerMissing({ title, description }: { title: string; description: s
 
 export function CustomerProfileView({ customer }: { customer: CustomerProfile }) {
   const text = useCopy().customer
+  const ticketCount =
+    customer.ticket_count === 1
+      ? text.ticketCountOne
+      : fill(text.ticketCountMany, { count: customer.ticket_count })
   return (
     <>
       <Link to="/" className="back-link">
@@ -49,7 +53,7 @@ export function CustomerProfileView({ customer }: { customer: CustomerProfile })
       </Link>
       <PageHeader
         title={<bdi dir="ltr">{customer.phone}</bdi>}
-        description={`${fill(text.since, { date: dateLabel(customer.created_at) })} · ${fill(text.ticketCount, { count: customer.ticket_count })}`}
+        description={`${fill(text.since, { date: dateLabel(customer.created_at) })} · ${ticketCount}`}
       />
       <Card className="queue-card">
         {customer.results.length ? (
