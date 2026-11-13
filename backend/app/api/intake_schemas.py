@@ -16,12 +16,19 @@ class CreateSessionInput(IntakeBody):
     customer_phone: str = Field(min_length=1, max_length=32)
 
 
+class AnswerTo(IntakeBody):
+    message_id: UUID
+    key: str = Field(min_length=1, max_length=64)
+    choice: Literal["yes", "no", "unknown"]
+
+
 class MessageInput(IntakeBody):
     request_id: UUID
     expected_revision: int = Field(ge=0)
     text: str = Field(default="", max_length=6000)
     language: Literal["ar", "en"]
     attachment_ids: list[UUID] = Field(default_factory=list)
+    answer_to: AnswerTo | None = None
 
 class ReviewInput(IntakeBody):
     request_id: UUID

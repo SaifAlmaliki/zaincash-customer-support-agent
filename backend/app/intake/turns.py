@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import sessionmaker
 
-from app.intake.contracts import OperationClaim, SessionView, TurnResult
+from app.intake.contracts import IntakeState, OperationClaim, SessionView, TurnResult
 from app.intake.db_models import (
     IntakeAttachmentRow,
     IntakeMessageRow,
@@ -15,9 +15,11 @@ from app.intake.db_models import (
     IntakeSessionRow,
 )
 from app.intake.errors import ImageRejected, InvalidEvidence, RevisionConflict, TurnBusy
+from app.intake.policy import pending_question
 from app.intake.repository import (
     IntakeRepository,
     assert_same_operation,
+    load_messages,
     operation_fingerprint,
     session_view,
     turn_context,
@@ -59,6 +61,8 @@ class TurnStore:
             now = datetime.now(UTC)
             customer_message = None
             if kind == "message":
+                if payload.get("answer_to") is not None:
+                    self._check_answer(session, row, payload["answer_to"])
                 customer_message = self._append_customer_message(session, row, payload, now)
             elif kind != "review":
                 raise InvalidEvidence("Unsupported conversation operation.")
@@ -230,6 +234,17 @@ class TurnStore:
         for attachment in attachments:
             attachment.message_id = message_id
         return message
+
+    @staticmethod
+    def _check_answer(session, row: IntakeSessionRow, answer: dict) -> None:
+        state = IntakeState.model_validate(row.state)
+        pending = pending_question(state, load_messages(session, row.id), row.phase)
+        choice = answer.get("choice")
+        if (
+            pending is None or str(pending.message_id) != str(answer.get("message_id"))
+            or pending.key != answer.get("key") or choice not in pending.choices or choice == "attach"
+        ):
+            raise RevisionConflict("Reload the current conversation.")
 
     def _locked_attempt(self, session, claim: OperationClaim):
         row = session.scalar(select(IntakeSessionRow).where(IntakeSessionRow.id == claim.session_id).with_for_update())

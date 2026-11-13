@@ -70,7 +70,7 @@ def get_session(session_id: UUID, request: Request):
 async def post_message(session_id: UUID, body: MessageInput, request: Request):
     if not body.text and not body.attachment_ids:
         raise HTTPException(status_code=422, detail={"code": "invalid_evidence", "message": "Enter a message or attach a screenshot."})
-    view = await request.app.state.intake.message(_credentials(request, session_id), body.model_dump())
+    view = await request.app.state.intake.message(_credentials(request, session_id), body.model_dump(exclude_none=True))
     return JSONResponse(_dump(view), status_code=_status(view, body.request_id))
 
 

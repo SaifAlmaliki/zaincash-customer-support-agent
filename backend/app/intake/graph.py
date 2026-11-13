@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 
 from langgraph.graph import END, StateGraph
 
+from app.intake.answers import quick_answer
 from app.intake.contracts import QuestionRecord, TurnContext, TurnResult
 from app.intake.errors import IntakeError, InvalidEvidence, ModelUnavailable
 from app.intake.evidence import merge_analysis
@@ -37,19 +38,31 @@ class IntakeGraph:
         graph.add_edge("review", END)
         self._compiled = graph.compile()
 
-    async def advance(self, context: TurnContext) -> TurnResult:
+    async def advance(self, context: TurnContext, answer: dict | None = None) -> TurnResult:
         budget = await self._budget(context)
         try:
-            outcome = await self._compiled.ainvoke({
-                "context": context,
-                "images": self._images(context, [item for item in context.messages if item.id == context.current_message_id]),
-                "budget": budget,
-                "trace": [],
-            })
+            if answer is not None:
+                outcome = await self._answer(context, answer, budget)
+            else:
+                outcome = await self._compiled.ainvoke({
+                    "context": context,
+                    "images": self._images(context, [item for item in context.messages if item.id == context.current_message_id]),
+                    "budget": budget,
+                    "trace": [],
+                })
         except IntakeError as exc:
             exc.trace = list(budget.trace or exc.trace)
             raise
         return TurnResult(outcome["state"], outcome.get("assistant_text"), outcome.get("review"), outcome.get("trace", []))
+
+    async def _answer(self, context: TurnContext, answer: dict, budget: ModelBudget) -> dict:
+        analysis = quick_answer(context, answer["key"], answer["choice"])
+        state = self._merge({
+            "context": context, "analysis": analysis, "visible_image_ids": set(), "budget": budget, "trace": [],
+        })
+        if self._route(state) == "review":
+            return await self._review(state)
+        return self._ask(state)
 
     async def review(self, context: TurnContext, *, allow_partial: bool, language: str) -> TurnResult:
         budget = await self._budget(context)

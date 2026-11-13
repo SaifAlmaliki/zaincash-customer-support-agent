@@ -51,7 +51,7 @@ class IntakeService:
                     claim.context, allow_partial=bool(claim.payload.get("allow_partial")), language=language
                 )
             else:
-                result = await self.graph.advance(claim.context)
+                result = await self.graph.advance(claim.context, answer=claim.payload.get("answer_to"))
         except ModelUnavailable as exc:
             return await run_in_threadpool(self.turns.fail, claim, "model_unavailable", list(exc.trace))
         except (InvalidEvidence, ImageRejected) as exc:
