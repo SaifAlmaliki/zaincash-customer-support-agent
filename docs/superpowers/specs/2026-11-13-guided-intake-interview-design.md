@@ -48,7 +48,7 @@ Each category has a **required** list and an **ask-once** list.
 
 | Category | Required | Ask-once |
 |---|---|---|
-| failed_transfer | issue, amount, date, debited, recipient_outcome, recipient_phone | recipient_name, txn_ref, exact_error |
+| failed_transfer | issue, amount, date, debited, recipient_outcome, recipient_phone | recipient_name, txn_ref |
 | wrong_recipient | issue, amount, date, recipient_phone | recipient_name, txn_ref |
 | bill_payment | issue, biller, amount, date | txn_ref, debited |
 | agent_dispute | issue, amount, agent_location, date | txn_ref |
@@ -62,6 +62,7 @@ Each category has a **required** list and an **ask-once** list.
 | other | issue, desired_outcome | — |
 
 - `actual` and `expected` are no longer required for money categories, because the expected outcome is implied there. The model may still record them.
+- `exact_error` is not on the failed_transfer ask-once list. Asking "what error appeared?" after a complete transfer report would stop that report from going straight to review. The model can still request it through `additional_needed` when the customer mentions an error.
 - The `required_fields` for each category in the taxonomy are still merged into the required list, as they are today.
 - `additional_needed` keys from `HIGH_VALUE` stay ask-once additions.
 
@@ -103,7 +104,8 @@ Each fact quotes the customer's words. Never ask about a detail the customer has
   - `reference` → `["unknown", "attach"]`
   - every other kind → `["unknown"]`
   - `attach` is handled on the screen only; it opens the file picker.
-- `QuestionRecord` gains `text`, `reason`, `answer_kind`, `choices` and `attempt`. Existing stored records without these fields stay valid; defaults are applied when they are read.
+- `QuestionRecord` gains `reason` and `attempt`. Existing stored records without these fields stay valid; defaults are applied when they are read.
+- `answer_kind` and `choices` are always derived from the key and are never stored, so older records get them too. The question text is the text of the assistant message.
 - The question that is actually asked becomes `readiness.next_key` again, so the two can no longer disagree.
 
 ### Quick-reply answers
@@ -222,8 +224,8 @@ The composer font size becomes 16px, which stops iOS from zooming on focus.
 
 ### Summary
 
-- `review_v1.md`: `customer_text` is one or two friendly sentences addressed to the customer, without listing every field.
-- `employee_text_ar` is unchanged. The existing number-grounding validation still applies.
+- `review_v1.md`: `customer_text` is a short neutral narrative of what happened, two or three sentences. It does not list every field as label/value pairs, because the details list is shown separately.
+- The narrative is neutral, not addressed to the customer, because the Arabic customer text and the employee text must stay identical (`review.py`). The existing number-grounding validation still applies.
 
 ### Details, each shown once
 
