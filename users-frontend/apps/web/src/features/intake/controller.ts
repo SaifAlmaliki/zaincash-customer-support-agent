@@ -25,6 +25,7 @@ export type ControllerState = {
   outgoing: MessageCommand | null
   error: string | null
   uploads: Record<string, number>
+  restored: { id: number; text: string } | null
   resumeUnavailable: boolean
   pollingExhausted: boolean
   needsPhone: boolean
@@ -39,6 +40,7 @@ function emptyState(): ControllerState {
     outgoing: null,
     error: null,
     uploads: {},
+    restored: null,
     resumeUnavailable: false,
     pollingExhausted: false,
     needsPhone: false,
@@ -80,6 +82,7 @@ export class IntakeController {
   private pendingUpload: { clientId: string; file: File } | null = null
   private pendingRemoval: { attachmentId: string; request_id: string; expected_revision: number } | null = null
   private readonly uploadIds = new Map<string, string>()
+  private readonly replayed = new Set<string>()
 
   private readonly api: IntakeApi
   private readonly storage: SessionStorage
@@ -175,6 +178,7 @@ export class IntakeController {
       this.credentials = null
       this.pending = null
       this.uploadIds.clear()
+      this.replayed.clear()
       this.pendingUpload = null
       this.pendingRemoval = null
       let resumeFailure: string | null = null
@@ -211,6 +215,7 @@ export class IntakeController {
       this.pending = null
       this.phone = null
       this.uploadIds.clear()
+      this.replayed.clear()
       this.pendingUpload = null
       this.pendingRemoval = null
       this.initPromise = null
@@ -281,7 +286,9 @@ export class IntakeController {
         this.pending = null
         try { this.storage.clear() } catch { /* The phone screen still opens. */ }
         this.replace({ ...this.snapshot, session: null, busy: false, error: null, needsPhone: true, phoneError: null })
+        return
       }
+      this.replayPending(generation)
       return
     }
     if (!this.phone) {
@@ -438,7 +445,7 @@ export class IntakeController {
     ) {
       await this.dispatch(generation, () =>
         this.api.retry(this.credentials!, session.active_request_id!, session.revision, this.nextSignal()),
-        "message",
+        this.pending?.kind === "review" || this.pending?.kind === "ask" ? this.pending.kind : "message",
       )
       return
     }
@@ -569,7 +576,7 @@ export class IntakeController {
 
   private async dispatch(generation: number, run: () => Promise<SessionView>, activity: Activity) {
     this.stopPoll()
-    this.replace({ ...this.snapshot, busy: true, activity, error: null, pollingExhausted: false })
+    this.replace({ ...this.snapshot, busy: true, activity, error: null, pollingExhausted: false, restored: null })
     try {
       const view = await run()
       if (generation !== this.generation) return
@@ -580,8 +587,14 @@ export class IntakeController {
     } catch (error) {
       if (generation !== this.generation) return
       if (isConflict(error)) {
+        const sent = this.pending
+        const lost = sent?.kind === "message" && !sent.payload.answer_to ? sent.payload.text : null
         await this.reconcileConflict(generation)
-        this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
+        if (generation !== this.generation) return
+        const restored = lost && !this.pending
+          ? { id: (this.snapshot.restored?.id ?? 0) + 1, text: lost }
+          : this.snapshot.restored
+        this.replace({ ...this.snapshot, busy: false, error: safeMessage(error), restored })
         return
       }
       if (isOffline(error)) {
@@ -602,6 +615,23 @@ export class IntakeController {
     if (generation !== this.generation) return
     this.replace({ ...this.snapshot, session: view, busy: false, error: null, pollingExhausted: false })
     this.watch(view)
+  }
+
+  private replayPending(generation: number) {
+    const pending = this.pending
+    if (generation !== this.generation || (pending?.kind !== "message" && pending?.kind !== "ask")) return
+    const session = this.snapshot.session
+    if (!session || session.phase === "submitted" || session.turn_status === "processing") return
+    if (this.snapshot.busy || this.pendingUpload || this.pendingRemoval) return
+    const requestId = pending.payload.request_id
+    if (this.replayed.has(requestId)) return
+    this.replayed.add(requestId)
+    void this.enqueue(async () => {
+      if (this.pending?.payload.request_id !== requestId) return
+      try { await this.retryNow() } catch (error) {
+        if (generation === this.generation) this.replace({ ...this.snapshot, busy: false, error: safeMessage(error) })
+      }
+    })
   }
 
   private watch(session: SessionView) {
@@ -631,7 +661,10 @@ export class IntakeController {
           const view = await this.api.get(this.credentials, signal)
           if (generation !== this.generation || pollGeneration !== this.pollGeneration) return
           this.replace({ ...this.snapshot, session: view })
-          if (view.turn_status !== "processing") return
+          if (view.turn_status !== "processing") {
+            this.replayPending(generation)
+            return
+          }
         }
       } catch {
         /* Keep polling until the deadline. The saved messages stay put. */

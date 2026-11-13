@@ -31,6 +31,11 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const locale = selectedLocale ?? session?.language ?? "ar"
   const direction = locale === "ar" ? "rtl" : "ltr"
   const [draft, setDraft] = useState("")
+  const [restoredId, setRestoredId] = useState(0)
+  if (snapshot.restored && snapshot.restored.id !== restoredId) {
+    setRestoredId(snapshot.restored.id)
+    setDraft((current) => current || snapshot.restored!.text)
+  }
   const { previews, selectFiles, clearPreviews } = useIntakeUploads(controller)
   const [confirmNew, setConfirmNew] = useState(false)
   const [confirmChange, setConfirmChange] = useState(false)
@@ -63,7 +68,10 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const unsent =
     session?.attachments.filter((item) => !item.removed && !item.message_id) ??
     []
-  const awaitingResend = Boolean(snapshot.outgoing) && !snapshot.busy
+  const awaitingResend =
+    Boolean(snapshot.outgoing) &&
+    !snapshot.busy &&
+    session?.turn_status !== "processing"
   const canSend =
     Boolean(
       session &&
@@ -94,7 +102,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     session.phase !== "submitted" &&
     session.revision === outgoing.expected_revision
   )
-  const outgoingFailed = showOutgoing && !snapshot.busy && Boolean(snapshot.error)
+  const outgoingFailed = showOutgoing && awaitingResend
   const typing =
     (snapshot.busy && (snapshot.activity === "message" || snapshot.activity === "ask")) ||
     session?.turn_status === "processing"
@@ -201,6 +209,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
             reviewHeading.current = node
           }}
           askable={session.progress.map((item) => item.key)}
+          required={session.progress.filter((item) => item.tier === "required").map((item) => item.key)}
           busy={snapshot.busy}
           submitting={submitting}
           onAsk={(key) => void controller.ask(key)}
@@ -215,7 +224,7 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
   const showRefresh =
     session?.turn_status === "processing" || snapshot.pollingExhausted
   const showRetry =
-    session?.turn_status === "retryable_failure" || Boolean(snapshot.error)
+    session?.turn_status === "retryable_failure" || Boolean(snapshot.error) || awaitingResend
   const showReviewNow = Boolean(session && !session.review && !session.receipt)
   const showProgress = Boolean(showReviewNow && (session?.progress.length || hasContent))
 

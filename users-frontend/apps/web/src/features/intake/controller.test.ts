@@ -3,7 +3,7 @@ import { IntakeRequestError, type IntakeApi } from "./api"
 import { IntakeController } from "./controller"
 import { browserSessionStorage, memoryStorage, type SessionStorage } from "./session"
 import { CUSTOMER_PHONE, attachment, emptySession, fakeApi as sharedFakeApi, review as sharedReview } from "./test/fixtures"
-import type { SessionView } from "./types"
+import type { MessageCommand, SavedSession, SessionView } from "./types"
 
 const review = { ...sharedReview, facts: {} }
 
@@ -487,5 +487,111 @@ describe("intake controller", () => {
     const calls = vi.mocked(api.message).mock.calls
     expect(calls[1]?.[1].text).toBe("hello")
     expect(calls[1]?.[1].request_id).toBe(calls[0]?.[1].request_id)
+  })
+
+  describe("a saved unsent operation", () => {
+    const credentials = { session_id: "session-1", token: "token" }
+    const saved = (pending: SavedSession["pending"]) => memoryStorage({ credentials, pending })
+    const message = (extra: Partial<MessageCommand> = {}): MessageCommand => ({
+      request_id: "req-saved", expected_revision: 1, text: "hello", language: "en", attachment_ids: [], ...extra,
+    })
+
+    it("is replayed once with its request ID after a reload", async () => {
+      const api = fakeApi({ revision: 1 })
+      const storage = saved({ kind: "message", payload: message() })
+      const controller = new IntakeController(api, storage)
+      await controller.initialize("en")
+      await vi.waitFor(() => expect(storage.load()?.pending).toBeNull())
+      expect(controller.getSnapshot()).toMatchObject({ busy: false, outgoing: null })
+      expect(api.message).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(api.message).mock.calls[0]?.[1]).toMatchObject({ request_id: "req-saved", text: "hello", expected_revision: 1 })
+      await controller.refresh()
+      expect(api.message).toHaveBeenCalledTimes(1)
+    })
+
+    it("is resolved by the completed view when the server already moved on", async () => {
+      const api = fakeApi({ revision: 3 })
+      const controller = new IntakeController(api, saved({ kind: "message", payload: message() }))
+      await controller.initialize("en")
+      await vi.waitFor(() => expect(api.message).toHaveBeenCalledTimes(1))
+      await vi.waitFor(() => expect(controller.getSnapshot()).toMatchObject({ busy: false, outgoing: null }))
+      expect(controller.getSnapshot()).toMatchObject({ error: null, restored: null })
+      await controller.send("next", "en", [])
+      expect(vi.mocked(api.message).mock.calls[1]?.[1]).toMatchObject({ text: "next", expected_revision: 3 })
+    })
+
+    it("keeps the answer it was answering", async () => {
+      const api = fakeApi({ revision: 1 })
+      const answerTo = { message_id: "q1", key: "debited", choice: "yes" as const }
+      const controller = new IntakeController(api, saved({ kind: "message", payload: message({ text: "yes", answer_to: answerTo }) }))
+      await controller.initialize("en")
+      await vi.waitFor(() => expect(api.message).toHaveBeenCalledTimes(1))
+      expect(vi.mocked(api.message).mock.calls[0]?.[1]).toMatchObject({ request_id: "req-saved", answer_to: answerTo })
+    })
+
+    it("replays a saved ask with its request ID", async () => {
+      const api = fakeApi({ revision: 1 })
+      const controller = new IntakeController(api, saved({ kind: "ask", payload: { request_id: "req-ask", expected_revision: 1, key: "txn_ref" } }))
+      await controller.initialize("en")
+      await vi.waitFor(() => expect(api.ask).toHaveBeenCalledTimes(1))
+      expect(vi.mocked(api.ask).mock.calls[0]?.[1]).toEqual({ request_id: "req-ask", expected_revision: 1, key: "txn_ref" })
+      expect(api.message).not.toHaveBeenCalled()
+    })
+
+    it("waits while the server is still processing, then replays", async () => {
+      vi.useFakeTimers()
+      try {
+        const api = fakeApi({ revision: 2, turn_status: "processing" })
+        const controller = new IntakeController(api, saved({ kind: "message", payload: message() }))
+        await controller.initialize("en")
+        expect(api.message).not.toHaveBeenCalled()
+        vi.mocked(api.get).mockResolvedValue(emptySession({ revision: 3, turn_status: "idle" }))
+        await vi.advanceTimersByTimeAsync(2000)
+        await vi.waitFor(() => expect(api.message).toHaveBeenCalledTimes(1))
+        expect(vi.mocked(api.message).mock.calls[0]?.[1].request_id).toBe("req-saved")
+        controller.dispose()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("returns the text to the draft when the server never received it", async () => {
+      const api = fakeApi({ revision: 3 })
+      vi.mocked(api.message).mockRejectedValueOnce(new IntakeRequestError("The conversation changed.", 409, "revision_conflict"))
+      const controller = new IntakeController(api, saved({ kind: "message", payload: message() }))
+      await controller.initialize("en")
+      await vi.waitFor(() => expect(controller.getSnapshot().restored?.text).toBe("hello"))
+      expect(controller.getSnapshot()).toMatchObject({ busy: false, outgoing: null })
+      await controller.send("hello again", "en", [])
+      expect(api.message).toHaveBeenCalledTimes(2)
+      expect(controller.getSnapshot().restored).toBeNull()
+    })
+
+    it("is not replayed again after a failed replay", async () => {
+      const api = fakeApi({ revision: 1 })
+      vi.mocked(api.message).mockRejectedValue(new TypeError("offline"))
+      const controller = new IntakeController(api, saved({ kind: "message", payload: message() }))
+      await controller.initialize("en")
+      await vi.waitFor(() => expect(controller.getSnapshot().error).toBeTruthy())
+      await controller.refresh()
+      expect(api.message).toHaveBeenCalledTimes(1)
+      expect(controller.getSnapshot().outgoing?.request_id).toBe("req-saved")
+    })
+  })
+
+  it("shows the review activity when a failed review is retried on the server", async () => {
+    const credentials = { session_id: "session-1", token: "token" }
+    const api = fakeApi({ revision: 2, turn_status: "retryable_failure", active_request_id: "req-review" })
+    const pending = { kind: "review" as const, payload: { request_id: "req-review", expected_revision: 1, allow_partial: true, language: "en" as const } }
+    const controller = new IntakeController(api, memoryStorage({ credentials, pending }))
+    const activities: (string | null)[] = []
+    vi.mocked(api.retry).mockImplementation(async () => {
+      activities.push(controller.getSnapshot().activity)
+      return emptySession({ revision: 3 })
+    })
+    await controller.initialize("en")
+    await controller.retry()
+    expect(api.retry).toHaveBeenCalledWith(credentials, "req-review", 2, expect.any(AbortSignal))
+    expect(activities).toEqual(["review"])
   })
 })

@@ -473,3 +473,124 @@ it("keeps the review visible while the ticket is submitting", async () => {
   expect(submit).toHaveAttribute("aria-busy", "true")
   expect(screen.getByRole("status")).toHaveTextContent("Submitting the ticket…")
 })
+
+it("names only the missing required details in the partial banner", async () => {
+  const withReference = {
+    ...groupedReview,
+    facts: { ...groupedReview.facts, txn_ref: { ...groupedReview.facts.txn_ref, status: "missing" as const } },
+  }
+  const api = fakeApi({ phase: "review_ready", review: withReference, progress: groupedProgress })
+  const controller = new IntakeController(api, memoryStorage())
+  await controller.initialize("en", CUSTOMER_PHONE)
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByText("Missing: Recipient number")).toBeVisible()
+  const missing = screen.getByRole("heading", { name: "Missing" }).nextElementSibling as HTMLElement
+  expect(within(missing).getByText("Reference")).toBeVisible()
+  expect(within(missing).getByText("Recipient number")).toBeVisible()
+})
+
+it("falls back to the general partial banner when only optional details are missing", async () => {
+  const optionalOnly = {
+    ...groupedReview,
+    facts: {
+      amount: groupedReview.facts.amount,
+      txn_ref: { ...groupedReview.facts.txn_ref, status: "missing" as const },
+    },
+  }
+  const api = fakeApi({ phase: "review_ready", review: optionalOnly, progress: groupedProgress })
+  const controller = new IntakeController(api, memoryStorage())
+  await controller.initialize("en", CUSTOMER_PHONE)
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByText("Some details are still unknown")).toBeVisible()
+  expect(screen.queryByText(/^Missing: /)).not.toBeInTheDocument()
+})
+
+const savedCredentials = { session_id: "session-1", token: "token" }
+const savedMessage = {
+  request_id: "req-saved", expected_revision: 1, text: "my unsent words", language: "en" as const, attachment_ids: [],
+}
+
+async function reloadedController(api: IntakeApi) {
+  const controller = new IntakeController(
+    api,
+    memoryStorage({ credentials: savedCredentials, pending: { kind: "message", payload: savedMessage } }),
+  )
+  await controller.initialize("en")
+  return controller
+}
+
+it("resends a saved message after a reload and leaves the composer usable", async () => {
+  const user = userEvent.setup()
+  const api = fakeApi({ phase: "collecting", language: "en", revision: 1 })
+  const controller = await reloadedController(api)
+  render(<IntakePage controller={controller} />)
+  await waitFor(() => expect(api.message).toHaveBeenCalledTimes(1))
+  expect(vi.mocked(api.message).mock.calls[0]?.[1]).toMatchObject({ request_id: "req-saved", text: "my unsent words" })
+  await user.type(await screen.findByRole("textbox", { name: "Your message" }), "next")
+  await waitFor(() => expect(screen.getByRole("button", { name: "Send" })).toBeEnabled())
+  expect(screen.queryByText("Not sent")).not.toBeInTheDocument()
+})
+
+it("does not leave the composer blocked when the server moved on before the reload", async () => {
+  const user = userEvent.setup()
+  const api = fakeApi({ phase: "collecting", language: "en", revision: 3 })
+  const controller = await reloadedController(api)
+  render(<IntakePage controller={controller} />)
+  await waitFor(() => expect(api.message).toHaveBeenCalledTimes(1))
+  await user.type(await screen.findByRole("textbox", { name: "Your message" }), "next")
+  await waitFor(() => expect(screen.getByRole("button", { name: "Send" })).toBeEnabled())
+  await user.click(screen.getByRole("button", { name: "Send" }))
+  expect(vi.mocked(api.message).mock.calls[1]?.[1]).toMatchObject({ text: "next", expected_revision: 3 })
+})
+
+it("offers Try again for a saved message whose replay failed", async () => {
+  const user = userEvent.setup()
+  const api = fakeApi({ phase: "collecting", language: "en", revision: 1 })
+  vi.mocked(api.message).mockRejectedValueOnce(new TypeError("offline"))
+  const controller = await reloadedController(api)
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByText("Not sent")).toBeVisible()
+  expect(screen.getByText("my unsent words")).toBeVisible()
+  await user.click(screen.getByRole("button", { name: "Try again" }))
+  await waitFor(() => expect(api.message).toHaveBeenCalledTimes(2))
+  expect(vi.mocked(api.message).mock.calls[1]?.[1].request_id).toBe("req-saved")
+  await waitFor(() => expect(screen.queryByText("Not sent")).not.toBeInTheDocument())
+})
+
+it("keeps a visible control when the unsent bubble cannot be shown", async () => {
+  const user = userEvent.setup()
+  const api = fakeApi({ phase: "collecting", language: "en", revision: 3 })
+  vi.mocked(api.message).mockRejectedValueOnce(new TypeError("offline"))
+  const controller = await reloadedController(api)
+  render(<IntakePage controller={controller} />)
+  const retry = await screen.findByRole("button", { name: "Retry" })
+  expect(screen.queryByText("Not sent")).not.toBeInTheDocument()
+  await user.click(retry)
+  await waitFor(() => expect(api.message).toHaveBeenCalledTimes(2))
+  expect(vi.mocked(api.message).mock.calls[1]?.[1].request_id).toBe("req-saved")
+})
+
+it("puts the text back in the composer when the saved message never reached the server", async () => {
+  const api = fakeApi({ phase: "collecting", language: "en", revision: 3 })
+  vi.mocked(api.message).mockRejectedValueOnce(new IntakeRequestError("The conversation changed.", 409, "revision_conflict"))
+  const controller = await reloadedController(api)
+  render(<IntakePage controller={controller} />)
+  await waitFor(() => expect(screen.getByRole("textbox", { name: "Your message" })).toHaveValue("my unsent words"))
+  expect(screen.getByRole("button", { name: "Send" })).toBeEnabled()
+})
+
+it("replays a saved quick reply with the question it answered", async () => {
+  const api = fakeApi({ phase: "collecting", language: "en", revision: 1 })
+  const answerTo = { message_id: "q1", key: "debited", choice: "yes" as const }
+  const controller = new IntakeController(
+    api,
+    memoryStorage({
+      credentials: savedCredentials,
+      pending: { kind: "message", payload: { ...savedMessage, text: "Yes", answer_to: answerTo } },
+    }),
+  )
+  await controller.initialize("en")
+  render(<IntakePage controller={controller} />)
+  await waitFor(() => expect(api.message).toHaveBeenCalledTimes(1))
+  expect(vi.mocked(api.message).mock.calls[0]?.[1]).toMatchObject({ request_id: "req-saved", answer_to: answerTo })
+})

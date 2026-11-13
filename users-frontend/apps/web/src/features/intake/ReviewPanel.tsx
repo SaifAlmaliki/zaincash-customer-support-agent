@@ -29,6 +29,7 @@ export function ReviewPanel({
   copy,
   headingRef,
   askable,
+  required,
   busy,
   submitting,
   onAsk,
@@ -42,6 +43,7 @@ export function ReviewPanel({
   copy: IntakeCopy
   headingRef: (node: HTMLHeadingElement | null) => void
   askable: string[]
+  required: string[]
   busy: boolean
   submitting: boolean
   onAsk: (key: string) => void
@@ -54,10 +56,11 @@ export function ReviewPanel({
   const missing = facts.filter((fact) => fact.status === "missing" || fact.status === "conflicting")
   const unknown = facts.filter((fact) => fact.status === "unknown")
   const label = (key: string) => copy.fieldLabels[key] || key
+  const missingRequired = missing.filter((fact) => required.includes(fact.key))
   const banner = review.quality === "sufficient_context"
     ? null
-    : missing.length
-      ? copy.missingList.replace("{items}", missing.map((fact) => label(fact.key)).join(copy.listSeparator))
+    : missingRequired.length
+      ? copy.missingList.replace("{items}", missingRequired.map((fact) => label(fact.key)).join(copy.listSeparator))
       : copy.partial
   return (
     <section className="intake-review" aria-labelledby="intake-review-heading">
