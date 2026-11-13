@@ -10,10 +10,15 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM tickets)
         OR EXISTS (SELECT 1 FROM transactions)
-        OR EXISTS (SELECT 1 FROM runs) THEN
+        OR EXISTS (SELECT 1 FROM runs)
+        OR EXISTS (SELECT 1 FROM customers) THEN
         RAISE EXCEPTION 'Database is not empty. Run cleanup.sql first.';
     END IF;
 END $$;
+
+INSERT INTO customers (phone) VALUES
+    ('07809876543'), ('07501112233'), ('07712223344'), ('07723334455'),
+    ('07734445566'), ('07745556677'), ('07756667788');
 
 INSERT INTO transactions (
     txn_ref, sender_phone, receiver_phone, receiver_name,
@@ -45,13 +50,13 @@ INSERT INTO tickets (
     (4, 'S-004', 'app', '07723334455',
      $t$دفعت فاتورة الكهرباء 35,000 دينار يوم الخميس وطلعت ناجحة بس بعدها جاني اشعار انها ما مدفوعة$t$,
      '2026-10-07T12:15:00+03:00', 'demo', 'demo-seed'),
-    (5, 'S-005', 'whatsapp', NULL,
+    (5, 'S-005', 'whatsapp', '07734445566',
      $t$شكد عمولة التحويل لحساب بنكي؟$t$,
      '2026-10-07T13:00:00+03:00', 'demo', 'demo-seed'),
-    (6, 'RAG-DEMO-GENERAL', 'app', NULL,
+    (6, 'RAG-DEMO-GENERAL', 'app', '07745556677',
      $t$شلون أشرح مشكلتي للدعم بأمان؟ شنو المعلومات غير السرية اللي أذكرها؟$t$,
      '2026-10-07T13:10:00+03:00', 'demo', 'demo-seed'),
-    (7, 'RAG-DEMO-UNSUPPORTED', 'app', NULL,
+    (7, 'RAG-DEMO-UNSUPPORTED', 'app', '07756667788',
      $t$اشرحلي بالتفصيل شلون التشابك الكمي يشتغل بين فوتونين داخل مختبر فيزياء؟$t$,
      '2026-10-07T14:00:00+03:00', 'demo', 'demo-seed');
 

@@ -75,6 +75,17 @@ You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter ke
 
 After you change `.env`, restart the API (`docker compose up -d --build api`). Changes made on the admin page apply without a restart.
 
+### Reset the demo database
+
+Customers are identified by their phone number (`07XXXXXXXXX`), and every ticket and customer conversation belongs to one. A database created before this change cannot be upgraded in place: the API stops at startup and asks for a reset. To reset:
+
+```bash
+docker compose down -v
+docker compose up --build -d
+```
+
+Then load the demo data: in pgAdmin (database `support`, `localhost:5433`), run `docker/db/cleanup.sql` and then `docker/db/seed_demo.sql`.
+
 ## Local models with Ollama
 
 1. Pull the models:
@@ -93,7 +104,7 @@ Local models are slower. The settings `LOCAL_AGENT_TIMEOUT_S`, `LOCAL_INTAKE_TIM
 ## Try the demo
 
 1. Open **Knowledge base**, upload [`data/test-kb/judge-demo.ar.md`](data/test-kb/judge-demo.ar.md), and wait for **Indexed**.
-2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing.
+2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing. Every ticket in a batch file needs a `customer_phone`. The customer intake app asks for the phone number before the chat starts.
 3. Open the results. Edit a reply and choose **Save & approve**.
 
 The demo data and the files in `data/kb/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).

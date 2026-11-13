@@ -23,6 +23,7 @@ BEGIN
         'kb_document_indexes',
         'uploaded_documents',
         'tickets',
+        'customers',
         'runs',
         'transactions',
         'service_incidents'
