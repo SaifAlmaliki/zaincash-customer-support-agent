@@ -5,10 +5,13 @@ import type { IntakeCopy } from "./copy"
 import type { Attachment, Credentials, CustomerReview, Fact } from "./types"
 import { OwnedImage } from "./OwnedImage"
 
+function hasValue(fact: Fact) {
+  return Boolean(fact.normalized || fact.value)
+}
+
 function factText(fact: Fact, copy: IntakeCopy) {
   if (fact.status === "unknown" || fact.status === "missing") return copy.unknown
   if (fact.status === "not_applicable") return copy.notApplicable
-  if (fact.status === "conflicting") return `${copy.conflicting}: ${fact.value || copy.unknown}`
   if (fact.normalized === "yes") return copy.choiceYes
   if (fact.normalized === "no") return copy.choiceNo
   return fact.normalized || fact.value || copy.unknown
@@ -52,16 +55,19 @@ export function ReviewPanel({
 }) {
   const selected = attachments.filter((item) => !item.removed && review.attachment_ids.includes(item.id))
   const facts = Object.values(review.facts).filter((fact) => fact.key !== "customer_phone")
-  const known = facts.filter((fact) => fact.status === "known" || fact.status === "not_applicable")
-  const missing = facts.filter((fact) => fact.status === "missing" || fact.status === "conflicting")
+  const known = facts.filter((fact) => fact.status === "known" || fact.status === "not_applicable" || (fact.status === "conflicting" && hasValue(fact)))
+  const missing = facts.filter((fact) => fact.status === "missing" || (fact.status === "conflicting" && !hasValue(fact)))
   const unknown = facts.filter((fact) => fact.status === "unknown")
   const label = (key: string) => copy.fieldLabels[key] || key
-  const missingRequired = missing.filter((fact) => required.includes(fact.key))
+  const missingRequired = facts.filter((fact) => fact.status === "missing" && required.includes(fact.key))
+  const missingOptional = facts.filter((fact) => fact.status === "missing" && !required.includes(fact.key))
   const banner = review.quality === "sufficient_context"
     ? null
     : missingRequired.length
       ? copy.missingList.replace("{items}", missingRequired.map((fact) => label(fact.key)).join(copy.listSeparator))
-      : copy.partial
+      : missingOptional.length || unknown.length
+        ? copy.partial
+        : null
   return (
     <section className="intake-review" aria-labelledby="intake-review-heading">
       <h2 id="intake-review-heading" tabIndex={-1} ref={headingRef}>
@@ -69,9 +75,9 @@ export function ReviewPanel({
       </h2>
       {review.quality === "sufficient_context" ? (
         <p className="intake-complete">{copy.complete}</p>
-      ) : (
+      ) : banner ? (
         <p className="intake-partial">{banner}</p>
-      )}
+      ) : null}
       <p dir="auto" lang={review.language}>
         {review.text}
       </p>
@@ -97,7 +103,6 @@ export function ReviewPanel({
             {missing.map((fact) => (
               <li key={fact.key}>
                 <span>{label(fact.key)}</span>
-                {fact.status === "conflicting" ? <bdi dir="auto">{factText(fact, copy)}</bdi> : null}
                 {askable.includes(fact.key) ? (
                   <Button type="button" variant="outline" size="sm" className={quietButton} disabled={busy}
                     aria-label={`${copy.answer}: ${label(fact.key)}`} onClick={() => onAsk(fact.key)}>

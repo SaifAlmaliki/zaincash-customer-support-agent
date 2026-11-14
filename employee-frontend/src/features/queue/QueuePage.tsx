@@ -104,33 +104,28 @@ export function QueuePage() {
         </Button>
       </PageHeader>
       <div className="metrics-grid">
-        <Metric
-          label={text.inQueue}
-          value={counts.all}
-          detail={text.inQueueDetail}
-          icon={<Inbox size={19} />}
-        />
-        <Metric
-          label={text.ready}
-          value={counts.pending_review}
-          detail={text.readyDetail}
-          icon={<CheckCheck size={19} />}
-          tone="metric-blue"
-        />
-        <Metric
-          label={text.closer}
-          value={counts.escalated}
-          detail={text.closerDetail}
-          icon={<CircleAlert size={19} />}
-          tone="metric-amber"
-        />
-        <Metric
-          label={text.approved}
-          value={counts.approved}
-          detail={text.approvedDetail}
-          icon={<ShieldCheck size={19} />}
-          tone="metric-green"
-        />
+        {(
+          [
+            ["all", text.inQueue, counts.all, text.inQueueDetail, <Inbox size={19} />, ""],
+            ["pending_review", text.ready, counts.pending_review, text.readyDetail, <CheckCheck size={19} />, "metric-blue"],
+            ["escalated", text.closer, counts.escalated, text.closerDetail, <CircleAlert size={19} />, "metric-amber"],
+            ["approved", text.approved, counts.approved, text.approvedDetail, <ShieldCheck size={19} />, "metric-green"],
+          ] as const
+        ).map(([value, label, count, detail, icon, tone]) => (
+          <Metric
+            key={value}
+            label={label}
+            value={count}
+            detail={detail}
+            icon={icon}
+            tone={tone}
+            pressed={tab === value}
+            onClick={() => {
+              setTab(tab === value && value !== "all" ? "all" : value)
+              setPage(0)
+            }}
+          />
+        ))}
       </div>
       {query.error && (
         <ErrorState message={query.error} retry={query.reload} />
@@ -338,20 +333,29 @@ export function QueuePage() {
               <div className="category-bars">
                 {distribution.length ? (
                   distribution.map(([id, count], index) => (
-                    <div key={id}>
-                      <div>
+                    <button
+                      key={id}
+                      type="button"
+                      className="category-filter"
+                      aria-pressed={category === id}
+                      onClick={() => {
+                        setCategory(category === id ? "all" : id)
+                        setPage(0)
+                      }}
+                    >
+                      <span>
                         <span>{categoryLabel(id)}</span>
                         <strong>{count}</strong>
-                      </div>
-                      <div className="distribution-track">
+                      </span>
+                      <span className="distribution-track">
                         <i
                           style={{
                             width: `${(count / rows.length) * 100}%`,
                             opacity: 1 - index * 0.12,
                           }}
                         />
-                      </div>
-                    </div>
+                      </span>
+                    </button>
                   ))
                 ) : (
                   <p className="muted small">

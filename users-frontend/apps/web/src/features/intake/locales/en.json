@@ -103,5 +103,6 @@
   "groupMissing": "Missing",
   "groupUnknown": "Not known",
   "answer": "Answer",
-  "answerRemembered": "Remembered? Answer"
+  "answerRemembered": "Remembered? Answer",
+  "detailSave": "Save"
 }

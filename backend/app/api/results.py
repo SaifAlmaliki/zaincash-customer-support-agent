@@ -39,8 +39,13 @@ def list_results(session: SessionDep, status: str | None = None, team: str | Non
     total = session.scalar(
         select(func.count()).select_from(query.order_by(None).subquery())
     ) or 0
+    received_at = (
+        select(TicketRow.received_at)
+        .where(TicketRow.id == TicketResultRow.ticket_id)
+        .scalar_subquery()
+    )
     rows = session.scalars(
-        query.order_by(TicketResultRow.priority.asc().nullslast(), TicketResultRow.id.desc())
+        query.order_by(received_at.desc().nullslast(), TicketResultRow.id.desc())
         .offset(offset)
         .limit(limit)
     )

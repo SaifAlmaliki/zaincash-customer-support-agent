@@ -83,6 +83,7 @@ export type IntakeCopy = {
   groupUnknown: string
   answer: string
   answerRemembered: string
+  detailSave: string
 }
 
 export const copy: Record<Language, IntakeCopy> = { ar, en }

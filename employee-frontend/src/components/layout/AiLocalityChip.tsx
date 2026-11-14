@@ -15,16 +15,24 @@ export function AiLocalityChip() {
         <Cpu size={12} />
         {copy.ai[ai.locality]}
       </TooltipTrigger>
-      <TooltipContent>
-        <strong className="ai-chip-line">{copy.ai.tooltip}</strong>
-        {MODEL_STEPS.map((step) => {
-          const item = ai.steps[step]
-          return item ? (
-            <span key={step} className="ai-chip-line">
-              {copy.models.steps[step]}: <span dir="ltr">{item.model}</span> ({copy.models.locality[item.locality]})
-            </span>
-          ) : null
-        })}
+      <TooltipContent className="ai-locality-tooltip" side="bottom" align="end" sideOffset={8}>
+        <p className="ai-locality-title">{copy.ai.tooltip}</p>
+        <ul className="ai-locality-steps">
+          {MODEL_STEPS.map((step) => {
+            const item = ai.steps[step]
+            return item ? (
+              <li key={step}>
+                <span className="ai-locality-step">{copy.models.steps[step]}</span>
+                <span className={`ai-locality-where${item.locality === "local" ? " is-local" : ""}`}>
+                  {copy.models.locality[item.locality]}
+                </span>
+                <span className="ai-locality-model">
+                  <bdi dir="ltr">{item.model}</bdi>
+                </span>
+              </li>
+            ) : null
+          })}
+        </ul>
       </TooltipContent>
     </Tooltip>
   )

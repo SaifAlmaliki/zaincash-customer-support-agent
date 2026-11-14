@@ -277,7 +277,8 @@ it("labels conflicting and inapplicable facts on the confirmation surface", asyn
   const controller = new IntakeController(api, memoryStorage())
   await controller.initialize("en", CUSTOMER_PHONE)
   render(<IntakePage controller={controller} />)
-  expect(screen.getByText("Conflicting: 50000", { exact: true })).toBeVisible()
+  expect(screen.getByText("50000", { exact: true })).toBeVisible()
+  expect(screen.queryByText(/Conflicting/)).not.toBeInTheDocument()
   expect(screen.getByText("Not applicable")).toBeVisible()
 })
 
@@ -412,6 +413,20 @@ it("shows interview progress with the collected values", async () => {
   expect(within(list).getByText("Reference · Not known")).toBeVisible()
 })
 
+it("fills a missing detail from a small dialog on the progress chip", async () => {
+  const user = userEvent.setup()
+  const { controller, api } = await collectingController("en", { progress: transferProgress, messages: [firstMessage] })
+  render(<IntakePage controller={controller} />)
+  await user.click(await screen.findByRole("button", { name: "Details: 3 of 4" }))
+  await user.click(screen.getByRole("button", { name: /Recipient number/ }))
+  const dialog = screen.getByRole("dialog", { name: "Recipient number" })
+  await user.type(within(dialog).getByRole("textbox", { name: "Recipient number" }), "07709876543")
+  await user.click(within(dialog).getByRole("button", { name: "Save" }))
+  await waitFor(() => expect(api.message).toHaveBeenCalled())
+  expect(vi.mocked(api.message).mock.calls[0]?.[1].text).toBe("Recipient number: 07709876543")
+  expect(screen.queryByRole("dialog", { name: "Recipient number" })).not.toBeInTheDocument()
+})
+
 it("requests an early review from the progress strip", async () => {
   const user = userEvent.setup()
   const { controller, api } = await collectingController("en", { progress: transferProgress, messages: [firstMessage] })
@@ -487,6 +502,26 @@ it("names only the missing required details in the partial banner", async () => 
   const missing = screen.getByRole("heading", { name: "Missing" }).nextElementSibling as HTMLElement
   expect(within(missing).getByText("Reference")).toBeVisible()
   expect(within(missing).getByText("Recipient number")).toBeVisible()
+})
+
+it("shows a recorded date without a missing or conflicting label", async () => {
+  const api = fakeApi({
+    phase: "review_ready",
+    review: {
+      ...groupedReview,
+      facts: {
+        ...groupedReview.facts,
+        date: { key: "date", status: "conflicting" as const, value: "10.10.2026", normalized: null, evidence: [] },
+      },
+    },
+    progress: [...groupedProgress, { key: "date", tier: "required" as const, status: "conflicting" as const, display: "10.10.2026" }],
+  })
+  const controller = new IntakeController(api, memoryStorage())
+  await controller.initialize("en", CUSTOMER_PHONE)
+  render(<IntakePage controller={controller} />)
+  expect(await screen.findByText("10.10.2026")).toBeVisible()
+  expect(screen.queryByText("Missing: Date")).not.toBeInTheDocument()
+  expect(screen.queryByText(/Conflicting/)).not.toBeInTheDocument()
 })
 
 it("falls back to the general partial banner when only optional details are missing", async () => {

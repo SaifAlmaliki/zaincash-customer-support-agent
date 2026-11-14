@@ -509,9 +509,14 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                             items={session.progress}
                             copy={text}
                             reviewDisabled={snapshot.busy || session.turn_status === "processing"}
+                            pending={pending}
                             onReviewNow={() => {
                               reviewRequest.current = true
                               void controller.requestReview(true, locale)
+                            }}
+                            onFill={(content, answerTo) => {
+                              if (answerTo) answer(content, answerTo)
+                              else void controller.send(content, locale, [])
                             }}
                           />
                         ) : null}

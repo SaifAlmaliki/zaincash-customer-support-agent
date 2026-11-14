@@ -333,6 +333,29 @@ html[lang="ar"] .brand > div {
   border-radius: 8px;
   box-shadow: none;
 }
+.metric-card[role="button"] {
+  cursor: pointer;
+  text-align: start;
+}
+.metric-card[role="button"]:hover {
+  background: color-mix(in srgb, var(--card) 94%, #1d2430 6%);
+}
+.metric-card[role="button"]:focus-visible {
+  outline: 2px solid #c73649;
+  outline-offset: 2px;
+}
+.metric-pressed {
+  box-shadow: inset 0 0 0 1.5px #c73649;
+}
+.metric-pressed.metric-blue {
+  box-shadow: inset 0 0 0 1.5px var(--blue);
+}
+.metric-pressed.metric-amber {
+  box-shadow: inset 0 0 0 1.5px var(--amber);
+}
+.metric-pressed.metric-green {
+  box-shadow: inset 0 0 0 1.5px var(--green);
+}
 .metric-card [data-slot="card-content"] {
   display: flex;
   align-items: center;
@@ -593,35 +616,11 @@ html[lang="ar"] .brand > div {
   font-weight: 500;
   color: #727b89;
 }
-.priority-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 12px;
-}
-.priority-bars i {
-  width: 3px;
-  background: currentColor;
-  border-radius: 1px;
-}
-.priority-bars i:nth-child(1) {
-  height: 4px;
-}
-.priority-bars i:nth-child(2) {
-  height: 8px;
-}
-.priority-bars i:nth-child(3) {
-  height: 12px;
-}
 .priority-P1 {
   color: #cb3448;
 }
 .priority-P2 {
   color: #b3822e;
-}
-.priority-P3 .priority-bars i:nth-child(3),
-.priority-P4 .priority-bars i:not(:first-child) {
-  opacity: 0.18;
 }
 .confidence {
   display: flex;
@@ -739,12 +738,35 @@ html[lang="ar"] .brand > div {
   display: grid;
   gap: 16px;
 }
-.category-bars > div > div:first-child {
+.category-filter {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.category-filter:focus-visible {
+  outline: 2px solid #c73649;
+  outline-offset: 2px;
+}
+.category-filter > span:first-child {
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 10px;
   margin-bottom: 7px;
+}
+.category-filter:hover > span:first-child,
+.category-filter[aria-pressed="true"] > span:first-child {
+  color: #c73649;
+}
+.category-filter[aria-pressed="true"] .distribution-track i {
+  background: #c73649;
 }
 .category-bars strong {
   font-size: 10px;
@@ -2770,13 +2792,85 @@ html[dir="rtl"] .workspace-toast {
   border: 1px solid var(--border);
   color: var(--muted-foreground);
   white-space: nowrap;
+  cursor: help;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.ai-chip:hover,
+.ai-chip:focus-visible {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--foreground) 35%, var(--border));
 }
 .ai-chip.ai-local {
   color: var(--green);
   border-color: currentColor;
 }
-.ai-chip-line {
+.ai-chip.ai-local:hover,
+.ai-chip.ai-local:focus-visible {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+  border-color: currentColor;
+}
+.ai-locality-tooltip {
   display: block;
+  width: min(22rem, calc(100vw - 1.5rem));
+  max-width: min(22rem, calc(100vw - 1.5rem));
+  padding: 10px 12px 6px;
+  text-align: start;
+  line-height: 1.35;
+  white-space: normal;
+  font-family: Tajawal, sans-serif;
+}
+html[lang="en"] .ai-locality-tooltip {
+  font-family: "Plus Jakarta Sans Variable", sans-serif;
+}
+.ai-locality-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.ai-locality-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.ai-locality-steps li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 7px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+.ai-locality-step {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.ai-locality-where {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  white-space: nowrap;
+}
+.ai-locality-where.is-local {
+  color: #d7f5e4;
+  background: color-mix(in srgb, #8dcea8 28%, transparent);
+}
+.ai-locality-model {
+  grid-column: 1 / -1;
+  margin-top: 1px;
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0.72;
+  overflow-wrap: anywhere;
 }
 .run-models-card {
   margin-bottom: 20px;

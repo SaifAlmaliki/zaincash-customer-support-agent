@@ -24,6 +24,11 @@ export type QueueProjection = {
   lastPage: number
 }
 
+function receivedAt(row: Result): number {
+  const value = Date.parse(row.ticket.received_at)
+  return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY
+}
+
 export function projectQueue(
   rows: Result[],
   filters: QueueFilters,
@@ -45,13 +50,13 @@ export function projectQueue(
           ? ["approved", "edited"].includes(row.status)
           : row.status === filters.tab)) &&
       (filters.team === "all" || row.team === filters.team) &&
-      (filters.category === "all" || row.category === filters.category) &&
+      (filters.category === "all" || (row.category || "other") === filters.category) &&
       (`${row.ticket.text} ${row.ticket.external_id} ${row.ticket.customer_phone}`
         .toLowerCase()
         .includes(filters.search.toLowerCase()) ||
         (phoneQuery !== null && row.ticket.customer_phone === phoneQuery)),
     )
-    .sort((a, b) => (a.priority || "P9").localeCompare(b.priority || "P9"))
+    .sort((a, b) => receivedAt(b) - receivedAt(a))
   const lastPage = Math.max(0, Math.ceil(filtered.length / pageSize) - 1)
   const currentPage = Math.min(requestedPage, lastPage)
   const visible = filtered.slice(

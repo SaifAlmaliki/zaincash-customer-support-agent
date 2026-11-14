@@ -330,6 +330,15 @@ def test_result_search_matches_the_customer_phone_in_any_format(client):
         assert [item["ticket"]["external_id"] for item in page["items"]] == ["mine"], query
 
 
+def test_result_list_puts_the_latest_received_ticket_first(client):
+    start_run(client, [
+        {"external_id": "newer", "text": "جديد", "received_at": "2026-10-08T09:00:00+03:00"},
+        {"external_id": "older", "text": "قديم", "received_at": "2026-10-07T09:00:00+03:00"},
+    ])
+    items = client.get("/api/results").json()["items"]
+    assert [item["ticket"]["external_id"] for item in items] == ["newer", "older"]
+
+
 def test_customer_profile_lists_the_latest_result_of_each_ticket(client):
     start_run(client, [
         {"external_id": "first", "text": "مرحبا", "customer_phone": "07809876543",

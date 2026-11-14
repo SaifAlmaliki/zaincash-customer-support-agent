@@ -108,15 +108,30 @@ it("finds a customer's tickets by phone in any accepted format", () => {
   }
 })
 
-it("sorts by the existing priority ordering without mutating input rows", () => {
+it("filters unclassified tickets together with the other category", () => {
   const rows = [
-    row(1, { priority: null }),
-    row(2, { priority: "P2" }),
-    row(3, { priority: "P1" }),
+    row(1, { category: null }),
+    row(2, { category: "other" }),
+    row(3, { category: "fraud_report" }),
+  ]
+  const view = projectQueue(rows, filters({ category: "other" }), 0)
+  expect(view.filtered.map((item) => item.id)).toEqual([1, 2])
+})
+
+it("keeps the latest tickets on top without mutating input rows", () => {
+  const received = (id: number, received_at: string, priority: string | null) => {
+    const item = row(id, { priority })
+    return { ...item, ticket: { ...item.ticket, received_at } }
+  }
+  const rows = [
+    received(1, "2026-10-10T10:00:00Z", "P1"),
+    received(2, "2026-10-12T10:00:00Z", "P3"),
+    received(3, "2026-10-11T08:00:00Z", "P2"),
   ]
   const originalOrder = rows.map((item) => item.id)
   const view = projectQueue(rows, filters(), 0)
-  expect(view.filtered.map((item) => item.id)).toEqual([3, 2, 1])
+  expect(view.filtered.map((item) => item.id)).toEqual([2, 3, 1])
+  expect(view.visible.map((item) => item.id)).toEqual([2, 3, 1])
   expect(rows.map((item) => item.id)).toEqual(originalOrder)
 })
 

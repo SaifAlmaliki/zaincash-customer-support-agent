@@ -32,14 +32,7 @@ export function StatusBadge({ status }: { status: string }) {
 }
 export function PriorityBadge({ priority }: { priority: string | null }) {
   return (
-    <span className={`priority priority-${priority}`}>
-      <span className="priority-bars">
-        <i />
-        <i />
-        <i />
-      </span>
-      {priority || "—"}
-    </span>
+    <span className={`priority priority-${priority}`}>{priority || "—"}</span>
   )
 }
 export function Confidence({ value }: { value: number | null }) {
@@ -131,15 +124,35 @@ export function Metric({
   detail,
   icon,
   tone = "",
+  pressed = false,
+  onClick,
 }: {
   label: string
   value: ReactNode
   detail: string
   icon: ReactNode
   tone?: string
+  pressed?: boolean
+  onClick?: () => void
 }) {
   return (
-    <Card className={`metric-card ${tone}`}>
+    <Card
+      className={`metric-card ${tone}${pressed ? " metric-pressed" : ""}`}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-pressed={onClick ? pressed : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                onClick()
+              }
+            }
+          : undefined
+      }
+    >
       <CardContent>
         <span className="metric-icon">{icon}</span>
         <div className="metric-copy">
