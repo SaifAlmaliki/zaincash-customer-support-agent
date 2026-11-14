@@ -48,6 +48,26 @@ What to know:
 - **Changing the embedding model re-indexes the knowledge base.** New batches wait until it finishes, and the switch cannot start while a batch is running.
 - The top bar shows **AI: Local**, **AI: Cloud**, or **AI: Mixed**, so everyone can see where ticket data goes. Each run page lists the models it used.
 
+### AI usage and performance (`/evaluation`)
+
+Every AI call is recorded in the `ai_calls` table:
+- customer intake, Jev classification, detail extraction and reply drafting;
+- knowledge search during drafting and the credential check;
+- knowledge indexing, manual knowledge search and admin model tests.
+
+Each row holds the model, start time, latency, tokens, cost, cost source (provider-reported,
+estimated, local or unknown) and errors. Prompts and ticket text are never stored.
+
+The Evaluation page shows, for a chosen period, process, model or batch run:
+- total AI cost, cost per ticket and AI time per ticket;
+- cost and time by process and by model, with local models shown as **Local · $0**;
+- a daily trend;
+- every ticket with its cost split and a timeline of its AI calls.
+
+Estimates use the price saved with the admin's model choice (taken from the OpenRouter
+catalog), or the `.env` prices for the default models; any other model shows "Price unknown".
+Results processed before tracking began show only their totals.
+
 ## Quick start
 
 You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter key.
