@@ -185,8 +185,8 @@ it("drops a late reply after starting a new report", async () => {
   const input = await screen.findByRole("textbox", { name: "Your message" })
   await user.type(input, "more")
   await user.click(screen.getByRole("button", { name: "Send" }))
-  await user.click(screen.getByRole("button", { name: "Start a new report" }))
-  await user.click(screen.getByRole("button", { name: "Start new report" }))
+  await user.click(screen.getByRole("button", { name: "New ticket" }))
+  await user.click(screen.getByRole("button", { name: "Start new ticket" }))
   release(
     emptySession({
       messages: [{ id: "late", role: "user", text: "late secret", language: "en", created_at: "2026-10-18T09:00:00Z", attachment_ids: [] }],

@@ -43,9 +43,9 @@
     "kyc_step": "Verification step"
   },
   "continueChat": "Continue conversation",
-  "startNew": "Start a new report",
-  "confirmNew": "Start new report",
-  "confirmNewBody": "The current report stays saved. This screen will start a separate one.",
+  "startNew": "New ticket",
+  "confirmNew": "Start new ticket",
+  "confirmNewBody": "The current ticket stays saved. This screen will start a separate one.",
   "cancel": "Cancel",
   "retry": "Retry",
   "refresh": "Refresh",
