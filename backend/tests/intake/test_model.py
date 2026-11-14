@@ -174,6 +174,37 @@ async def test_rejected_summary_keeps_the_stated_values():
     assert "06-10-2026" in result.value.customer_text
 
 
+async def test_rejected_summary_trace_contains_only_its_own_requests():
+    from app.intake.contracts import ReviewText
+    from app.intake.policy import interview_plan
+    from tests.intake.helpers import fact
+
+    source = message("حولت 50000 دينار يوم 06-10-2026", language="ar")
+    turn = context(
+        [source],
+        [fact("issue", "ما وصل التحويل", source), fact("amount", "50000", source, normalized="50000")],
+        category="general_inquiry",
+    )
+
+    class InventsAmount:
+        async def ainvoke(self, messages):
+            return {"raw": AIMessage(content="ok"), "parsed": ReviewText(
+                customer_text="المبلغ 99999", employee_text_ar="المبلغ 99999",
+                fact_keys=list(interview_plan(turn.state)[0]),
+            )}
+
+    def factory(schema):
+        return InventsAmount() if schema is ReviewText else CapturingRunnable()
+
+    model = IntakeModel(Settings(_env_file=None), runnable_factory=factory)
+    budget = ModelBudget(60, 4)
+    analyzed = await model.analyze(turn, [], budget)
+    summary = await model.summarize(turn.state, "ar", budget)
+    assert [entry["kind"] for entry in analyzed.trace] == ["analyze"]
+    assert [entry["kind"] for entry in summary.trace] == ["summarize", "summarize"]
+    assert len(budget.trace) == 3
+
+
 def test_budget_choice_selects_provider_model_and_local_timeout():
     from app.models_config.types import ModelChoice
     from tests.models_config_fakes import FakeProvider, fake_registry

@@ -72,15 +72,17 @@ class IntakeModel:
             validate_review_numbers(state, value)
             if not set(interview_plan(state)[0]).issubset(value.fact_keys):
                 raise InvalidEvidence("Include all required_fact_keys, even when their values are unknown.")
+        trace_start = len(budget.trace)
         try:
             return await self._invoke(ReviewText, system, blocks, budget, validate=validate)
         except ModelUnavailable as exc:
+            own = exc.trace[trace_start:]
             # A paraphrase of a real date or phone must not discard the customer's answer.
-            if not any(item.get("validation_error") for item in exc.trace):
+            if not any(item.get("validation_error") for item in own):
                 raise
             text = grounded_review_text(state, language)
             validate(text)
-            return ModelCall(text, list(exc.trace))
+            return ModelCall(text, list(own))
 
     def _choice(self, budget: ModelBudget) -> ModelChoice:
         return budget.choice or env_defaults(self.settings)[Step.INTAKE]
