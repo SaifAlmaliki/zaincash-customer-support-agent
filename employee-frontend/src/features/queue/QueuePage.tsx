@@ -332,29 +332,21 @@ export function QueuePage() {
               <p className="muted small">{text.needs}</p>
               <div className="category-bars">
                 {distribution.length ? (
-                  distribution.map(([id, count], index) => (
+                  distribution.map(([id, count]) => (
                     <button
                       key={id}
                       type="button"
                       className="category-filter"
                       aria-pressed={category === id}
+                      style={{ "--share": `${(count / distribution[0][1]) * 100}%` }}
                       onClick={() => {
                         setCategory(category === id ? "all" : id)
                         setPage(0)
                       }}
                     >
-                      <span>
-                        <span>{categoryLabel(id)}</span>
-                        <strong>{count}</strong>
-                      </span>
-                      <span className="distribution-track">
-                        <i
-                          style={{
-                            width: `${(count / rows.length) * 100}%`,
-                            opacity: 1 - index * 0.12,
-                          }}
-                        />
-                      </span>
+                      <i className="category-fill" aria-hidden="true" />
+                      <span className="category-filter-name">{categoryLabel(id)}</span>
+                      <strong>{count}</strong>
                     </button>
                   ))
                 ) : (

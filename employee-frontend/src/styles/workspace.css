@@ -755,55 +755,72 @@ html[lang="ar"] .brand > div {
   color: var(--muted-foreground);
 }
 .category-bars {
-  margin: 20px 0 22px;
+  margin: 12px 0 14px;
   display: grid;
-  gap: 16px;
+  gap: 6px;
 }
 .category-filter {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   width: 100%;
-  padding: 0;
+  min-height: 32px;
+  padding: 6px 8px;
+  overflow: hidden;
   border: 0;
-  background: none;
+  border-radius: 8px;
+  background: #f6f4f4;
   color: inherit;
   font: inherit;
   text-align: start;
   cursor: pointer;
-  border-radius: 6px;
+}
+.category-fill {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0;
+  width: var(--share);
+  background: #f0d4d9;
+  pointer-events: none;
+}
+.category-filter:hover {
+  background: #f1ecec;
 }
 .category-filter:focus-visible {
   outline: 2px solid #c73649;
   outline-offset: 2px;
 }
-.category-filter > span:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 10px;
-  margin-bottom: 7px;
+.category-filter-name,
+.category-filter strong {
+  position: relative;
+  z-index: 1;
 }
-.category-filter:hover > span:first-child,
-.category-filter[aria-pressed="true"] > span:first-child {
+.category-filter-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.category-filter[aria-pressed="true"] {
+  background: #fff1f3;
+  box-shadow: inset 0 0 0 1px #f0c6cd;
+}
+.category-filter[aria-pressed="true"] .category-fill {
+  background: #f6c5cc;
+}
+.category-filter[aria-pressed="true"] .category-filter-name {
   color: #c73649;
 }
-.category-filter[aria-pressed="true"] .distribution-track i {
-  background: #c73649;
-}
 .category-bars strong {
-  font-size: 10px;
-  font-weight: 500;
-}
-.distribution-track {
-  height: 4px;
-  border-radius: 4px;
-  background: var(--muted);
-  overflow: hidden;
-}
-.distribution-track i {
-  display: block;
-  height: 100%;
-  background: #dd7a86;
-  border-radius: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #8b919b;
 }
 .text-link {
   display: flex;
