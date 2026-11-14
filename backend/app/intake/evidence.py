@@ -6,10 +6,10 @@ import re
 from app.intake.contracts import EvidenceRef, Fact, IntakeState, TurnContext
 from app.intake.dates import canonical_digits, normalize_reported_date
 from app.intake.errors import InvalidEvidence
-from app.intake.policy import HIGH_VALUE, field_is_resolved
+from app.intake.policy import HIGH_VALUE, customer_received_money, field_is_resolved
 from app.pipeline.stage1_normalize.candidates import normalize_phone, parse_amount
 
-_PRECISE = {"txn_ref", "amount", "recipient_phone", "exact_error", "date"}
+_PRECISE = {"txn_ref", "amount", "recipient_phone", "sender_phone", "exact_error", "date"}
 _GROUPING = re.compile(r"(?<=\d)[,.\s\u066c\u060c](?=\d{3}(?!\d))")
 _CURRENCIES = {"IQD": ("iqd", "دينار", "د.ع"), "USD": ("usd", "دولار", "$")}
 _CORRECTION = re.compile(r"\b(i meant|correction|correct(?:ed|ion)?|actually|instead|not .+ but)\b|أقصد|اقصد|تصحيح|الصحيح|قصدي|مو .+ وإنما", re.I)
@@ -59,7 +59,7 @@ def _normalize_precise(fact: Fact, messages: dict) -> Fact:
         if fact.normalized and _compact(fact.normalized) != str(parsed[0]):
             raise InvalidEvidence("Normalized amount does not match the reported text.")
         return fact.model_copy(update={"normalized": str(parsed[0])})
-    if fact.key == "recipient_phone":
+    if fact.key in {"recipient_phone", "sender_phone"}:
         parsed = normalize_phone(value)
         if parsed is None:
             return fact.model_copy(update={"normalized": None})
@@ -168,13 +168,29 @@ def merge_analysis(context: TurnContext, analysis, *, visible_image_ids=None) ->
         key for key in analysis.additional_needed
         if key in HIGH_VALUE and not field_is_resolved(facts.get(key))
     ]
-    return context.state.model_copy(update={
+    merged = context.state.model_copy(update={
         "language": analysis.language,
         "category": analysis.category or context.state.category,
         "facts": facts,
         "additional_issues": list(issues.values()),
         "additional_needed": needed,
     })
+    if customer_received_money(merged):
+        merged = merged.model_copy(update={"facts": _sender_not_recipient(merged.facts)})
+    return merged
+
+
+def _sender_not_recipient(facts: dict[str, Fact]) -> dict[str, Fact]:
+    """A number given for money the customer received is the sender's, not a recipient they paid."""
+    phone = facts.get("recipient_phone")
+    if phone is None or phone.status not in {"known", "unknown"}:
+        return facts
+    updated = dict(facts)
+    sender = updated.get("sender_phone")
+    if sender is None or sender.status == "missing":
+        updated["sender_phone"] = phone.model_copy(update={"key": "sender_phone"})
+    del updated["recipient_phone"]
+    return updated
 
 
 def remove_attachment_evidence(state: IntakeState, attachment_id) -> IntakeState:

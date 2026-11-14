@@ -196,3 +196,50 @@ def test_secret_asking_reason_falls_back_to_the_template_reason(taxonomy, reason
     assert question.text == "على أي رقم حولت؟"
     assert question.reason == ask_for(state, "recipient_phone", 2).reason
     assert question.reason != reason
+
+
+def _received_unknown_sender(source, *, phone="07501112233"):
+    return [
+        fact("issue", f"وصلني تحويل من رقم {phone} وما أعرف المرسل", source),
+        fact("amount", "200000", source, normalized="200000"),
+        fact("date", "07-10-2026", source, normalized="2026-10-07"),
+        fact("txn_ref", "ZC2410000789", source, normalized="ZC2410000789"),
+    ]
+
+
+def test_received_money_from_an_unknown_sender_asks_what_to_do(taxonomy):
+    source = message("وصلني تحويل 200,000 دينار يوم 07-10-2026 من رقم 07501112233 وانا ما اعرف المرسل. رقم العملية ZC2410000789")
+    state = context([source], _received_unknown_sender(source), category="wrong_recipient").state
+    suggested = Question(key="recipient_phone", text="على أي رقم حولت الفلوس؟", reason="بساعدنا نلكه التحويل.", basis_revision=0)
+    question = choose_question(state, suggested, 2, taxonomy)
+    assert question is not None
+    assert question.key == "desired_outcome"
+    assert question.answer_kind == "text"
+    assert "حولت" not in question.text
+    assert "المرسل" in question.text
+    readiness = assess_readiness(state, taxonomy)
+    assert readiness.next_key == "desired_outcome"
+    assert "recipient_phone" not in readiness.missing
+    assert "recipient_name" not in readiness.missing
+    answered = state.model_copy(update={"facts": {
+        **state.facts, "desired_outcome": fact("desired_outcome", "اعرف منو المرسل", source),
+    }})
+    assert choose_question(answered, None, 3, taxonomy) is None
+    assert assess_readiness(answered, taxonomy).quality == "sufficient_context"
+
+
+def test_received_money_without_a_sender_number_asks_where_it_came_from(taxonomy):
+    source = message("وصلني تحويل وما اعرف المرسل")
+    facts = [
+        fact("issue", source.text, source),
+        fact("amount", "200000", source, normalized="200000"),
+        fact("date", "07-10-2026", source, normalized="2026-10-07"),
+    ]
+    state = context([source], facts, category="failed_transfer").state
+    suggested = Question(key="recipient_phone", text="على أي رقم حولت الفلوس؟", reason="يساعدنا نلگه التحويل.", basis_revision=0)
+    question = choose_question(state, suggested, 2, taxonomy)
+    assert question is not None
+    assert question.key == "sender_phone"
+    assert question.answer_kind == "phone"
+    assert question.text == "من أي رقم وصلتك الفلوس؟"
+    assert "حولت" not in question.text

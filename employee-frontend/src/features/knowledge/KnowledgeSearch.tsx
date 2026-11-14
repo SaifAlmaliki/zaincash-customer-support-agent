@@ -9,6 +9,19 @@ import { api } from "@/lib/api"
 import { categories, categoryLabel } from "@/lib/format"
 import { fill, getLocale, useCopy } from "@/lib/locale"
 import type { ChunkPage, KnowledgeDocument, KnowledgeSearchResult } from "@/lib/types"
+import { concisePassage } from "./passage-reading"
+
+function PassageBody({ text, showRest }: { text: string; showRest: string }) {
+  const reading = concisePassage(text)
+  const language = reading.direction === "rtl" ? "ar" : "en"
+  return <>
+    <p className="passage-text" dir={reading.direction} lang={language}>{reading.lead}</p>
+    {reading.rest ? <details className="passage-more">
+      <summary>{showRest}</summary>
+      <p className="passage-text" dir={reading.direction} lang={language}>{reading.rest}</p>
+    </details> : null}
+  </>
+}
 
 function pageLabel(
   text: ReturnType<typeof useCopy>["knowledge"],
@@ -37,7 +50,7 @@ function ChunkInspection({ document, onClose }: { document: KnowledgeDocument; o
         <div className="passage-list">
           {query.data.items.map((chunk) => <article className="passage" key={chunk.id}>
             <div className="passage-meta"><strong>{fill(text.passage, { number: chunk.chunk_index + 1 })}</strong><span>{pageLabel(text, chunk.page_start, chunk.page_end)}</span></div>
-            <p className="passage-text" dir="auto">{chunk.text}</p>
+            <PassageBody text={chunk.text} showRest={text.showRest} />
             <small className="muted">{chunk.embedding_model}{chunk.category_tags.length ? ` · ${chunk.category_tags.map(categoryLabel).join(getLocale() === "ar" ? "، " : ", ")}` : ""}</small>
             <code className="passage-id">{chunk.id}</code>
           </article>)}
@@ -113,7 +126,7 @@ export function KnowledgeSearch({ configured, selected, onClose }: {
             {result.passages.map((passage) => <article className="passage" key={passage.id}>
               <strong className="passage-filename">{passage.filename}</strong>
               <div className="passage-meta"><span>{fill(text.resultMeta, { document: passage.document_id, passage: passage.chunk_index + 1 })}{passage.page_start == null ? "" : ` · ${pageLabel(text, passage.page_start, passage.page_end)}`}</span><span>{fill(text.similarity, { score: passage.score.toFixed(3) })}</span></div>
-              <p className="passage-text" dir="auto">{passage.text}</p>
+              <PassageBody text={passage.text} showRest={text.showRest} />
               <code className="passage-id">{passage.id}</code>
             </article>)}
             <p className="field-help">{text.similarityHelp}</p>

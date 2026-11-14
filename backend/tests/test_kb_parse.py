@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 
@@ -139,6 +140,20 @@ def test_malformed_pdf_has_a_bounded_public_error():
     assert "PDF" in str(error.value)
     assert "private document data" not in str(error.value)
     assert len(str(error.value)) <= 250
+
+
+def test_mixed_arabic_policy_pdf_is_read_in_logical_order():
+    root = Path(__file__).parents[2] / "data" / "kb-pdf"
+    refund = parse_document("refund_request.pdf", (root / "refund_request.pdf").read_bytes())
+    text = refund[0].text
+    assert "إذا الزبون ألغى طلب من متجر أو خدمة ويريد فلوسه" in text
+    assert "وجّه الطلب لفريق Disputes" in text
+    assert "لا تطلب رمز التحقق OTP أو الرقم السري PIN" in text
+    assert "SYNTHETIC / FICTIONAL DEMO ONLY — مو سياسة حقيقية لزين كاش." in text
+    for path in sorted(root.glob("*.pdf")):
+        page = parse_document(path.name, path.read_bytes())[0].text
+        assert "لا تطلب رمز التحقق OTP أو الرقم السري PIN" in page
+        assert "PIN  أو الرقم" not in page
 
 
 def test_pdf_chunks_keep_original_one_based_pages_including_blank_pages():

@@ -113,3 +113,13 @@ def test_model_cannot_set_or_change_the_signed_in_phone():
     ))
     assert result.facts["customer_phone"] == signed_in
     assert result.facts["recipient_phone"].normalized == "07801234567"
+
+
+def test_incoming_transfer_stores_the_other_number_as_the_sender():
+    source = message("وصلني تحويل من رقم 07501112233 وما أعرف المرسل")
+    result = merge_analysis(context([source]), proposal(
+        fact("issue", "وصلني تحويل وما أعرف المرسل", source),
+        fact("recipient_phone", "07501112233", source),
+    ))
+    assert "recipient_phone" not in result.facts
+    assert result.facts["sender_phone"].normalized == "07501112233"

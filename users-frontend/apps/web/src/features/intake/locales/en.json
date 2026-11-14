@@ -27,6 +27,7 @@
     "exact_error": "Exact error",
     "customer_phone": "Your account number",
     "recipient_phone": "Recipient number",
+    "sender_phone": "Sender number",
     "recipient_name": "Recipient name",
     "debited": "Funds deducted",
     "recipient_outcome": "Recipient outcome",

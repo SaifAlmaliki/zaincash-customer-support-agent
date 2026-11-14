@@ -271,6 +271,7 @@
       "recipient_outcome": "Recipient received it",
       "customer_phone": "Customer phone",
       "recipient_phone": "Recipient phone",
+      "sender_phone": "Sender phone",
       "recipient_name": "Recipient name",
       "txn_ref": "Transaction reference",
       "exact_error": "Error text"
@@ -473,6 +474,7 @@
     "noResultsHint": "Try another question or category, and check that a relevant policy is indexed.",
     "resultMeta": "Document {document} · Passage {passage}",
     "similarity": "Similarity {score}",
+    "showRest": "Show the rest",
     "similarityHelp": "Similarity measures retrieval relevance, not confidence or correctness.",
     "refreshFailed": "Could not refresh document status."
   },

@@ -271,6 +271,7 @@
       "recipient_outcome": "وصول المبلغ",
       "customer_phone": "هاتف الزبون",
       "recipient_phone": "هاتف المستلم",
+      "sender_phone": "هاتف المرسل",
       "recipient_name": "اسم المستلم",
       "txn_ref": "رقم العملية",
       "exact_error": "نص الخطأ"
@@ -473,6 +474,7 @@
     "noResultsHint": "جرّب سؤالاً أو فئة أخرى، وتأكد من فهرسة سياسة ذات صلة.",
     "resultMeta": "مستند {document} · مقطع {passage}",
     "similarity": "تشابه {score}",
+    "showRest": "باقي النص",
     "similarityHelp": "التشابه يقيس صلة الاسترجاع، وليس الثقة أو الصحة.",
     "refreshFailed": "تعذّر تحديث حالة المستندات."
   },

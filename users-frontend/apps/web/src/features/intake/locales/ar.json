@@ -27,6 +27,7 @@
     "exact_error": "نص الخطأ",
     "customer_phone": "رقم حسابك",
     "recipient_phone": "رقم المستلم",
+    "sender_phone": "رقم المرسل",
     "recipient_name": "اسم المستلم",
     "debited": "انخصم المبلغ؟",
     "recipient_outcome": "وصل المبلغ؟",

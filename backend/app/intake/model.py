@@ -21,7 +21,7 @@ from app.intake.contracts import (
 )
 from app.intake.errors import InvalidEvidence, ModelUnavailable
 from app.intake.evidence import merge_analysis
-from app.intake.policy import material_keys
+from app.intake.policy import interview_plan
 from app.intake.review import validate_review_numbers
 from app.models_config.providers.registry import ProviderRegistry
 from app.models_config.steps import env_defaults, intake_timeout_s
@@ -67,7 +67,7 @@ class IntakeModel:
         system, blocks = _review_prompt(state, language)
         def validate(value):
             validate_review_numbers(state, value)
-            if not set(material_keys(state.category)).issubset(value.fact_keys):
+            if not set(interview_plan(state)[0]).issubset(value.fact_keys):
                 raise InvalidEvidence("Include all required_fact_keys, even when their values are unknown.")
         return await self._invoke(ReviewText, system, blocks, budget, validate=validate)
 
@@ -164,7 +164,7 @@ def _analysis_prompt(context: TurnContext, images: list[ImageInput]) -> tuple[st
 
 def _review_prompt(state: IntakeState, language: str) -> tuple[str, list[dict]]:
     payload = state.model_dump_json()
-    keys = list(dict.fromkeys([*material_keys(state.category), *state.facts]))
+    keys = list(dict.fromkeys([*interview_plan(state)[0], *state.facts]))
     blocks = [{"type": "text", "text": f"Requested language: {language}\nrequired_fact_keys: {keys}\n{payload}"}]
     _guard_size(blocks)
     return _REVIEW_PROMPT, blocks
