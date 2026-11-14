@@ -242,7 +242,7 @@
     "insightsTitle": "Weekly insights",
     "insightsDescription": "Spot recurring issues and understand where your team’s time goes.",
     "evaluationTitle": "Evaluation",
-    "evaluationDescription": "Real evidence. A held-out dataset. Honest results.",
+    "evaluationDescription": "Cost and response time of every AI process.",
     "newBatchTitle": "Prepare a new batch",
     "newBatchDescription": "Bring the messages. Let the pipeline do the sorting."
   },
@@ -661,5 +661,120 @@
     "noData": "No data reported for this section.",
     "stepsPending": "Steps appear here when a ticket finishes.",
     "noTickets": "No processed ticket to show yet."
+  },
+  "evaluation": {
+    "refresh": "Refresh",
+    "filters": {
+      "period": "Period",
+      "day": "Last 24 hours",
+      "week": "Last 7 days",
+      "month": "Last 30 days",
+      "process": "AI process",
+      "allProcesses": "All processes",
+      "model": "Model",
+      "allModels": "All models",
+      "run": "Batch run",
+      "allRuns": "All runs",
+      "runOption": "Batch #{id}"
+    },
+    "headline": {
+      "cost": "Total AI cost",
+      "costDetail": "{calls} AI calls",
+      "perTicket": "Cost per ticket",
+      "perTicketDetail": "average · p95 {value}",
+      "time": "AI time per ticket",
+      "timeDetail": "median · p95 {value}",
+      "errors": "AI error rate",
+      "errorsDetail": "{count} failed calls",
+      "tickets": "Tickets",
+      "ticketsDetail": "{count} calls without a known price"
+    },
+    "byProcess": "Cost and time by AI process",
+    "byModel": "Cost and time by model",
+    "table": {
+      "process": "AI process",
+      "model": "Model",
+      "calls": "Calls",
+      "cost": "Cost",
+      "share": "Share",
+      "perCall": "Per call",
+      "p50": "p50",
+      "p95": "p95",
+      "errors": "Errors",
+      "tokens": "Tokens in / out",
+      "serves": "Used for",
+      "inUse": "In use",
+      "local": "Local · $0",
+      "empty": "No AI calls in this period."
+    },
+    "metricHelp": {
+      "share": "Share of total AI cost",
+      "p50": "Median latency",
+      "p95": "95th percentile latency",
+      "errors": "Share of calls that failed"
+    },
+    "trend": {
+      "title": "Daily cost and slowest responses",
+      "cost": "Cost",
+      "p95": "p95 latency",
+      "date": "Day",
+      "empty": "No daily data in this period."
+    },
+    "tickets": {
+      "title": "Every ticket",
+      "ticket": "Ticket",
+      "received": "Received",
+      "status": "Status",
+      "category": "Issue",
+      "cost": "AI cost",
+      "breakdown": "Cost by process",
+      "aiTime": "AI time",
+      "draftTime": "Drafting",
+      "errors": "Errors",
+      "sort": "Sort by",
+      "sortRecent": "Most recent",
+      "sortCost": "Highest cost",
+      "sortTime": "Slowest",
+      "notRecorded": "Detail not recorded (processed before tracking)",
+      "open": "Open the AI timeline of {id}",
+      "empty": "No processed tickets in this period.",
+      "range": "{from}–{to} of {total}",
+      "previous": "Previous page",
+      "next": "Next page",
+      "intake": "incl. intake {value}"
+    },
+    "timeline": {
+      "title": "AI timeline · {id}",
+      "close": "Close",
+      "loading": "Loading calls…",
+      "empty": "No AI calls were recorded for this ticket.",
+      "total": "{calls} calls · {cost} · AI time {time}",
+      "tokens": "{in} in / {out} out",
+      "attempt": "attempt {n}",
+      "error": "Error"
+    },
+    "unattributed": {
+      "title": "Not tied to a ticket",
+      "body": "Knowledge indexing, manual knowledge searches and model tests.",
+      "empty": "None in this period."
+    },
+    "processes": {
+      "intake": "Customer intake",
+      "classify": "Classification (Jev)",
+      "extract": "Detail extraction",
+      "draft": "Reply drafting",
+      "draft_search": "Knowledge search (drafting)",
+      "credential_check": "Credential check (Jev)",
+      "kb_index": "Knowledge indexing",
+      "kb_search": "Knowledge search (manual)",
+      "probe": "Model test"
+    },
+    "sources": {
+      "provider": "Reported by the provider",
+      "estimate": "Estimated from tokens",
+      "local": "Local · $0",
+      "unknown": "Price unknown"
+    },
+    "estimated": "est."
   }
 }

@@ -195,7 +195,6 @@ export type Insights = {
     total: number
     categories: Record<string, number>
   }[]
-  evaluation: null
 }
 export type EvaluationReport = {
   model: string
@@ -278,3 +277,96 @@ export type AiSummary = {
     Record<ModelStep, { provider: string; model: string; locality: ModelLocality; status: ProviderState }>
   >
 }
+
+export type AiProcess =
+  | "intake" | "classify" | "extract" | "draft" | "draft_search"
+  | "credential_check" | "kb_index" | "kb_search" | "probe"
+export type CostSource = "provider" | "estimate" | "local" | "unknown"
+export type UsageGroup = {
+  key: string
+  process?: AiProcess
+  provider?: string
+  model?: string
+  locality?: "local" | "cloud"
+  processes?: AiProcess[]
+  calls: number
+  cost_usd: number
+  cost_share: number | null
+  cost_per_call: number | null
+  latency_p50_ms: number | null
+  latency_p95_ms: number | null
+  error_rate: number | null
+  input_tokens: number
+  output_tokens: number
+  cost_sources: Partial<Record<CostSource, number>>
+}
+export type UsageDay = {
+  date: string
+  cost_usd: number
+  calls: number
+  errors: number
+  latency_p95_ms: number | null
+}
+export type UsageTotals = {
+  cost_usd: number
+  calls: number
+  errors: number
+  error_rate: number | null
+  unknown_cost_calls: number
+  tickets: number
+  cost_per_ticket_avg: number | null
+  cost_per_ticket_p95: number | null
+  ai_time_p50_ms: number | null
+  ai_time_p95_ms: number | null
+  draft_time_p50_ms: number | null
+  draft_time_p95_ms: number | null
+}
+export type UsageSummary = {
+  period: { from: string; to: string }
+  totals: UsageTotals
+  by_process: UsageGroup[]
+  by_model: UsageGroup[]
+  daily: UsageDay[]
+  unattributed: { cost_usd: number; calls: number; by_process: UsageGroup[] }
+}
+export type UsageTicket = {
+  result_id: number
+  ticket_id: number
+  external_id: string
+  run_id: number
+  received_at: string
+  processed_at: string | null
+  status: string
+  category: string | null
+  cost_usd: number
+  intake_cost_usd: number
+  total_cost_usd: number
+  cost_by_process: Partial<Record<AiProcess, number>>
+  ai_time_ms: number
+  draft_time_ms: number | null
+  intake_time_ms: number
+  calls: number
+  errors: number
+  detail_recorded: boolean
+}
+export type UsageTicketPage = { items: UsageTicket[]; total: number }
+export type AiCallView = {
+  id: number
+  process: AiProcess
+  provider: string
+  model: string
+  locality: "local" | "cloud"
+  started_at: string
+  latency_ms: number
+  input_tokens: number | null
+  output_tokens: number | null
+  cost_usd: number
+  cost_source: CostSource
+  status: "ok" | "error"
+  error: string | null
+  attempt: number
+  detail: Record<string, unknown>
+}
+export type TicketCalls = { result: UsageTicket; calls: AiCallView[] }
+export type UsagePeriod = "24h" | "7d" | "30d"
+export type UsageFilters = { period: UsagePeriod; process: AiProcess | "all"; model: string; runId: string }

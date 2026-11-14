@@ -58,6 +58,18 @@ export const timeLabel = (value: string) =>
   }).format(new Date(value))
 export const duration = (ms: number) =>
   ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`
+export const usd = (value?: number | null) =>
+  value == null ? "—"
+    : value === 0 ? "$0"
+      : value < 0.01 ? `$${value.toFixed(5)}`
+        : value < 1 ? `$${value.toFixed(4)}`
+          : `$${value.toFixed(2)}`
+export const msLabel = (value?: number | null) =>
+  value == null ? "—" : duration(Math.round(value))
+export const percent1 = (value?: number | null) =>
+  value == null ? "—" : `${(Math.round(value * 1000) / 10).toFixed(1)}%`
+export const countLabel = (value?: number | null) =>
+  value == null ? "—" : Math.round(value).toLocaleString("en-US")
 export const sizeLabel = (bytes: number) =>
   bytes < 1024 * 1024
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
