@@ -41,7 +41,7 @@ const InsightsPage = lazy(() =>
   }))
 )
 const EvaluationPage = lazy(() =>
-  import("@/features/insights/EvaluationPage").then((module) => ({
+  import("@/features/evaluation/EvaluationPage").then((module) => ({
     default: module.EvaluationPage,
   }))
 )

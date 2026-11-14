@@ -1,5 +1,5 @@
 import { normalizeCustomerPhone } from "./phone"
-import type { EvaluationReport, TicketInput } from "./types"
+import type { TicketInput } from "./types"
 
 function csvRows(text: string): string[][] {
   const rows: string[][] = []
@@ -88,40 +88,4 @@ export function parseTicketFile(
   if (badPhoneRows.length > 1)
     throw new Error(`Rows ${badPhoneRows.join(", ")} need a valid customer phone (07XXXXXXXXX).`)
   return tickets
-}
-
-export function validateEvaluation(data: unknown): EvaluationReport {
-  if (!data || typeof data !== "object")
-    throw new Error("Choose a JSON evaluation report.")
-  const report = data as Record<string, unknown>
-  if (
-    typeof report.model !== "string" ||
-    !report.model.trim() ||
-    report.split !== "test" ||
-    !Number.isInteger(report.sample_size) ||
-    Number(report.sample_size) < 1 ||
-    typeof report.generated_at !== "string" ||
-    Number.isNaN(Date.parse(report.generated_at))
-  ) {
-    throw new Error(
-      "A report needs model, split: test, a positive sample_size, and generated_at."
-    )
-  }
-  for (const key of ["classification_accuracy", "extraction_accuracy"]) {
-    if (
-      typeof report[key] !== "number" ||
-      !Number.isFinite(report[key]) ||
-      report[key] < 0 ||
-      report[key] > 1
-    ) {
-      throw new Error("Accuracy must be a number between 0 and 1.")
-    }
-  }
-  if (
-    !Array.isArray(report.confusion_cases) ||
-    !report.confusion_cases.every((item) => typeof item === "string")
-  ) {
-    throw new Error("confusion_cases must be an array of text descriptions.")
-  }
-  return report as EvaluationReport
 }

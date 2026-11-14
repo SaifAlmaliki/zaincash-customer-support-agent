@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseTicketFile, validateEvaluation } from "./imports"
+import { parseTicketFile } from "./imports"
 
 describe("ticket uploads", () => {
   it("reads quoted CSV fields, BOM, escaped quotes and Arabic without splitting messages", () => {
@@ -42,24 +42,5 @@ describe("ticket uploads", () => {
       /message/i
     )
     expect(() => parseTicketFile('{"hello":true}', "t.json")).toThrow(/array/i)
-  })
-})
-
-describe("evaluation evidence", () => {
-  it("requires a held-out split and finite fraction metrics", () => {
-    const report = {
-      model: "test-model",
-      split: "test",
-      sample_size: 100,
-      generated_at: "2026-10-07",
-      classification_accuracy: 0.87,
-      extraction_accuracy: 0.91,
-      confusion_cases: [],
-    }
-    expect(validateEvaluation(report).sample_size).toBe(100)
-    expect(() =>
-      validateEvaluation({ ...report, classification_accuracy: 91 })
-    ).toThrow()
-    expect(() => validateEvaluation({ ...report, split: "dev" })).toThrow()
   })
 })

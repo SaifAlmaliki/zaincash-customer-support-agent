@@ -98,11 +98,11 @@ export function TicketCostTable({ page, sort, onSort, offset, limit, onPage, onO
               <span>{fill(t.range, { from: offset + 1, to: offset + page.items.length, total: page.total })}</span>
               <Button variant="outline" size="icon-sm" aria-label={t.previous} disabled={offset === 0}
                       onClick={() => onPage(Math.max(0, offset - limit))}>
-                <ChevronRight className="rtl-flip" size={15} />
+                <ChevronRight className="usage-pager-icon" size={15} />
               </Button>
               <Button variant="outline" size="icon-sm" aria-label={t.next}
                       disabled={offset + page.items.length >= page.total} onClick={() => onPage(offset + limit)}>
-                <ChevronLeft className="rtl-flip" size={15} />
+                <ChevronLeft className="usage-pager-icon" size={15} />
               </Button>
             </div>
           </>

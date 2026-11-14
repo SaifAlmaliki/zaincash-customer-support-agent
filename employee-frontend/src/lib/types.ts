@@ -196,15 +196,6 @@ export type Insights = {
     categories: Record<string, number>
   }[]
 }
-export type EvaluationReport = {
-  model: string
-  split: "test"
-  sample_size: number
-  generated_at: string
-  classification_accuracy: number
-  extraction_accuracy: number
-  confusion_cases: string[]
-}
 export type ModelStep = "intake" | "classify" | "extract" | "draft" | "embed"
 export type ModelLocality = "local" | "cloud"
 export type ProviderState = "ready" | "missing_key" | "unreachable" | "model_missing"
