@@ -9,6 +9,8 @@ from typing import Any, Protocol
 from langchain_typesafe import Noul, NoulCriteria
 from langchain_typesafe.client import TypeSafeError
 
+from app.telemetry.calls import AiCall, Timer, record, short_error
+
 
 @dataclass(frozen=True)
 class CredentialCheck:
@@ -47,11 +49,17 @@ class JevCredentialChecker:
     score is returned unchanged; Task 5 applies the strict <0.2 acceptance gate.
     """
 
-    def __init__(self, runnable: Any, *, price_in_per_m: float) -> None:
+    def __init__(self, runnable: Any, *, price_in_per_m: float, model: str = "jev") -> None:
         if not _finite_nonnegative(price_in_per_m):
             raise ValueError("price_in_per_m must be finite and nonnegative")
         self._runnable = runnable
         self._price = price_in_per_m
+        self._model = model
+
+    def _record(self, timer: Timer, cost: float, tokens: Any, error: str | None) -> None:
+        record(AiCall("credential_check", "typesafe", self._model, "cloud", timer.started_at, timer.ms(),
+                      input_tokens=int(tokens) if tokens is not None else None, cost_usd=cost,
+                      cost_source="estimate", status="error" if error else "ok", error=error))
 
     def _cost(self, response: Any) -> float:
         tokens = _get(_get(response, "usage"), "input_tokens", 0)
@@ -73,6 +81,7 @@ class JevCredentialChecker:
                 false="No disclosure request; may warn against sharing secrets.",
             ),
         )}
+        timer = Timer()
         try:
             response = await self._runnable.ainvoke({"state": {"reply_ar": reply}, "questions": questions})
         except TypeSafeError as error:
@@ -80,8 +89,14 @@ class JevCredentialChecker:
             # Explicit cost and token-derived cost are alternatives, never additive.
             explicit = getattr(error, "cost_usd", None)
             cost = explicit if _finite_nonnegative(explicit) else self._cost(getattr(error, "body", None))
+            self._record(timer, cost, None, short_error(error))
             return CredentialCheck(None, True, cost)
+        except Exception as error:
+            self._record(timer, 0.0, None, short_error(error))
+            raise
         cost = self._cost(response)
+        tokens = _get(_get(response, "usage"), "input_tokens", None)
+        self._record(timer, cost, tokens if _finite_nonnegative(tokens) else None, None)
         nouls = _get(response, "nouls")
         answer = nouls.get("requests_credentials") if isinstance(nouls, Mapping) else None
         score = _get(answer, "noul")

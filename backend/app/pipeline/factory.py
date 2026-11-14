@@ -94,7 +94,8 @@ def build_pipeline(settings: Settings, mode: str, txn_repo: TransactionRepo, *,
                 investigation = SqlInvestigationRepo(txn_repo.session_factory)
             if credential_checker is None:
                 if models.ready(Step.CLASSIFY):
-                    credential_checker = JevCredentialChecker(jev_client, price_in_per_m=jev_price)
+                    credential_checker = JevCredentialChecker(
+                        jev_client, price_in_per_m=jev_price, model=models.choice(Step.CLASSIFY).model)
                 else:
                     credential_checker = DegradedCredentialChecker()
             info = models.draft_info()

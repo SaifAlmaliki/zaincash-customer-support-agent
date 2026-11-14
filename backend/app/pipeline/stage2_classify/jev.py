@@ -16,6 +16,7 @@ from app.pipeline.contracts import (
     NormalizedTicket,
 )
 from app.taxonomy import Taxonomy
+from app.telemetry.calls import AiCall, Timer, record, short_error
 
 NONE = "none"
 
@@ -157,11 +158,25 @@ class JevClassifier:
         self._t_jev, self._min_top = t_jev, min_top_prob
         self._price, self._max_chars = price_in_per_m, max_state_chars
 
+    async def _invoke(self, request: dict, check: str) -> Any:
+        timer = Timer()
+        try:
+            response = await self._runnable.ainvoke(request)
+        except Exception as exc:
+            record(AiCall("classify", "typesafe", self._model_id, "cloud", timer.started_at, timer.ms(),
+                          status="error", error=short_error(exc), detail={"check": check}))
+            raise
+        tokens = _input_tokens(response)
+        record(AiCall("classify", "typesafe", self._model_id, "cloud", timer.started_at, timer.ms(),
+                      input_tokens=tokens, cost_usd=tokens * self._price / 1e6,
+                      cost_source="estimate", detail={"check": check}))
+        return response
+
     async def classify(self, nt: NormalizedTicket, cands: Candidates) -> ClassifierOutput:
         state = build_state(nt, self._max_chars)
         main, order = await asyncio.gather(
-            self._runnable.ainvoke({"state": state, "questions": build_questions(self._tax, cands)}),
-            self._runnable.ainvoke({"state": state, "questions": build_order_check(self._tax)}),
+            self._invoke({"state": state, "questions": build_questions(self._tax, cands)}, "main"),
+            self._invoke({"state": state, "questions": build_order_check(self._tax)}, "order"),
         )
         cat = main.choices["category"]
         probs = {str(k): float(v) for k, v in cat.probabilities.items()}
