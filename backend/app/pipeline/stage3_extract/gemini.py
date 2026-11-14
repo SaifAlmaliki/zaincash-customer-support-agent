@@ -53,7 +53,9 @@ class GeminiExtractor:
         )
         [sample] = await self._llm.sample(prompt, GeminiFields, temperature=0.0, n=1)
         if sample.parsed is None:
-            raise LLMUnavailable(sample.error or "extraction failed")
+            error = LLMUnavailable(sample.error or "extraction failed")
+            error.cost_usd = sample.cost_usd
+            raise error
         picks = {
             f: verified_pick(getattr(sample.parsed, f), nt.match_text, GEMINI_EXTRACT_CONFIDENCE)
             for f in fields

@@ -82,8 +82,8 @@ async def fill_gaps(extracted: dict[str, ExtractedField], nt: NormalizedTicket,
         return extracted, 0.0
     try:
         picks, cost = await extractor.extract(nt, weak)
-    except LLMUnavailable:
-        return extracted, 0.0
+    except LLMUnavailable as exc:
+        return extracted, float(getattr(exc, "cost_usd", 0.0) or 0.0)
     updated = dict(extracted)
     for f in weak:
         pick = picks.get(f)

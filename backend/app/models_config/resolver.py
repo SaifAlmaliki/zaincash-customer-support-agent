@@ -73,14 +73,17 @@ class ActiveModels:
         provider = self.registry.get(choice.provider)
         timeout = self.settings.local_agent_timeout_s if provider.locality == "local" else EXTRACT_TIMEOUT_S
         override = choice.options.get("temperature")
-        price_in, price_out = self.token_prices(Step.EXTRACT)
+        prices = self.prices(Step.EXTRACT)
+        price_in, price_out = prices or (0.0, 0.0)
 
         def chat_factory(temperature: float):
             return provider.chat_model(choice.model, temperature=temperature if override is None else override,
                                        timeout_s=timeout, options=choice.options)
 
         return StructuredChatLLM(chat_factory=chat_factory, price_in_per_m=price_in,
-                                 price_out_per_m=price_out, max_retries=max_retries)
+                                 price_out_per_m=price_out, max_retries=max_retries,
+                                 provider=choice.provider, model=choice.model,
+                                 local=provider.locality == "local", price_known=prices is not None)
 
     def embedder(self):
         choice = self.choice(Step.EMBED)
