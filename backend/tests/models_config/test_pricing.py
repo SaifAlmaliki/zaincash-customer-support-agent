@@ -20,8 +20,22 @@ def test_env_defaults_keep_their_prices():
     assert prices_for(S, Step.EXTRACT, ModelChoice("openrouter", S.gemini_model), "cloud") == (
         S.price_gemini_flash_in, S.price_gemini_flash_out)
     assert prices_for(S, Step.DRAFT, ModelChoice("openrouter", S.draft_model), "cloud") == S.draft_token_prices
-    assert prices_for(S, Step.INTAKE, ModelChoice("openrouter", "anthropic/claude-sonnet-5.5"), "cloud") == (
-        S.price_anthropic_in, S.price_anthropic_out)
+    assert prices_for(S, Step.INTAKE, ModelChoice("openrouter", S.gemini_model), "cloud") == (
+        S.price_gemini_flash_in, S.price_gemini_flash_out)
+    anthropic_intake = Settings(_env_file=None, intake_model="anthropic/claude-sonnet-5.5")
+    assert prices_for(anthropic_intake, Step.INTAKE,
+                      ModelChoice("openrouter", "anthropic/claude-sonnet-5.5"), "cloud") == (
+        anthropic_intake.price_anthropic_in, anthropic_intake.price_anthropic_out)
+
+
+def test_env_prices_apply_only_to_the_env_default_model_of_the_step():
+    other = ModelChoice("openrouter", "anthropic/claude-haiku-x")
+    assert prices_for(S, Step.INTAKE, other, "cloud") is None
+    assert prices_for(S, Step.EXTRACT, other, "cloud") is None
+    assert prices_for(S, Step.DRAFT, other, "cloud") is None
+    # The .env Gemini model is the default for extract, not for drafting when Anthropic drafts.
+    assert prices_for(S, Step.DRAFT, ModelChoice("openrouter", S.gemini_model), "cloud") is None
+    assert prices_for(S, Step.CLASSIFY, ModelChoice("typesafe", "jev-other"), "cloud") is None
 
 
 def test_unknown_price_is_never_estimated():

@@ -28,6 +28,8 @@ def add_calls(session: Session, calls: Iterable[AiCall], **links: Any) -> None:
     rows = call_rows(calls, **links)
     if not rows:
         return
+    # The owner's pending changes must fail as the owner's error, not as a recording failure.
+    session.flush()
     try:
         with session.begin_nested():
             session.add_all(rows)

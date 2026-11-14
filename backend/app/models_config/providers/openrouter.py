@@ -89,10 +89,11 @@ class OpenRouterProvider:
                               timeout=int(timeout_s * 1000), max_retries=0,
                               model_kwargs={"retries": None}, **extra)
 
-    def embedder(self, model: str, *, dimensions: int) -> OpenAICompatibleEmbedder:
+    def embedder(self, model: str, *, dimensions: int,
+                 price_per_m: float | None = None) -> OpenAICompatibleEmbedder:
         return OpenAICompatibleEmbedder(
             model=model, dimensions=dimensions, url=f"{OPENROUTER_API}/embeddings",
-            api_key=self._settings.openrouter_api_key, price_per_m=self._settings.price_embedding_in,
+            api_key=self._settings.openrouter_api_key, price_per_m=price_per_m,
             transport=self._transport, provider="openrouter",
         )
 

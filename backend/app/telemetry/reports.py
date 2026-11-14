@@ -14,7 +14,8 @@ from app.telemetry.db_models import AiCallRow
 
 DEFAULT_DAYS = 7
 DRAFT_MS = cast(cast(literal_column(
-    "jsonb_path_query_first(ticket_results.agent_trace, '$[*] ? (@.kind == \"draft\").duration_ms')"
+    "jsonb_path_query_first(ticket_results.agent_trace, "
+    "'$[*] ? (@.kind == \"draft\" && @.duration_ms.type() == \"number\").duration_ms')"
 ), Text), Float)
 
 
@@ -123,9 +124,8 @@ def _ticket_query(f: UsageFilter):
 def _intake_totals():
     return (select(AiCallRow.run_id, AiCallRow.ticket_id,
                    func.sum(case((AiCallRow.process == "intake", AiCallRow.cost_usd), else_=0.0)).label("intake_cost"),
-                   func.sum(case((AiCallRow.process == "intake", AiCallRow.latency_ms), else_=0)).label("intake_ms"),
-                   func.count().label("calls"),
-                   func.sum(case((AiCallRow.status == "error", 1), else_=0)).label("errors"))
+                   func.sum(case((AiCallRow.process == "intake", AiCallRow.latency_ms), else_=0)).label("intake_ms"))
+            .where(AiCallRow.process == "intake", AiCallRow.ticket_id.is_not(None))
             .group_by(AiCallRow.run_id, AiCallRow.ticket_id).subquery())
 
 

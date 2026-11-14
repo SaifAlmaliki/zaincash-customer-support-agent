@@ -171,7 +171,7 @@ async def test_sql_defaults_retrieve_real_indexed_evidence():
         from tests.models_config_fakes import FakeProvider, fake_registry
 
         class PaidProvider(FakeProvider):
-            def embedder(self, model, *, dimensions):
+            def embedder(self, model, *, dimensions, price_per_m=None):
                 return PaidEmbedder()
 
         models = ActiveModels(settings, {}, fake_registry(settings, openrouter=PaidProvider("openrouter")))

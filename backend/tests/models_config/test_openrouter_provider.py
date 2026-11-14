@@ -74,6 +74,22 @@ async def test_embedder_posts_to_openrouter_with_dimensions():
     assert json.loads(seen[0].content)["dimensions"] == 768
 
 
+async def test_embedder_estimates_only_with_a_known_price():
+    def handler(request):
+        return httpx.Response(200, json={"data": [{"index": 0, "embedding": [1.0] + [0.0] * 767}],
+                                         "usage": {"prompt_tokens": 1000}})
+
+    from app.telemetry.calls import call_context
+
+    with call_context() as calls:
+        await _provider(handler).embedder("other/embedder", dimensions=768).embed(["x"])
+        priced = await _provider(handler).embedder("other/embedder", dimensions=768,
+                                                   price_per_m=0.5).embed(["x"])
+    unknown, estimate = calls.calls
+    assert (unknown.cost_source, unknown.cost_usd) == ("unknown", 0.0)
+    assert estimate.cost_source == "estimate" and priced.cost_usd == pytest.approx(0.0005)
+
+
 def test_typesafe_status_and_unsupported_chat():
     provider = TypeSafeProvider(Settings(_env_file=None, typesafe_api_key=""))
     assert provider.status().state == "missing_key"

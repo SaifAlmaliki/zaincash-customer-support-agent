@@ -28,7 +28,7 @@ class TypeSafeProvider:
                    options: Mapping[str, Any]):
         raise UnsupportedOperation("TypeSafe only provides the Jev classifier.")
 
-    def embedder(self, model: str, *, dimensions: int):
+    def embedder(self, model: str, *, dimensions: int, price_per_m: float | None = None):
         raise UnsupportedOperation("TypeSafe only provides the Jev classifier.")
 
     def classifier(self, model: str):

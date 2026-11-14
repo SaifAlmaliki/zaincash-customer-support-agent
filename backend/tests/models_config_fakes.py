@@ -47,8 +47,9 @@ class FakeProvider:
             raise AssertionError(f"{self.name} chat was not expected")
         return self.chat(model) if callable(self.chat) else self.chat
 
-    def embedder(self, model, *, dimensions):
+    def embedder(self, model, *, dimensions, price_per_m=None):
         embedder = NamedEmbedder(model, fail_for=self.embed_fail_for)
+        embedder.price_per_m = price_per_m
         self.embedders.append(embedder)
         return embedder
 

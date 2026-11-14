@@ -46,7 +46,9 @@ def seeded():
                             processed_at=NOW - timedelta(hours=1)),
             TicketResultRow(run_id=run.id, ticket_id=tickets[1].id, status="escalated", category="fraud_report",
                             category_probs={}, flags={}, extracted={}, escalation_reasons=[], citations=[],
-                            agent_trace=[], escalated=True, latency_ms=6000, cost_usd=0.002,
+                            agent_trace=[{"kind": "draft", "duration_ms": None},
+                                         {"kind": "draft", "duration_ms": "fast"}],  # malformed durations
+                            escalated=True, latency_ms=6000, cost_usd=0.002,
                             processed_at=NOW - timedelta(hours=1)),
             TicketResultRow(run_id=run.id, ticket_id=tickets[2].id, status="pending_review", category="other",
                             category_probs={}, flags={}, extracted={}, escalation_reasons=[], citations=[],
@@ -123,6 +125,17 @@ def test_ticket_rows_include_intake_cost(seeded):
     assert by_time["items"][0]["ai_time_ms"] == 6000 and by_time["total"] == 3
     filtered = client.get("/api/ai-usage/tickets", params={"model": "ollama:qwen3:4b"}).json()
     assert [i["result_id"] for i in filtered["items"]] == [ids["results"][1]]
+
+
+def test_non_numeric_draft_durations_do_not_break_reports(seeded):
+    client, ids = seeded
+    summary = client.get("/api/ai-usage/summary")
+    assert summary.status_code == 200
+    assert summary.json()["totals"]["draft_time_p50_ms"] == pytest.approx(1500)
+    page = client.get("/api/ai-usage/tickets")
+    assert page.status_code == 200
+    malformed = next(i for i in page.json()["items"] if i["result_id"] == ids["results"][1])
+    assert malformed["draft_time_ms"] is None
 
 
 def test_ticket_timeline(seeded):

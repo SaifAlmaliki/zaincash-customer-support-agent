@@ -87,7 +87,9 @@ class ActiveModels:
 
     def embedder(self):
         choice = self.choice(Step.EMBED)
-        return self.registry.get(choice.provider).embedder(choice.model, dimensions=EMBED_DIMENSIONS)
+        prices = self.prices(Step.EMBED)
+        return self.registry.get(choice.provider).embedder(
+            choice.model, dimensions=EMBED_DIMENSIONS, price_per_m=prices[0] if prices else None)
 
     def jev_client(self) -> Any:
         choice = self.choice(Step.CLASSIFY)

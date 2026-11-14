@@ -123,7 +123,8 @@ class OllamaProvider:
                           num_ctx=self._num_ctx, reasoning=options.get("think"), client_kwargs={"timeout": timeout_s},
                           validate_model_on_init=False)
 
-    def embedder(self, model: str, *, dimensions: int) -> OpenAICompatibleEmbedder:
+    def embedder(self, model: str, *, dimensions: int,
+                 price_per_m: float | None = None) -> OpenAICompatibleEmbedder:
         return OpenAICompatibleEmbedder(model=model, dimensions=dimensions,
                                         url=f"{self._base}/v1/embeddings", send_dimensions=False,
                                         transport=self._transport, provider="ollama", local=True)

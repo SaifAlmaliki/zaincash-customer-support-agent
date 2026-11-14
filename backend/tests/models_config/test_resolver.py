@@ -63,6 +63,22 @@ def test_a_saved_model_removed_from_the_provider_is_missing_and_not_ready():
     assert steps["extract"]["status"] == "model_missing" and steps["draft"]["status"] == "ready"
 
 
+def test_embedder_receives_the_known_price_or_none():
+    settings = _settings()
+    default = fake_registry(settings)
+    ActiveModels(settings, {}, default).embedder()
+    assert default.get("openrouter").embedders[-1].price_per_m == settings.price_embedding_in
+
+    unknown = fake_registry(settings)
+    ActiveModels(settings, {Step.EMBED: ModelChoice("openrouter", "other/embedder")}, unknown).embedder()
+    assert unknown.get("openrouter").embedders[-1].price_per_m is None
+
+    saved = fake_registry(settings)
+    choice = ModelChoice("openrouter", "other/embedder", {"price_in_per_m": 0.13, "price_out_per_m": 0.0})
+    ActiveModels(settings, {Step.EMBED: choice}, saved).embedder()
+    assert saved.get("openrouter").embedders[-1].price_per_m == 0.13
+
+
 def test_unknown_model_availability_does_not_block_a_ready_provider():
     settings = _settings()
     registry = fake_registry(settings, ollama=FakeProvider("ollama", locality="local"))

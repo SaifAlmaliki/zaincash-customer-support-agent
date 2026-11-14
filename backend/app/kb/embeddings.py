@@ -36,7 +36,7 @@ def _nonnegative_number(value: Any) -> float:
     return number
 
 
-def _response_cost(payload: dict, price_per_m: float) -> tuple[float, str, int | None]:
+def _response_cost(payload: dict, price_per_m: float | None) -> tuple[float, str, int | None]:
     usage = payload.get("usage")
     if usage is None:
         usage = {}
@@ -54,6 +54,8 @@ def _response_cost(payload: dict, price_per_m: float) -> tuple[float, str, int |
     if tokens is None:
         # No token usage means no estimate; do not invent a tokenizer/character estimate.
         return 0.0, "unknown", None
+    if price_per_m is None:
+        return 0.0, "unknown", tokens
     return _nonnegative_number(_nonnegative_number(tokens) / 1_000_000 * price_per_m), "estimate", tokens
 
 
@@ -100,7 +102,7 @@ class OpenAICompatibleEmbedder:
 
     def __init__(
         self, *, model: str, dimensions: int, url: str, api_key: str = "",
-        price_per_m: float = 0.0, send_dimensions: bool = True,
+        price_per_m: float | None = 0.0, send_dimensions: bool = True,
         transport: httpx.AsyncBaseTransport | None = None,
         provider: str = "openrouter", local: bool = False,
     ) -> None:

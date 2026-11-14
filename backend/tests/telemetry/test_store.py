@@ -57,6 +57,19 @@ def test_add_calls_failure_keeps_the_owner_transaction(sf, caplog):
 
 
 @pytest.mark.integration
+def test_add_calls_surfaces_the_owners_own_flush_failure(sf, caplog):
+    from sqlalchemy.exc import IntegrityError
+
+    with sf() as session:
+        session.add(AiCallRow(started_at=NOW, process="kb_index", provider="p", model="m", locality="cloud",
+                              latency_ms=1, cost_usd=0.0, cost_source="unknown", status="ok", attempt=1,
+                              ticket_id=999_999, detail={}))  # the owner's pending FK violation
+        with caplog.at_level(logging.WARNING), pytest.raises(IntegrityError):
+            add_calls(session, [CALL])
+    assert "AI call recording failed" not in caplog.text
+
+
+@pytest.mark.integration
 def test_persist_calls_own_transaction_and_swallow_errors(sf, caplog):
     persist_calls(sf, [CALL])
     with sf() as session:
