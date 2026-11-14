@@ -25,6 +25,7 @@ from app.intake.repository import (
 from app.models_config.resolver import ActiveModels
 from app.pipeline.contracts import Ticket
 from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
+from app.telemetry.intake import link_intake_calls
 
 
 @dataclass
@@ -102,6 +103,7 @@ class SubmissionService:
         )
         session.add(placeholder)
         session.flush()
+        link_intake_calls(session, row.id, run_id=run_id, ticket_id=stored.id)
         run = session.get(RunRow, run_id)
         run.counts = {"expected_total": 1, "total": 0, "by_status": {}}
         messages = [item.model_dump(mode="json") for item in load_messages(session, row.id)]

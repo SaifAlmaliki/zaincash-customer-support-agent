@@ -25,6 +25,7 @@ from app.intake.repository import (
     turn_context,
 )
 from app.intake.sanitize import sanitize_intake_text
+from app.telemetry.intake import add_intake_calls
 
 
 def _jsonable(value):
@@ -131,6 +132,7 @@ class TurnStore:
             operation.status = "completed"
             operation.error_code = None
             operation.usage = [*(operation.usage or []), *self._trace(claim, result.trace)]
+            add_intake_calls(session, claim.session_id, self._trace(claim, result.trace))
             operation.result_json = {"revision": publication, "review_id": None if review is None else str(review.id)}
             operation.updated_at = row.updated_at
             session.commit()
@@ -146,6 +148,7 @@ class TurnStore:
             operation.status = "failed"
             operation.error_code = error_code
             operation.usage = [*(operation.usage or []), *self._trace(claim, trace)]
+            add_intake_calls(session, claim.session_id, self._trace(claim, trace))
             operation.updated_at = now
             row.turn_status = "retryable_failure"
             row.error_code = error_code
@@ -271,7 +274,9 @@ class TurnStore:
             operation = self._operation(session, claim.session_id, claim.request_id)
             if operation is None:
                 return
-            operation.usage = [*(operation.usage or []), *[{**item, "rejected": True} for item in self._trace(claim, trace)]]
+            rejected = [{**item, "rejected": True} for item in self._trace(claim, trace)]
+            operation.usage = [*(operation.usage or []), *rejected]
+            add_intake_calls(session, claim.session_id, rejected)
             operation.updated_at = datetime.now(UTC)
             session.commit()
 

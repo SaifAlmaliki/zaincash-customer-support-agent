@@ -5,6 +5,7 @@ import asyncio
 import base64
 import json
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -23,9 +24,11 @@ from app.intake.errors import InvalidEvidence, ModelUnavailable
 from app.intake.evidence import merge_analysis
 from app.intake.policy import interview_plan
 from app.intake.review import validate_review_numbers
+from app.models_config.pricing import prices_for
 from app.models_config.providers.registry import ProviderRegistry
 from app.models_config.steps import env_defaults, intake_timeout_s
 from app.models_config.types import ModelChoice, Step
+from app.telemetry.calls import cost_for, count
 
 _PROMPTS = Path(__file__).with_name("prompts")
 _INTAKE_PROMPT = (_PROMPTS / "intake_v1.md").read_text(encoding="utf-8")
@@ -93,6 +96,7 @@ class IntakeModel:
         while True:
             budget.consume()
             started = time.monotonic()
+            started_at = datetime.now(UTC)
             try:
                 async with asyncio.timeout(budget.remaining_s()):
                     result = await self._runnable(schema, budget).ainvoke([
@@ -101,11 +105,11 @@ class IntakeModel:
             except ModelUnavailable:
                 raise
             except Exception as exc:
-                _record(budget, self._model_name(budget), exc, None, started)
+                _record(budget, self._identity(budget, schema), exc, None, started, started_at)
                 if _transient(exc) and budget.used < budget.max_requests and budget.remaining_s() > 0:
                     continue
                 raise ModelUnavailable("The assistant is temporarily unavailable.", trace=budget.trace) from exc
-            _record(budget, self._model_name(budget), None, result, started)
+            _record(budget, self._identity(budget, schema), None, result, started, started_at)
             parsed = result.get("parsed") if isinstance(result, dict) else None
             try:
                 if not isinstance(parsed, schema):
@@ -124,8 +128,15 @@ class IntakeModel:
                 raise ModelUnavailable("The assistant returned an unusable response.", trace=budget.trace) from exc
             return ModelCall(parsed, list(budget.trace[trace_start:]))
 
-    def _model_name(self, budget: ModelBudget) -> str:
-        return self._choice(budget).model
+    def _identity(self, budget: ModelBudget, schema: type) -> dict:
+        choice = self._choice(budget)
+        try:
+            locality = self._registry.get(choice.provider).locality
+        except Exception:
+            locality = "cloud"
+        return {"model": choice.model, "provider": choice.provider, "locality": locality,
+                "kind": "summarize" if schema is ReviewText else "analyze",
+                "prices": prices_for(self.settings, Step.INTAKE, choice, locality)}
 
 
 def _transient(exc: Exception) -> bool:
@@ -133,7 +144,8 @@ def _transient(exc: Exception) -> bool:
     return isinstance(exc, httpx.TransportError) or (isinstance(status, int) and (status in {408, 429} or status >= 500))
 
 
-def _record(budget: ModelBudget, model: str, error: Exception | None, result, started: float) -> None:
+def _record(budget: ModelBudget, identity: dict, error: Exception | None, result, started: float,
+            started_at: datetime) -> None:
     usage = {}
     cost = None
     if isinstance(result, dict):
@@ -142,11 +154,20 @@ def _record(budget: ModelBudget, model: str, error: Exception | None, result, st
         metadata = getattr(raw, "response_metadata", None) or {}
         if metadata.get("cost") is not None:
             cost = float(metadata["cost"])
+    estimate, source = cost_for(input_tokens=count(usage.get("input_tokens")),
+                                output_tokens=count(usage.get("output_tokens")), provider_cost=cost,
+                                prices=identity["prices"], local=identity["locality"] == "local")
     budget.trace.append({
-        "model": model,
+        "model": identity["model"],
+        "provider": identity["provider"],
+        "locality": identity["locality"],
+        "kind": identity["kind"],
+        "started_at": started_at.isoformat(),
         "latency_ms": round((time.monotonic() - started) * 1000),
         "usage": usage or None,
         "cost_usd": cost,
+        "cost_source": source,
+        "cost_estimate_usd": estimate if source == "estimate" else None,
         "error": None if error is None else type(error).__name__,
     })
 
