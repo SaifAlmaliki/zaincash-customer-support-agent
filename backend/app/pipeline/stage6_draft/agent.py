@@ -33,6 +33,7 @@ from app.pipeline.stage6_draft.investigation import SqlInvestigationRepo
 from app.pipeline.stage6_draft.model_info import DraftModelInfo
 from app.pipeline.stage6_draft.tools import _bounded, _json, build_tools
 from app.pipeline.state import PipelineState
+from app.telemetry.calls import AiCall, Timer, cost_for, count, record
 
 PROMPT_VERSION = "draft_v1"
 SYSTEM_PROMPT = Path(__file__).with_name("prompts").joinpath(f"{PROMPT_VERSION}.md").read_text(encoding="utf-8")
@@ -68,6 +69,24 @@ class _ModelUsage(AsyncCallbackHandler):
         self.context, self.info = context, info
         self.seen: set[str] = set()
         self.cost_usd = 0.0
+        self.timers: dict[str, Timer] = {}
+
+    async def on_chat_model_start(self, serialized, messages, *, run_id, **kwargs):
+        self.timers[str(run_id)] = Timer()
+
+    def _ledger(self, run_id, *, model, usage, reported, error_type=None, cost=None):
+        timer = self.timers.pop(str(run_id), None) or Timer()
+        tokens_in, tokens_out = count(usage.get("input_tokens")), count(usage.get("output_tokens"))
+        local = self.info.locality == "local"
+        if cost is None:
+            prices = self.info.token_prices if self.info.prices_known else None
+            cost, source = cost_for(input_tokens=tokens_in, output_tokens=tokens_out,
+                                    provider_cost=reported, prices=prices, local=local)
+        else:
+            source = "local" if local else "provider" if reported is not None else "unknown"
+        record(AiCall("draft", self.info.provider, model, self.info.locality, timer.started_at, timer.ms(),
+                      input_tokens=tokens_in, output_tokens=tokens_out, cost_usd=cost, cost_source=source,
+                      status="error" if error_type else "ok", error=error_type))
 
     async def on_llm_end(self, response, *, run_id, **kwargs):
         for batch in response.generations:
@@ -76,9 +95,9 @@ class _ModelUsage(AsyncCallbackHandler):
                 if message is None:
                     continue
                 self._record_response(message.response_metadata or {}, message.usage_metadata or {},
-                                      fallback_id=message.id or run_id)
+                                      fallback_id=message.id or run_id, run_id=run_id)
 
-    def _record_response(self, metadata, usage, *, fallback_id, error_type=None):
+    def _record_response(self, metadata, usage, *, fallback_id, error_type=None, run_id=None):
         response_id = str(metadata.get("id") or fallback_id)
         if response_id in self.seen:
             return
@@ -97,11 +116,14 @@ class _ModelUsage(AsyncCallbackHandler):
         if error_type:
             entry["error_type"] = error_type
         self.context.trace.append(entry)
+        reported_cost = float(reported) if source == "provider" else None
+        self._ledger(run_id, model=entry["model"], usage=usage, reported=reported_cost,
+                     error_type=error_type)
 
     async def on_llm_error(self, error, *, run_id, **kwargs):
         if _has_response_usage(error):
             self._record_response(error.response_metadata, error.usage_metadata,
-                                  fallback_id=run_id, error_type=type(error).__name__)
+                                  fallback_id=run_id, error_type=type(error).__name__, run_id=run_id)
             return
         partial = kwargs.get("response")
         has_response = partial is not None and any(
@@ -115,6 +137,8 @@ class _ModelUsage(AsyncCallbackHandler):
         self.cost_usd += cost
         self.context.trace.append({"kind": "model", "status": "error", "model": self.info.model,
                                    "error_type": type(error).__name__, "cost_usd": cost})
+        self._ledger(run_id, model=self.info.model, usage={}, reported=None,
+                     error_type=type(error).__name__, cost=cost)
 
 
 class _Execution(AgentMiddleware):
