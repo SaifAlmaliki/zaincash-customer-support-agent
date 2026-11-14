@@ -42,7 +42,7 @@ def health(request: Request, session: SessionDep):
               else "ready" if ready else "indexing" if "indexing" in states
               else "failed" if "failed" in states else "empty")
     return {"database": "connected", "configured_modes": modes,
-            "capabilities": {"drafting": ready, "rag_indexing": configured, "evaluation": False},
+            "capabilities": {"drafting": ready, "rag_indexing": configured, "evaluation": True},
             "knowledge": {"enabled": settings.rag_enabled, "configured": configured, "ready": ready,
                           "status": status, "indexed_document_count": indexed_count,
                           "embedding_model": embedding_model, "embedding_dimensions": settings.embed_dim},
@@ -76,4 +76,4 @@ def insights(session: SessionDep):
                       "categories": dict(Counter(row.category or "unclassified" for row in selected))})
     return {"categories": dict(Counter(row.category or "unclassified" for row in rows)),
             "reasons": dict(Counter(reason for row in rows for reason in row.escalation_reasons)),
-            "weeks": weeks, "total": len(rows), "evaluation": None}
+            "weeks": weeks, "total": len(rows)}

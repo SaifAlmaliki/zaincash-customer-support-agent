@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from starlette.concurrency import run_in_threadpool
 
-from app.api import admin, customers, intake, knowledge, results, runs, workspace
+from app.api import admin, ai_usage, customers, intake, knowledge, results, runs, workspace
 from app.config import Settings
 from app.db.models import RunRow
 from app.db.session import initialize_database, make_engine, make_sessionmaker
@@ -119,7 +119,7 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
         return JSONResponse(status_code=status, content={"detail": {"code": error.code, "message": error.message}})
 
     for router in (workspace.router, results.router, customers.router, runs.router, knowledge.router, intake.router,
-                   admin.router):
+                   admin.router, ai_usage.router):
         app.include_router(router)
     return app
 
