@@ -7,7 +7,6 @@
   "attach": "Attach screenshots",
   "remove": "Remove",
   "review": "Review your report",
-  "reviewNow": "Review what I have",
   "partial": "Some details are still unknown",
   "submit": "Submit ticket",
   "unknown": "Unknown",
@@ -94,9 +93,6 @@
   "notSent": "Not sent",
   "resend": "Try again",
   "empty": "Describe what happened, or attach a screenshot of the error.",
-  "progressLabel": "Details: {done} of {total}",
-  "stillNeeded": "still needed",
-  "notKnown": "Not known",
   "complete": "Details complete",
   "missingList": "Missing: {items}",
   "listSeparator": ", ",
@@ -104,6 +100,5 @@
   "groupMissing": "Missing",
   "groupUnknown": "Not known",
   "answer": "Answer",
-  "answerRemembered": "Remembered? Answer",
-  "detailSave": "Save"
+  "answerRemembered": "Remembered? Answer"
 }

@@ -399,41 +399,15 @@ const transferProgress: ProgressItem[] = [
   { key: "recipient_phone", tier: "required", status: "missing", display: null },
   { key: "txn_ref", tier: "ask_once", status: "unknown", display: null },
 ]
-const firstMessage = { id: "m1", role: "user" as const, text: "Transfer failed", language: "en" as const, created_at: "2026-10-18T09:00:00Z", attachment_ids: [] }
 
-it("shows interview progress with the collected values", async () => {
-  const user = userEvent.setup()
-  const { controller } = await collectingController("en", { progress: transferProgress, messages: [firstMessage] })
+it("keeps the follow-up question and hides the details checklist", async () => {
+  const { controller } = await collectingController("ar", { ...asking(debited), progress: transferProgress })
   render(<IntakePage controller={controller} />)
-  await user.click(await screen.findByRole("button", { name: "Details: 3 of 4" }))
-  const list = screen.getByRole("list", { name: "Details: 3 of 4" })
-  expect(within(list).getByText("Amount · 50000")).toBeVisible()
-  expect(within(list).getByText("Funds deducted · Yes")).toBeVisible()
-  expect(within(list).getByText("Recipient number")).toBeVisible()
-  expect(within(list).getByText("Reference · Not known")).toBeVisible()
-})
-
-it("fills a missing detail from a small dialog on the progress chip", async () => {
-  const user = userEvent.setup()
-  const { controller, api } = await collectingController("en", { progress: transferProgress, messages: [firstMessage] })
-  render(<IntakePage controller={controller} />)
-  await user.click(await screen.findByRole("button", { name: "Details: 3 of 4" }))
-  await user.click(screen.getByRole("button", { name: /Recipient number/ }))
-  const dialog = screen.getByRole("dialog", { name: "Recipient number" })
-  await user.type(within(dialog).getByRole("textbox", { name: "Recipient number" }), "07709876543")
-  await user.click(within(dialog).getByRole("button", { name: "Save" }))
-  await waitFor(() => expect(api.message).toHaveBeenCalled())
-  expect(vi.mocked(api.message).mock.calls[0]?.[1].text).toBe("Recipient number: 07709876543")
-  expect(screen.queryByRole("dialog", { name: "Recipient number" })).not.toBeInTheDocument()
-})
-
-it("requests an early review from the progress strip", async () => {
-  const user = userEvent.setup()
-  const { controller, api } = await collectingController("en", { progress: transferProgress, messages: [firstMessage] })
-  render(<IntakePage controller={controller} />)
-  expect(within(screen.getByRole("banner")).queryByRole("button", { name: "Review what I have" })).not.toBeInTheDocument()
-  await user.click(screen.getByRole("button", { name: "Review what I have" }))
-  expect(vi.mocked(api.review).mock.calls[0]?.[1]).toMatchObject({ allow_partial: true, language: "en" })
+  expect(await screen.findByRole("button", { name: "اي" })).toBeVisible()
+  expect(screen.getByText("ليش نسأل: حتى نعرف إذا الفلوس طلعت من محفظتك.")).toBeVisible()
+  expect(screen.queryByRole("button", { name: /التفاصيل/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole("button", { name: "راجع المعلومات الحالية" })).not.toBeInTheDocument()
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
 })
 
 const groupedReview = {

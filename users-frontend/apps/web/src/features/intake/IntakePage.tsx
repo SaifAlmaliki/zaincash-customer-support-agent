@@ -9,7 +9,6 @@ import { Button } from "@workspace/ui/components/button"
 import { AgentChat, type AgentMessage } from "@/components/ui/agent-chat"
 import { quietButton, solidButton } from "./buttons"
 import { PhoneGate } from "./PhoneGate"
-import { ProgressStrip } from "./ProgressStrip"
 import { ReceiptPanel } from "./ReceiptPanel"
 import { ReviewPanel } from "./ReviewPanel"
 import { OwnedImage } from "./OwnedImage"
@@ -225,9 +224,6 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
     session?.turn_status === "processing" || snapshot.pollingExhausted
   const showRetry =
     session?.turn_status === "retryable_failure" || Boolean(snapshot.error) || awaitingResend
-  const showReviewNow = Boolean(session && !session.review && !session.receipt)
-  const showProgress = Boolean(showReviewNow && (session?.progress.length || hasContent))
-
   return (
     <div className="intake-shell" dir={direction} lang={locale}>
       <div className="intake-frame">
@@ -499,27 +495,10 @@ export function IntakePage({ controller }: { controller: IntakeController }) {
                   }}
                   threadFooter={threadFooter}
                   toolbar={
-                    showProgress ||
                     previews.length ||
                     statusText ||
                     snapshot.resumeUnavailable ? (
                       <>
-                        {showProgress && session ? (
-                          <ProgressStrip
-                            items={session.progress}
-                            copy={text}
-                            reviewDisabled={snapshot.busy || session.turn_status === "processing"}
-                            pending={pending}
-                            onReviewNow={() => {
-                              reviewRequest.current = true
-                              void controller.requestReview(true, locale)
-                            }}
-                            onFill={(content, answerTo) => {
-                              if (answerTo) answer(content, answerTo)
-                              else void controller.send(content, locale, [])
-                            }}
-                          />
-                        ) : null}
                         {previews.map((preview) => (
                           <progress
                             key={preview.id}

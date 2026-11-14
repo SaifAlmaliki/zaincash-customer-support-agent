@@ -111,3 +111,26 @@ def test_saved_choice_keeps_catalog_prices_but_hides_them(make_client):
         assert "price_in_per_m" not in saved.json()["options"]
         assert app.state.model_store.choice(Step.DRAFT).options["price_in_per_m"] == 1.5
         assert app.state.model_store.active().prices(Step.DRAFT) == (1.5, 6.0)
+
+
+def test_model_tests_are_recorded(make_client):
+    from sqlalchemy import select
+
+    from app.telemetry.db_models import AiCallRow
+
+    def chat(model):
+        if model == "missing":
+            raise RuntimeError("model not found")
+        return _tool_chat(model)
+
+    with make_client() as client:
+        client.app.state.model_store.registry.get("ollama").chat = chat
+        body = {"provider": "ollama", "model": "qwen3:4b", "options": {"think": False}}
+        client.post("/api/admin/models/test", headers=HEADERS, json={"step": "draft", **body})
+        client.post("/api/admin/models/test", headers=HEADERS,
+                    json={"step": "draft", "provider": "ollama", "model": "missing"})
+        with client.app.state.session_factory() as session:
+            rows = session.scalars(select(AiCallRow).order_by(AiCallRow.id)).all()
+        assert [(r.process, r.locality, r.cost_source) for r in rows] == [("probe", "local", "local")] * 2
+        assert rows[0].status == "ok" and rows[0].detail == {"step": "draft"}
+        assert rows[1].status == "error"

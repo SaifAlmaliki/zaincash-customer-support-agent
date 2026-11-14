@@ -2,20 +2,6 @@ import type { Activity } from "./controller"
 import type { IntakeCopy } from "./copy"
 import type { AnswerKind, Choice } from "./types"
 
-const ANSWER_KINDS: Record<string, AnswerKind> = {
-  debited: "yes_no",
-  recipient_outcome: "yes_no",
-  repeats: "yes_no",
-  amount: "amount",
-  recipient_phone: "phone",
-  txn_ref: "reference",
-  date: "date",
-}
-
-export function answerKind(key: string): AnswerKind {
-  return ANSWER_KINDS[key] ?? "text"
-}
-
 export type ComposerHint = { placeholder: string; inputMode: "text" | "tel" | "numeric" }
 
 export function composerHint(kind: AnswerKind | null, copy: IntakeCopy): ComposerHint {

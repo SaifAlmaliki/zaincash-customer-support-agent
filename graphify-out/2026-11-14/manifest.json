@@ -180,9 +180,9 @@
     "semantic_hash": ""
   },
   "backend/app/pipeline/stage4_lookup/lookup.py": {
-    "mtime": 1793643708.20461,
-    "seen": 1793661526.3072352,
-    "ast_hash": "00d20734112fb757e34b8e5dbcbd8eff",
+    "mtime": 1794649974.147986,
+    "seen": 1794649989.9315603,
+    "ast_hash": "acce6d586b017ea51eb093438f73de0e",
     "semantic_hash": ""
   },
   "backend/app/pipeline/stage5_decide/rules.py": {
@@ -330,10 +330,10 @@
     "semantic_hash": ""
   },
   "backend/tests/test_lookup.py": {
-    "mtime": 1791394927.705552,
-    "seen": 1792231636.9874084,
-    "ast_hash": "f371b944f8e0ffe1462e1458c4b52743",
-    "semantic_hash": "f371b944f8e0ffe1462e1458c4b52743"
+    "mtime": 1794649945.873374,
+    "seen": 1794649989.9422648,
+    "ast_hash": "6a41aa9510c6dd138a4bf40ec190a399",
+    "semantic_hash": ""
   },
   "backend/tests/test_normalize.py": {
     "mtime": 1793643708.2927003,

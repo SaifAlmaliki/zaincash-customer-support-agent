@@ -54,26 +54,27 @@ You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter ke
 
 1. **Configure.** Create a `.env` file in the repository root (it is gitignored):
    ```bash
-   TYPESAFE_API_KEY=...
-   OPENROUTER_API_KEY=...
-   # Empty disables the admin page.
-   ADMIN_TOKEN=...
-   # Drafting and customer intake models; if empty, both use GEMINI_MODEL.
-   ANTHROPIC_MODEL=anthropic/claude-sonnet-5.5
-   INTAKE_MODEL=anthropic/claude-sonnet-5.5
+    TYPESAFE_API_KEY=...
+    OPENROUTER_API_KEY=...
+    # Empty disables the admin page.
+    ADMIN_TOKEN=...
+    # Drafting and customer intake models; if empty, both use GEMINI_MODEL.
+    ANTHROPIC_MODEL=anthropic/claude-sonnet-5.5
+    INTAKE_MODEL=anthropic/claude-sonnet-5.5
    ```
-   Every other setting has a default in [`backend/app/config.py`](backend/app/config.py); add a line to `.env` only to override one. Do not set `DATABASE_URL`: the API container builds it from `secrets/`. Copy each file in `secrets/` from its `.example` version, removing the `.example` suffix.
+
+    Every other setting has a default in [`backend/app/config.py`](backend/app/config.py); add a line to `.env` only to override one. Do not set `DATABASE_URL`: the API container builds it from `secrets/`. Copy each file in `secrets/` from its `.example` version, removing the `.example` suffix.
 2. **Start the database and API:**
    ```bash
-   docker compose up --build -d
+    docker compose up --build -d
    ```
 3. **Start the employee workspace:**
    ```bash
-   cd employee-frontend && npm ci && npm run dev
+    cd employee-frontend && npm ci && npm run dev
    ```
 4. **Start the customer intake app** (optional):
    ```bash
-   cd users-frontend && npm ci && npm --workspace web run dev
+    cd users-frontend && npm ci && npm --workspace web run dev
    ```
 
 | App | Address |
@@ -102,9 +103,9 @@ Then load the demo data: in pgAdmin (database `support`, `localhost:5433`), run 
 
 1. Pull the models:
    ```bash
-   ollama pull qwen3:4b          # extract and draft
-   ollama pull nomic-embed-text  # embeddings (768 dimensions)
-   ollama pull gemma3:4b         # intake (needs vision; qwen3:4b has none)
+    ollama pull qwen3:4b          # extract and draft
+    ollama pull nomic-embed-text  # embeddings (768 dimensions)
+    ollama pull gemma3:4b         # intake (needs vision; qwen3:4b has none)
    ```
 2. Make Ollama reachable from the API and set `OLLAMA_BASE_URL` in `.env`:
    - **Ollama on Windows, API in WSL or Docker inside WSL:** set the Windows user variable `OLLAMA_HOST=0.0.0.0:11434`, restart Ollama, and use `http://<windows-ip>:11434`. Run `ip route show default` in WSL to get the IP. Alternatively, enable WSL mirrored networking and use `http://localhost:11434`.
@@ -117,34 +118,31 @@ Local models are slower. The settings `LOCAL_AGENT_TIMEOUT_S`, `LOCAL_INTAKE_TIM
 
 1. Index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf). That folder is the only policy reference:
    ```bash
-   uv --directory backend run support ingest-kb ../data/kb-pdf
+    uv --directory backend run support ingest-kb ../data/kb-pdf
    ```
-   Wait until each file is **Indexed**.
+
+    Wait until each file is **Indexed**.
 2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing. Every ticket in a batch file needs a `customer_phone`. The customer intake app asks for the phone number before the chat starts.
 3. Open the results. Edit a reply and choose **Save & approve**.
 
 The demo data and the files in `data/kb-pdf/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).
 
-## Committee test cases
+## Test cases
 
 Load the demo database first (`docker/db/cleanup.sql`, then `docker/db/seed_demo.sql`). Open the customer app at http://localhost:5174, enter the phone, and send the message. In the employee workspace, **دليل العملية** should show the seeded transaction.
 
 1. **Pending transfer that left the wallet.** Phone `07809876543`. Matches pending `ZC2410000123`, 50,000 IQD to علي حسين on 2026-10-06.
 
    حولت 50,000 دينار يوم 2026-10-06 على رقم 07701234567 باسم علي حسين وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123 والتحويل للحين معلق.
-
 2. **Receiver never got that transfer.** Phone `07701234567`. Same pending transfer, from the receiver's side.
 
    انا علي حسين. في تحويل 50,000 دينار يوم 2026-10-06 من رقم 07809876543 وما وصلني. رقم العملية ZC2410000123.
-
 3. **Electricity bill marked paid but not posted.** Phone `07723334455`. Matches completed bill `ZC2410000456`, 35,000 IQD on 2026-10-01.
 
    دفعت فاتورة الكهرباء 35,000 دينار يوم 2026-10-01 وطلعت ناجحة بالتطبيق بس ما انحسبت عند الكهرباء. رقم العملية ZC2410000456.
-
 4. **Completed transfer the sender did not make.** Phone `07501112233`. Fraud report that still matches completed `ZC2410000789`, 200,000 IQD on 2026-10-07.
 
    ما حولت اني. انسحب من حسابي 200,000 دينار يوم 2026-10-07 على رقم 07901234567 بعد ما اتصل بيه شخص وطلب رمز التحقق. رقم العملية ZC2410000789.
-
 5. **Receiver got money from someone they do not know.** Phone `07901234567`. Same completed transfer, from the receiver's side.
 
    وصلني تحويل 200,000 دينار يوم 2026-10-07 من رقم 07501112233 وانا ما اعرف المرسل. رقم العملية ZC2410000789.

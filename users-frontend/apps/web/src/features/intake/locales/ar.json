@@ -7,7 +7,6 @@
   "attach": "أرفق لقطات",
   "remove": "إزالة",
   "review": "راجع تفاصيل المشكلة",
-  "reviewNow": "راجع المعلومات الحالية",
   "partial": "بعض التفاصيل بعدها مو معروفة",
   "submit": "إرسال التذكرة",
   "unknown": "غير معروف",
@@ -94,9 +93,6 @@
   "notSent": "ما انرسلت",
   "resend": "أعد الإرسال",
   "empty": "اكتب شنو صار، أو أرفق لقطة للخطأ.",
-  "progressLabel": "التفاصيل: {done} من {total}",
-  "stillNeeded": "بعده مطلوب",
-  "notKnown": "ما معروف",
   "complete": "التفاصيل كاملة",
   "missingList": "ناقص: {items}",
   "listSeparator": "، ",
@@ -104,6 +100,5 @@
   "groupMissing": "ناقص",
   "groupUnknown": "ما معروف",
   "answer": "جاوب",
-  "answerRemembered": "تذكرت؟ جاوب",
-  "detailSave": "حفظ"
+  "answerRemembered": "تذكرت؟ جاوب"
 }

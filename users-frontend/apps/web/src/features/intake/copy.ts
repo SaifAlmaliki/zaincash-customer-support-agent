@@ -11,7 +11,6 @@ export type IntakeCopy = {
   attach: string
   remove: string
   review: string
-  reviewNow: string
   partial: string
   submit: string
   unknown: string
@@ -72,9 +71,6 @@ export type IntakeCopy = {
   notSent: string
   resend: string
   empty: string
-  progressLabel: string
-  stillNeeded: string
-  notKnown: string
   complete: string
   missingList: string
   listSeparator: string
@@ -83,7 +79,6 @@ export type IntakeCopy = {
   groupUnknown: string
   answer: string
   answerRemembered: string
-  detailSave: string
 }
 
 export const copy: Record<Language, IntakeCopy> = { ar, en }

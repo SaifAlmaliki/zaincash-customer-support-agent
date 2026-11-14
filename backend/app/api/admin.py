@@ -23,6 +23,8 @@ from app.models_config.pricing import with_catalog_prices
 from app.models_config.probe import probe
 from app.models_config.steps import CATALOG_KIND, PROVIDERS_FOR_STEP
 from app.models_config.types import ModelChoice, Step
+from app.telemetry.probe import probe_call
+from app.telemetry.store import persist_calls
 
 
 def require_admin(request: Request, x_admin_token: Annotated[str | None, Header()] = None) -> None:
@@ -78,10 +80,20 @@ async def _priced(request: Request, step: Step, choice: ModelChoice) -> ModelCho
     return with_catalog_prices(choice, entries)
 
 
+async def _record_probe(request: Request, step: Step, choice: ModelChoice, result) -> None:
+    try:
+        locality = _store(request).registry.get(choice.provider).locality
+    except Exception:
+        locality = "cloud"
+    await run_in_threadpool(persist_calls, request.app.state.session_factory,
+                            [probe_call(step, choice, result, locality)])
+
+
 async def _tested(request: Request, step: Step, body: ChoiceInput):
     choice = body.choice()
     _check_provider(step, choice)
     result = await probe(step, choice, _store(request).registry)
+    await _record_probe(request, step, choice, result)
     if not result.ok:
         raise HTTPException(422, f"Model test failed: {result.error}")
     choice = await _priced(request, step, choice)
@@ -109,7 +121,9 @@ async def catalog(request: Request, step: Step, refresh: bool = False):
 async def test_model(request: Request, body: ProbeInput):
     choice = body.choice()
     _check_provider(body.step, choice)
-    return (await probe(body.step, choice, _store(request).registry)).to_json()
+    result = await probe(body.step, choice, _store(request).registry)
+    await _record_probe(request, body.step, choice, result)
+    return result.to_json()
 
 
 @router.put("/models/{step}")
