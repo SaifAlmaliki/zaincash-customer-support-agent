@@ -151,3 +151,4 @@ class TicketOutcome:
     latency_ms: int = 0
     cost_usd: float = 0.0
     error: str | None = None
+    ai_calls: tuple = ()  # telemetry AiCall records, written with the result

@@ -125,6 +125,30 @@ Local models are slower. The settings `LOCAL_AGENT_TIMEOUT_S`, `LOCAL_INTAKE_TIM
 
 The demo data and the files in `data/kb-pdf/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).
 
+## Committee test cases
+
+Load the demo database first (`docker/db/cleanup.sql`, then `docker/db/seed_demo.sql`). Open the customer app at http://localhost:5174, enter the phone, and send the message. In the employee workspace, **دليل العملية** should show the seeded transaction.
+
+1. **Pending transfer that left the wallet.** Phone `07809876543`. Matches pending `ZC2410000123`, 50,000 IQD to علي حسين on 2026-10-06.
+
+   حولت 50,000 دينار يوم 2026-10-06 على رقم 07701234567 باسم علي حسين وانقطعت من رصيدي بس ما وصلتله. رقم العملية ZC2410000123 والتحويل للحين معلق.
+
+2. **Receiver never got that transfer.** Phone `07701234567`. Same pending transfer, from the receiver's side.
+
+   انا علي حسين. في تحويل 50,000 دينار يوم 2026-10-06 من رقم 07809876543 وما وصلني. رقم العملية ZC2410000123.
+
+3. **Electricity bill marked paid but not posted.** Phone `07723334455`. Matches completed bill `ZC2410000456`, 35,000 IQD on 2026-10-01.
+
+   دفعت فاتورة الكهرباء 35,000 دينار يوم 2026-10-01 وطلعت ناجحة بالتطبيق بس ما انحسبت عند الكهرباء. رقم العملية ZC2410000456.
+
+4. **Completed transfer the sender did not make.** Phone `07501112233`. Fraud report that still matches completed `ZC2410000789`, 200,000 IQD on 2026-10-07.
+
+   ما حولت اني. انسحب من حسابي 200,000 دينار يوم 2026-10-07 على رقم 07901234567 بعد ما اتصل بيه شخص وطلب رمز التحقق. رقم العملية ZC2410000789.
+
+5. **Receiver got money from someone they do not know.** Phone `07901234567`. Same completed transfer, from the receiver's side.
+
+   وصلني تحويل 200,000 دينار يوم 2026-10-07 من رقم 07501112233 وانا ما اعرف المرسل. رقم العملية ZC2410000789.
+
 ## Checks
 
 ```bash

@@ -38,6 +38,24 @@ def test_not_applicable_category(tax):
     assert _match(tax, "login_access").status == "not_applicable"
 
 
+def test_fraud_without_a_cited_payment_stays_not_applicable(tax):
+    assert _match(tax, "fraud_report").status == "not_applicable"
+
+
+def test_fraud_with_a_real_reference_is_matched(tax):
+    r = _match(tax, "fraud_report", txn_ref="ZC2410000123", amount=50000, date="2026-10-06")
+    assert r.status == "matched" and r.txn.txn_ref == "ZC2410000123"
+
+
+def test_fraud_reference_missing_from_the_ledger_is_not_found(tax):
+    assert _match(tax, "fraud_report", txn_ref="ZC0000000000").status == "not_found"
+
+
+def test_fraud_search_by_phone_amount_and_date(tax):
+    r = _match(tax, "fraud_report", amount=50000, date="2026-10-06")
+    assert r.status == "matched" and r.txn.txn_ref == "ZC2410000123"
+
+
 def test_ref_matched(tax):
     r = _match(tax, txn_ref="ZC2410000123", amount=50000, date="2026-10-06")
     assert r.status == "matched" and r.txn.txn_ref == "ZC2410000123"

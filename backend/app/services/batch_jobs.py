@@ -13,6 +13,7 @@ from app.pipeline.contracts import DraftResult, TicketOutcome
 from app.pipeline.execution import TicketExecution, ticket_execution
 from app.pipeline.graph import outcome_from_state, summarize
 from app.services.intake_recovery import fail_intake_placeholders, reconcile_intake_run
+from app.telemetry.calls import call_context
 
 logger = logging.getLogger(__name__)
 TICKET_TIMEOUT_S = 180
@@ -58,29 +59,31 @@ async def process_batch(app, run_id, tickets, mode, models=None):
             start = perf_counter()
             execution = TicketExecution(asyncio.timeout(timeout_s))
             token = ticket_execution.set(execution)
-            try:
-                async with execution.timeout:
-                    async for kind, event in graph.astream({"ticket": ticket}, stream_mode=["updates", "values"]):
-                        if kind == "values":
-                            state = event
-                        else:
-                            for node in event:
-                                trace.append({"kind": "stage", "node": node, "status": "completed",
-                                              "elapsed_ms": round((perf_counter() - start) * 1000)})
-                outcome = outcome_from_state(state)
-            except Exception as exc:
-                logger.warning("Ticket %s failed: %s", ticket.external_id, type(exc).__name__)
-                state = execution.draft_state or state or {}
-                outcome = TicketOutcome(ticket=ticket, status="failed",
-                                        error=f"{type(exc).__name__}: processing could not complete. Check server logs and retry.",
-                                        classifier=state.get("classifier"), extracted=state.get("extracted", {}),
-                                        lookup=state.get("lookup"), decision=state.get("decision"),
-                                        draft=state.get("draft"), cost_usd=round(state.get("cost_usd", 0.0), 6),
-                                        latency_ms=round((perf_counter() - start) * 1000))
-            finally:
-                ticket_execution.reset(token)
+            with call_context(run_id=run_id, ticket_id=ticket.id) as calls:
+                try:
+                    async with execution.timeout:
+                        async for kind, event in graph.astream({"ticket": ticket}, stream_mode=["updates", "values"]):
+                            if kind == "values":
+                                state = event
+                            else:
+                                for node in event:
+                                    trace.append({"kind": "stage", "node": node, "status": "completed",
+                                                  "elapsed_ms": round((perf_counter() - start) * 1000)})
+                    outcome = outcome_from_state(state)
+                except Exception as exc:
+                    logger.warning("Ticket %s failed: %s", ticket.external_id, type(exc).__name__)
+                    state = execution.draft_state or state or {}
+                    outcome = TicketOutcome(ticket=ticket, status="failed",
+                                            error=f"{type(exc).__name__}: processing could not complete. Check server logs and retry.",
+                                            classifier=state.get("classifier"), extracted=state.get("extracted", {}),
+                                            lookup=state.get("lookup"), decision=state.get("decision"),
+                                            draft=state.get("draft"), cost_usd=round(state.get("cost_usd", 0.0), 6),
+                                            latency_ms=round((perf_counter() - start) * 1000))
+                finally:
+                    ticket_execution.reset(token)
             draft = outcome.draft or DraftResult()
-            outcome = replace(outcome, draft=replace(draft, trace=tuple(trace) + draft.trace))
+            outcome = replace(outcome, draft=replace(draft, trace=tuple(trace) + draft.trace),
+                              ai_calls=tuple(calls.calls))
             with sf() as session:
                 save_outcomes(session, run_id, [outcome])
                 run = session.get(RunRow, run_id)

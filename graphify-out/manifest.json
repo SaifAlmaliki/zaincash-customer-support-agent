@@ -72,9 +72,9 @@
     "semantic_hash": "5375cc0f5206715cda8df8edea739045"
   },
   "backend/app/db/models.py": {
-    "mtime": 1794575656.435124,
-    "seen": 1794576226.6404321,
-    "ast_hash": "23e0aa0eedd3f54f85caf76a370a0441",
+    "mtime": 1794649533.9320388,
+    "seen": 1794649832.0420334,
+    "ast_hash": "8e5cb2ea2594f300d388c01141277ef3",
     "semantic_hash": ""
   },
   "backend/app/db/repository.py": {
@@ -84,15 +84,15 @@
     "semantic_hash": ""
   },
   "backend/app/db/session.py": {
-    "mtime": 1794520530.7922285,
-    "seen": 1794568981.1992555,
-    "ast_hash": "ffff1ba37bd681c60853cffef3f6f810",
+    "mtime": 1794649553.5369341,
+    "seen": 1794649832.0420868,
+    "ast_hash": "560f0ebdaa5dd874b1159426a22ff2ad",
     "semantic_hash": ""
   },
   "backend/app/db/workspace_schema.py": {
-    "mtime": 1794575656.471124,
-    "seen": 1794576226.6404774,
-    "ast_hash": "d86f4b468058d48fc96565d078ef28e5",
+    "mtime": 1794649533.968589,
+    "seen": 1794649832.0420895,
+    "ast_hash": "850621679006f0ab98a3082d8c84a0d9",
     "semantic_hash": ""
   },
   "backend/app/ingest.py": {
@@ -180,9 +180,9 @@
     "semantic_hash": ""
   },
   "backend/app/pipeline/stage4_lookup/lookup.py": {
-    "mtime": 1793643708.20461,
-    "seen": 1793661526.3072352,
-    "ast_hash": "00d20734112fb757e34b8e5dbcbd8eff",
+    "mtime": 1794649974.147986,
+    "seen": 1794649989.9315603,
+    "ast_hash": "acce6d586b017ea51eb093438f73de0e",
     "semantic_hash": ""
   },
   "backend/app/pipeline/stage5_decide/rules.py": {
@@ -330,10 +330,10 @@
     "semantic_hash": ""
   },
   "backend/tests/test_lookup.py": {
-    "mtime": 1791394927.705552,
-    "seen": 1792231636.9874084,
-    "ast_hash": "f371b944f8e0ffe1462e1458c4b52743",
-    "semantic_hash": "f371b944f8e0ffe1462e1458c4b52743"
+    "mtime": 1794649945.873374,
+    "seen": 1794649989.9422648,
+    "ast_hash": "6a41aa9510c6dd138a4bf40ec190a399",
+    "semantic_hash": ""
   },
   "backend/tests/test_normalize.py": {
     "mtime": 1793643708.2927003,
@@ -1302,9 +1302,9 @@
     "semantic_hash": ""
   },
   "backend/app/intake/policy.py": {
-    "mtime": 1794649192.5020893,
-    "seen": 1794649425.2033014,
-    "ast_hash": "e55095821c620e8a3e1b59ebe62919d4",
+    "mtime": 1794649724.6358263,
+    "seen": 1794649832.042874,
+    "ast_hash": "98fcb13093934186c18837b73d4a7d35",
     "semantic_hash": ""
   },
   "backend/app/intake/projection.py": {
@@ -3054,9 +3054,9 @@
     "semantic_hash": ""
   },
   "backend/tests/intake/test_interview_policy.py": {
-    "mtime": 1794649182.2817588,
-    "seen": 1794649425.2079043,
-    "ast_hash": "66cfcbcb3bb1c616b4b099521e4e4ba8",
+    "mtime": 1794649688.2515616,
+    "seen": 1794649832.0473576,
+    "ast_hash": "26cfd82f9db7107de49c6189f740868e",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-11-13-guided-intake-interview.md": {
@@ -3345,6 +3345,48 @@
     "mtime": 1794649295.0520618,
     "seen": 1794649425.2130206,
     "ast_hash": "10f7fa200265fcd36af2139d512f41bb",
+    "semantic_hash": ""
+  },
+  "backend/app/telemetry/__init__.py": {
+    "mtime": 1794649533.9280388,
+    "seen": 1794649832.0465202,
+    "ast_hash": "22e373393d25eb5a09ba9ca4e6db83c1",
+    "semantic_hash": ""
+  },
+  "backend/app/telemetry/calls.py": {
+    "mtime": 1794649533.9280388,
+    "seen": 1794649832.0465229,
+    "ast_hash": "cad60761673e18377c3563c1b03e13bc",
+    "semantic_hash": ""
+  },
+  "backend/app/telemetry/db_models.py": {
+    "mtime": 1794649533.9280388,
+    "seen": 1794649832.0465245,
+    "ast_hash": "de084e03e97dd137981f19bdd2fa7731",
+    "semantic_hash": ""
+  },
+  "backend/app/telemetry/store.py": {
+    "mtime": 1794649533.9280388,
+    "seen": 1794649832.0465267,
+    "ast_hash": "b7b08477f89420f5e25856960258c253",
+    "semantic_hash": ""
+  },
+  "backend/tests/telemetry/__init__.py": {
+    "mtime": 1794649508.0171096,
+    "seen": 1794649832.0485797,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "backend/tests/telemetry/test_calls.py": {
+    "mtime": 1794649508.019233,
+    "seen": 1794649832.0485811,
+    "ast_hash": "d63dd3a6b559c8ebcfc0313b108ebf64",
+    "semantic_hash": ""
+  },
+  "backend/tests/telemetry/test_store.py": {
+    "mtime": 1794649508.0204413,
+    "seen": 1794649832.0485823,
+    "ast_hash": "6953f92f8fa361fa2c8f12b8ee4d65fd",
     "semantic_hash": ""
   }
 }

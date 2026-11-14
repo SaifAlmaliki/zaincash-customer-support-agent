@@ -12,6 +12,7 @@ from app.intake.policy import (
     assess_readiness,
     choose_question,
     material_keys,
+    progress,
 )
 from app.taxonomy import load_taxonomy
 from tests.intake.helpers import context, fact, message
@@ -243,3 +244,21 @@ def test_received_money_without_a_sender_number_asks_where_it_came_from(taxonomy
     assert question.answer_kind == "phone"
     assert question.text == "من أي رقم وصلتك الفلوس؟"
     assert "حولت" not in question.text
+
+
+def test_received_details_stay_visible_while_asking_what_to_do(taxonomy):
+    source = message("وصلني تحويل 200,000 دينار يوم 07-10-2026 من رقم 07501112233 وانا ما اعرف المرسل. رقم العملية ZC2410000789")
+    state = context([source], [
+        fact("issue", "وصلني تحويل من مرسل ما أعرفه", source),
+        fact("amount", "200,000", source, normalized="200000"),
+        fact("date", "07-10-2026", source),
+        fact("txn_ref", "ZC2410000789", source, normalized="ZC2410000789"),
+        fact("sender_phone", "07501112233", source, normalized="07501112233"),
+    ], category="general_inquiry").state
+    question = choose_question(state, None, 2, taxonomy)
+    assert question is not None and question.key == "desired_outcome"
+    shown = {item.key: item.display for item in progress(state, taxonomy)}
+    assert shown["amount"] == "200000"
+    assert shown["date"] == "07-10-2026"
+    assert shown["sender_phone"] == "07501112233"
+    assert shown["txn_ref"] == "ZC2410000789"

@@ -16,6 +16,7 @@ from app.db.models import IncidentRow, RunRow, TicketResultRow, TicketRow, Trans
 from app.pipeline.contracts import Ticket, TicketOutcome, TxnRecord
 from app.pipeline.graph import RunSummary
 from app.pipeline.io.serialize import outcome_to_row
+from app.telemetry.store import add_calls
 
 
 def _ticket_phone(ticket: Ticket) -> str:
@@ -50,7 +51,9 @@ def create_run(session: Session, *, mode: str, prompt_version: str, model_ids: d
 
 
 def save_outcomes(session: Session, run_id: int, outcomes: Sequence[TicketOutcome]) -> None:
-    rows = [{"run_id": run_id, **outcome_to_row(o)} for o in outcomes if o.ticket.id is not None]
+    now = datetime.now(UTC)
+    rows = [{"run_id": run_id, **outcome_to_row(o), "processed_at": now}
+            for o in outcomes if o.ticket.id is not None]
     if not rows:
         return
     stmt = insert(TicketResultRow).values(rows)
@@ -58,6 +61,9 @@ def save_outcomes(session: Session, run_id: int, outcomes: Sequence[TicketOutcom
     session.execute(stmt.on_conflict_do_update(
         constraint="uq_result_run_ticket", set_={k: stmt.excluded[k] for k in updatable}
     ))
+    for outcome in outcomes:
+        if outcome.ticket.id is not None and outcome.ai_calls:
+            add_calls(session, outcome.ai_calls, run_id=run_id, ticket_id=outcome.ticket.id)
 
 
 def finish_run(session: Session, run_id: int, summary: RunSummary, *,

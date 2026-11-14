@@ -460,6 +460,21 @@ def progress(state: IntakeState, taxonomy: Taxonomy | None = None) -> list[Progr
                 key=key, tier=tier, status=item.status if item is not None else "missing",
                 display=(item.normalized or item.value) if known else None,
             ))
+    if customer_received_money(state):
+        present = {item.key for item in items}
+        remembered = []
+        for key in ("amount", "date", "sender_phone", "txn_ref"):
+            if key in present:
+                continue
+            item = state.facts.get(key)
+            if item is None or item.status != "known":
+                continue
+            remembered.append(ProgressItem(
+                key=key, tier="ask_once", status="known", display=item.normalized or item.value,
+            ))
+        if remembered:
+            index = next((i for i, item in enumerate(items) if item.status != "known"), len(items))
+            items[index:index] = remembered
     return items
 
 

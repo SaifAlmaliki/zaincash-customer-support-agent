@@ -63,7 +63,8 @@ def _as_date(field: ExtractedField) -> date | None:
 def match_transaction(category: Category, extracted: dict[str, ExtractedField], *,
                       customer_phone: str | None, received_at: datetime,
                       repo: TransactionRepo) -> LookupResult:
-    if not category.needs_transaction:
+    cites_payment = bool(extracted["txn_ref"].value) or _iqd_amount(extracted["amount"]) is not None
+    if not category.needs_transaction and not (category.id == "fraud_report" and cites_payment):
         return LookupResult("not_applicable")
     amount = _iqd_amount(extracted["amount"])
     when = _as_date(extracted["date"])

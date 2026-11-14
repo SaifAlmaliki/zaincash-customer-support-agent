@@ -24,6 +24,7 @@ from app.pipeline.stage5_decide.rules import decide, empty_ticket_decision, merg
 from app.pipeline.stage6_draft.drafting import Drafter, DraftExecutionError, NullDrafter
 from app.pipeline.state import PipelineState
 from app.taxonomy import Taxonomy
+from app.telemetry.calls import call_context
 
 MODES = ("jev",)
 _NOT_RETRYABLE = (ValueError, TypeError, KeyError, AttributeError, AssertionError)
@@ -228,14 +229,16 @@ async def run_batch(graph: Any, tickets: Sequence[Ticket], *,
                     concurrency: int) -> tuple[list[TicketOutcome], RunSummary]:
     if not tickets:
         return [], summarize([])
-    results = await graph.abatch(
-        [{"ticket": t} for t in tickets],
-        config={"max_concurrency": concurrency},
-        return_exceptions=True,
-    )
-    outcomes = [
-        TicketOutcome(ticket=t, status="failed", error=f"{type(r).__name__}: {r}")
-        if isinstance(r, BaseException) else outcome_from_state(r)
-        for t, r in zip(tickets, results, strict=True)
-    ]
+    limiter = asyncio.Semaphore(max(1, concurrency))
+
+    async def one(ticket: Ticket) -> TicketOutcome:
+        async with limiter:
+            with call_context(ticket_id=ticket.id) as calls:
+                try:
+                    outcome = outcome_from_state(await graph.ainvoke({"ticket": ticket}))
+                except Exception as exc:
+                    outcome = TicketOutcome(ticket=ticket, status="failed", error=f"{type(exc).__name__}: {exc}")
+            return replace(outcome, ai_calls=tuple(calls.calls))
+
+    outcomes = list(await asyncio.gather(*(one(t) for t in tickets)))
     return outcomes, summarize(outcomes)
