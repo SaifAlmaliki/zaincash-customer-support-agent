@@ -1,5 +1,7 @@
 # Per-model Evaluation Implementation Plan — Part 1 of 3 (backend foundations)
 
+> **Superseded (2026-11-14): do not execute.** Replaced by `docs/superpowers/specs/2026-11-14-ai-usage-dashboard-design.md` and its plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Measure every configured model (Jev, Claude Sonnet, Gemini, local Ollama `qwen3:4b`) on the same labelled, held-out Iraqi-dialect tickets through the real pipeline, and show quality, latency/error rate and cost per request on a fully translated `/evaluation` page.

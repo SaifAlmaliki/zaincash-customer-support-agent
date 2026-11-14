@@ -1,5 +1,7 @@
 # Per-model Evaluation Implementation Plan — Part 2 of 3 (evaluation engine)
 
+> **Superseded (2026-11-14): do not execute.** Replaced by `docs/superpowers/specs/2026-11-14-ai-usage-dashboard-design.md` and its plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Score each model's predictions (quality, system, cost), store runs and predictions, run evaluations in the background with progress/cancel, and expose them through an API and a CLI.

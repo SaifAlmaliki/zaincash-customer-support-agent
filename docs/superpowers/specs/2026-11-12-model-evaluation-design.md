@@ -1,7 +1,7 @@
 # Per-model evaluation (quality, system, cost) — design specification
 
 - **Date:** 2026-11-12
-- **Status:** Design approved in conversation on 2026-11-12; written specification awaiting user review
+- **Status:** Superseded on 2026-11-14 by `2026-11-14-ai-usage-dashboard-design.md` (Jev stays the only classifier; the labelled-dataset approach in §4.5 is kept for phase 2)
 - **Repository state at design:** `cbad948` on `main`
 - **Depends on:** `2026-11-12-admin-model-config-design.md` (provider adapters only — see 4.1)
 - **Scope:** Labelled synthetic dataset, pluggable LLM classifier, evaluation runner and metrics, evaluation API, a rebuilt `/evaluation` page, and full Arabic/English text for the Evaluation, Runs and Run detail pages

@@ -1,5 +1,7 @@
 # Per-model Evaluation Implementation Plan — Part 3 of 3 (frontend, translations, verification)
 
+> **Superseded (2026-11-14): do not execute.** Replaced by `docs/superpowers/specs/2026-11-14-ai-usage-dashboard-design.md` and its plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the import-only `/evaluation` page with a model comparison driven by stored runs (start, progress, cancel, comparison table, per-model detail, confusion drill-down), fully translated in Arabic and English, and translate the Runs and Run detail pages.
