@@ -12,6 +12,9 @@ from app.kb import models as kb_models  # noqa: F401 -- register before create_a
 from app.models_config import (
     db_models as model_config_db_models,  # noqa: F401 -- register before create_all/drop_all
 )
+from app.telemetry import (
+    db_models as telemetry_db_models,  # noqa: F401 -- register before create_all/drop_all
+)
 
 
 def make_engine(url: str) -> Engine:

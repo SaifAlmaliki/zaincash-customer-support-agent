@@ -45,3 +45,6 @@ def upgrade_workspace_schema(engine):
         connection.execute(text(
             "ALTER TABLE IF EXISTS intake_sessions ADD COLUMN IF NOT EXISTS model_choice JSONB"
         ))
+        connection.execute(text(
+            "ALTER TABLE IF EXISTS ticket_results ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ"
+        ))

@@ -81,6 +81,7 @@ class TicketResultRow(Base):
     status: Mapped[str] = mapped_column(String(32))
     error: Mapped[str | None] = mapped_column(Text)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     jev_model_version: Mapped[str | None] = mapped_column(String(32))
     updated_at: Mapped[datetime] = mapped_column(
