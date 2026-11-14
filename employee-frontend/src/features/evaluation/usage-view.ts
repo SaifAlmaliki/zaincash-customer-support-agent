@@ -66,34 +66,33 @@ export function costSegments(costs: Partial<Record<AiProcess, number>>) {
   return present.map((process) => ({ process, share: total ? (costs[process] ?? 0) / total : 0 }))
 }
 
-export function waterfall(calls: AiCallView[]) {
-  if (!calls.length) return []
-  const spans = calls.map((call) => {
-    const start = Date.parse(call.started_at)
-    return { call, start, end: start + call.latency_ms }
-  })
-  const first = Math.min(...spans.map((s) => s.start))
-  const last = Math.max(...spans.map((s) => s.end))
-  const total = Math.max(1, last - first)
-  return spans.map(({ call, start, end }) => {
-    const left = ((start - first) / total) * 100
-    return { call, left, width: Math.max(1, Math.min(100 - left, ((end - start) / total) * 100)) }
-  })
+// A ticket's calls span minutes (intake, then the pipeline), so wall-clock positions leave
+// each bar ~1% wide; bars instead compare each call's latency with the slowest call.
+export function durationBars(calls: AiCallView[]) {
+  const slowest = Math.max(1, ...calls.map((c) => c.latency_ms))
+  return calls.map((call) => ({ call, width: Math.max(2, Math.round((call.latency_ms / slowest) * 100)) }))
 }
 
-export function trendGeometry(days: UsageDay[], height = 120) {
-  const width = Math.max(1, days.length) * 40
-  if (!days.length) return { bars: [], line: "", width, height }
+const REJECTED_OUTPUT = new Set(["InvalidEvidence", "ValidationError", "ParsingError", "OutputParserException"])
+
+export function rejection(calls: AiCallView[], index: number): "retried" | "rejected" | null {
+  const call = calls[index]
+  if (!call || call.status !== "error" || !REJECTED_OUTPUT.has(call.error ?? "")) return null
+  return calls.slice(index + 1).some((c) => c.process === call.process) ? "retried" : "rejected"
+}
+
+export function trendGeometry(days: UsageDay[], height = 120, minSlots = 7) {
+  const width = Math.max(minSlots, days.length) * 40
+  if (!days.length) return { bars: [], line: "", points: [], width, height }
   const maxCost = Math.max(...days.map((d) => d.cost_usd), 1e-12)
   const maxLatency = Math.max(...days.map((d) => d.latency_p95_ms ?? 0), 1)
   const bars = days.map((day, i) => {
     const h = (day.cost_usd / maxCost) * 100
     return { day, x: i * 40 + 8, y: height - (h / 100) * height, h }
   })
-  const line = days
-    .map((d, i) => `${i ? "L" : "M"}${i * 40 + 20},${height - ((d.latency_p95_ms ?? 0) / maxLatency) * height}`)
-    .join(" ")
-  return { bars, line, width, height }
+  const points = days.map((d, i) => ({ x: i * 40 + 20, y: height - ((d.latency_p95_ms ?? 0) / maxLatency) * height }))
+  const line = points.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join(" ")
+  return { bars, line, points, width, height }
 }
 
 export function processLabel(process: string, copy: Copy["evaluation"]) {

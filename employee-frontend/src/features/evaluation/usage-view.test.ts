@@ -4,15 +4,16 @@ import type { AiSummary } from "@/lib/types"
 import { summaryFixture, ticketCalls } from "./fixtures"
 import {
   costSegments,
+  durationBars,
   isInUse,
   mergeModels,
   periodRange,
   processLabel,
+  rejection,
   shareWidth,
   sourceMark,
   trendGeometry,
   usageQuery,
-  waterfall,
 } from "./usage-view"
 
 const NOW = Date.parse("2026-11-14T09:00:00Z")
@@ -65,12 +66,20 @@ it("orders cost segments by process and drops zeros", () => {
   expect(total).toBeCloseTo(1)
 })
 
-it("lays out a waterfall from start times and latencies", () => {
-  const bars = waterfall(ticketCalls.calls)
+it("sizes timeline bars by latency relative to the slowest call", () => {
+  const bars = durationBars(ticketCalls.calls)
   expect(bars.map((b) => b.call.id)).toEqual([1, 2, 3])
-  expect(bars[0].left).toBe(0)
-  expect(bars[2].left + bars[2].width).toBeCloseTo(100)
-  expect(waterfall([])).toEqual([])
+  expect(bars.map((b) => b.width)).toEqual([80, 90, 100])
+  expect(durationBars([{ ...ticketCalls.calls[0], latency_ms: 0 }])[0].width).toBe(2)
+  expect(durationBars([])).toEqual([])
+})
+
+it("recognises rejected model output and whether it was retried", () => {
+  const rejected = { ...ticketCalls.calls[0], status: "error" as const, error: "InvalidEvidence" }
+  expect(rejection([rejected, ticketCalls.calls[0]], 0)).toBe("retried")
+  expect(rejection([rejected], 0)).toBe("rejected")
+  expect(rejection(ticketCalls.calls, 2)).toBeNull()
+  expect(rejection(ticketCalls.calls, 0)).toBeNull()
 })
 
 it("draws the trend and names processes", () => {
@@ -78,7 +87,12 @@ it("draws the trend and names processes", () => {
   expect(g.bars).toHaveLength(2)
   expect(g.bars[1].h).toBeCloseTo(100)
   expect(g.line.startsWith("M")).toBe(true)
+  // A one-day line is a single point, so each day also gets a dot.
+  expect(g.points).toHaveLength(2)
+  expect(g.points[0].x).toBe(20)
   expect(trendGeometry([]).bars).toEqual([])
+  // A short period keeps a week of slots, so one day is not drawn as one giant bar.
+  expect(trendGeometry(summaryFixture.daily.slice(0, 1)).width).toBe(7 * 40)
   expect(processLabel("draft_search", getCopy().evaluation)).toBe(getCopy().evaluation.processes.draft_search)
   expect(processLabel("future_process", getCopy().evaluation)).toBe("future_process")
 })

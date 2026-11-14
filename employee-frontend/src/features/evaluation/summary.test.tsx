@@ -40,7 +40,7 @@ it("renders the summary in English with sources, badges and ltr model IDs", () =
   expect(html).toContain("In use")
   expect(html).toContain('dir="ltr"')
   expect(html).toContain("est.")
-  expect(html).toContain('title="Median latency"')
+  expect(html).toContain("p50 / p95")
   expect(html).toContain("<svg")
   expect(html).toContain("Model test")
 })
@@ -48,21 +48,31 @@ it("renders the summary in English with sources, badges and ltr model IDs", () =
 it("renders the summary in Arabic without English UI text", () => {
   setLocale("ar")
   const html = all()
-  expect(html).toContain("إجمالي كلفة الذكاء الاصطناعي")
+  expect(html).toContain("إجمالي الكلفة")
   expect(html).toContain("صياغة الرد")
   expect(html).toContain("محلي · $0")
   for (const english of ["Total AI cost", "Reply drafting", "In use", "Cost and time by", "Not tied to a ticket"])
     expect(html, english).not.toContain(english)
 })
 
-it("renders Arabic tooltips and duration units without English", () => {
+it("keeps technical terms (p50, p95, ms, s, tokens) in English on the Arabic profile", () => {
   setLocale("ar")
   const html = all()
-  expect(html).toContain('title="الوسيط: نصف الاستدعاءات أسرع من هذا الزمن"')
+  expect(html).toContain("p50 / p95")
+  expect(html).toMatch(/title="p50: [^"]*p95: [^"]*"/)
+  expect(html).toContain("p50 · p95:")
+  expect(html).toContain("tokens")
+  expect(html).toMatch(/\d (ms|s)\b/)
+  for (const word of ["المئين", "الوسيط", "مللي", "الرموز"]) expect(html, word).not.toContain(word)
   for (const english of ["Median latency", "95th percentile", "Share of", "Estimated from tokens", "Price unknown"])
     expect(html, english).not.toContain(english)
-  expect(html).toContain("مللي ث")
-  expect(html).not.toMatch(/\d (ms|s)\b/)
+})
+
+it("keeps the tables compact: wide-only columns are marked so narrow screens can drop them", () => {
+  setLocale("en")
+  const html = renderToStaticMarkup(<GroupTable kind="model" groups={summaryFixture.by_model} ai={AI} />)
+  expect(html).toContain("usage-col-wide")
+  expect(html).not.toContain(">p50<")
 })
 
 it("shows unknown cost as a dash, partly unknown with a marker, and keeps est. and local", () => {

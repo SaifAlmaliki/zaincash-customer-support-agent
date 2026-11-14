@@ -33,17 +33,31 @@ it("TicketCostTable marks rows without recorded detail", () => {
   expect(html).not.toContain("Detail not recorded")
 })
 
-it("renders the timeline in Arabic with localised units and a dash for unknown cost", () => {
+it("renders the timeline in Arabic with English units and a dash for unknown cost", () => {
   setLocale("ar")
   const unknownCall = { ...ticketCalls.calls[1], id: 4, cost_usd: 0, cost_source: "unknown" as const }
   const html = renderToStaticMarkup(
     <TimelineView data={{ ...ticketCalls, calls: [...ticketCalls.calls, unknownCall] }} />)
-  expect(html).toContain("800 مللي ث")
+  expect(html).toContain("800 ms")
+  expect(html).toContain("tokens")
   expect(html).toContain('title="السعر غير معروف">—<')
-  expect(html).not.toMatch(/\d (ms|s)\b/)
+  expect(html).not.toContain("مللي")
   expect(html).not.toContain("Price unknown")
-  expect(renderToStaticMarkup(<TicketCostTable page={ticketPage} sort="cost" onSort={() => {}} offset={0}
-                              limit={25} onPage={() => {}} onOpen={() => {}} />)).not.toMatch(/\d (ms|s)\b/)
+})
+
+it("sizes timeline bars by latency, shows start times and labels rejected outputs", () => {
+  setLocale("en")
+  const rejected = { ...ticketCalls.calls[0], id: 9, status: "error" as const, error: "InvalidEvidence" }
+  const html = renderToStaticMarkup(
+    <TimelineView data={{ ...ticketCalls, calls: [rejected, ...ticketCalls.calls] }} />)
+  expect(html).toContain("width:80%")
+  expect(html).toContain("width:100%")
+  expect(html).toContain("10:59:00")
+  expect(html).toContain("Output rejected · retried")
+  expect(html).toContain("InvalidEvidence")
+  setLocale("ar")
+  const ar = renderToStaticMarkup(<TimelineView data={{ ...ticketCalls, calls: [rejected, ...ticketCalls.calls] }} />)
+  expect(ar).toContain("رُفض الرد · أُعيدت المحاولة")
 })
 
 it("renders the timeline in order with errors and local cost", () => {

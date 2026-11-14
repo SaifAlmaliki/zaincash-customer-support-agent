@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from "vitest"
 import { getLocale, setLocale } from "./locale"
-import { countLabel, msLabel, percent1, usd } from "./format"
+import { clockLabel, countLabel, msLabel, percent1, usd } from "./format"
 
 const originalLocale = getLocale()
 afterEach(() => setLocale(originalLocale))
@@ -20,8 +20,10 @@ it("formats usage numbers and keeps null as a dash", () => {
   expect(countLabel(1534.4)).toBe("1,534")
 })
 
-it("localises duration units and keeps Latin digits", () => {
+it("keeps technical duration units in English with Latin digits on the Arabic profile", () => {
   setLocale("ar")
-  expect(msLabel(850)).toBe("850 مللي ث")
-  expect(msLabel(2500)).toBe("2.5 ث")
+  // Isolated left-to-right, so "9.3 s / 9.8 s" is not reordered inside Arabic text.
+  expect(msLabel(850)).toBe("\u2066850 ms\u2069")
+  expect(msLabel(2500)).toBe("\u20662.5 s\u2069")
+  expect(clockLabel("2026-11-14T08:00:01.000Z")).toBe("11:00:01")
 })

@@ -687,7 +687,7 @@
       "perTicket": "Cost per ticket",
       "perTicketDetail": "average · p95 {value}",
       "time": "AI time per ticket",
-      "timeDetail": "median · p95 {value}",
+      "timeDetail": "p50 · p95: {value}",
       "errors": "AI error rate",
       "errorsDetail": "{count} failed calls",
       "tickets": "Tickets",
@@ -702,8 +702,7 @@
       "cost": "Cost",
       "share": "Share",
       "perCall": "Per call",
-      "p50": "p50",
-      "p95": "p95",
+      "latency": "p50 / p95",
       "errors": "Errors",
       "tokens": "Tokens in / out",
       "serves": "Used for",
@@ -713,8 +712,7 @@
     },
     "metricHelp": {
       "share": "Share of total AI cost",
-      "p50": "Median latency",
-      "p95": "95th percentile latency",
+      "latency": "p50: half of the calls are faster than this · p95: 95% of the calls are faster than this",
       "errors": "Share of calls that failed"
     },
     "trend": {
@@ -755,7 +753,9 @@
       "total": "{calls} calls · {cost} · AI time {time}",
       "tokens": "{in} in / {out} out",
       "attempt": "attempt {n}",
-      "error": "Error"
+      "error": "Error",
+      "rejected": "Output rejected",
+      "retried": "retried"
     },
     "unattributed": {
       "title": "Not tied to a ticket",

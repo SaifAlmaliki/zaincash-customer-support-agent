@@ -66,11 +66,12 @@ export function EvaluationPage() {
       ) : (
         <>
           <UsageHeadline totals={summaryData.totals} />
-          <div className="two-column">
-            <GroupTable kind="process" groups={summaryData.by_process} />
-            <DailyTrend days={summaryData.daily} />
-          </div>
+          <GroupTable kind="process" groups={summaryData.by_process} />
           <GroupTable kind="model" groups={summaryData.by_model} ai={workspace.health?.ai} />
+          <div className="usage-pair">
+            <DailyTrend days={summaryData.daily} />
+            <UnattributedCard data={summaryData.unattributed} />
+          </div>
         </>
       )}
       {tickets.error && <ErrorState message={tickets.error} retry={tickets.reload} />}
@@ -79,7 +80,6 @@ export function EvaluationPage() {
                          onSort={(value) => { setSort(value); setOffset(0) }}
                          offset={offset} limit={PAGE_SIZE} onPage={setOffset} onOpen={setOpen} />
       )}
-      {summaryData && <UnattributedCard data={summaryData.unattributed} />}
       <TicketTimeline resultId={open} onClose={() => setOpen(null)} />
     </>
   )

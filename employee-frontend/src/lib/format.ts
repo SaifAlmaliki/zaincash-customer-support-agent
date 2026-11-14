@@ -56,9 +56,19 @@ export const timeLabel = (value: string) =>
     minute: "2-digit",
     timeZone: "Asia/Baghdad",
   }).format(new Date(value))
+export const clockLabel = (value: string) =>
+  new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Baghdad",
+  }).format(new Date(value))
 export const duration = (ms: number) => {
   const units = getCopy().common.units
-  return ms < 1000 ? `${ms} ${units.ms}` : `${(ms / 1000).toFixed(1)} ${units.s}`
+  const text = ms < 1000 ? `${ms} ${units.ms}` : `${(ms / 1000).toFixed(1)} ${units.s}`
+  // The units stay Latin in Arabic; isolate them so RTL text does not reorder "9.3 s / 9.8 s".
+  return getLocale() === "ar" ? `\u2066${text}\u2069` : text
 }
 export const usd = (value?: number | null) =>
   value == null ? "—"

@@ -6,7 +6,7 @@ import { trendGeometry } from "./usage-view"
 
 export function DailyTrend({ days }: { days: UsageDay[] }) {
   const copy = useCopy().evaluation.trend
-  const g = trendGeometry(days)
+  const g = trendGeometry(days, 80)
   return (
     <Card className="data-card usage-trend">
       <CardHeader>
@@ -28,6 +28,11 @@ export function DailyTrend({ days }: { days: UsageDay[] }) {
                   </g>
                 ))}
                 <path className="usage-line" d={g.line} fill="none" />
+                {g.points.map((p, i) => (
+                  <circle key={days[i].date} className="usage-dot" cx={p.x} cy={Math.max(3, p.y)} r={3}>
+                    <title>{`${days[i].date} · p95 ${msLabel(days[i].latency_p95_ms)}`}</title>
+                  </circle>
+                ))}
               </svg>
             </div>
             <table className="sr-only">

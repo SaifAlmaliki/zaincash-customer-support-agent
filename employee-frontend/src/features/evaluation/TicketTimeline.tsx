@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ErrorState, LoadingState } from "@/components/shared/workspace-ui"
 import { useResource } from "@/hooks/use-resource"
-import { countLabel, msLabel, usd } from "@/lib/format"
+import { clockLabel, countLabel, msLabel, usd } from "@/lib/format"
 import { fill, useCopy } from "@/lib/locale"
 import type { TicketCalls } from "@/lib/types"
 import { CostValue } from "./CostValue"
-import { processLabel, waterfall } from "./usage-view"
+import { durationBars, processLabel, rejection } from "./usage-view"
 
 export function TimelineView({ data }: { data: TicketCalls }) {
   const copy = useCopy().evaluation
@@ -18,25 +18,36 @@ export function TimelineView({ data }: { data: TicketCalls }) {
       <p className="field-help">
         {fill(tl.total, { calls: data.calls.length, cost: usd(total), time: msLabel(data.result.ai_time_ms) })}
       </p>
-      {waterfall(data.calls).map(({ call, left, width }) => (
-        <div key={call.id} className="usage-timeline-row">
-          <div className="usage-timeline-label">
-            <strong>{processLabel(call.process, copy)}</strong>
-            <bdi dir="ltr">{call.model}</bdi>
-            {call.attempt > 1 && <small>{fill(tl.attempt, { n: call.attempt })}</small>}
+      {durationBars(data.calls).map(({ call, width }, index) => {
+        const rejected = rejection(data.calls, index)
+        return (
+          <div key={call.id} className="usage-timeline-row">
+            <div className="usage-timeline-label">
+              <strong>{processLabel(call.process, copy)}</strong>
+              <small>
+                <bdi dir="ltr">{call.model}</bdi>
+                {call.attempt > 1 && <> · {fill(tl.attempt, { n: call.attempt })}</>}
+              </small>
+            </div>
+            <bdi dir="ltr" className="usage-timeline-clock">{clockLabel(call.started_at)}</bdi>
+            <div className="usage-track">
+              <span className={call.status === "error" ? "usage-bar-error" : "usage-bar-ok"}
+                    style={{ width: `${width}%` }} />
+            </div>
+            <div className="usage-timeline-meta">
+              <strong>{msLabel(call.latency_ms)}</strong>
+              <span>{fill(tl.tokens, { in: countLabel(call.input_tokens), out: countLabel(call.output_tokens) })}</span>
+              <CostValue value={call.cost_usd} sources={{ [call.cost_source]: 1 }} />
+              {call.error && (
+                <span className={rejected ? "usage-rejected" : "error-text"}>
+                  {rejected ? (rejected === "retried" ? `${tl.rejected} · ${tl.retried}` : tl.rejected) : tl.error}
+                  {" "}(<bdi dir="ltr">{call.error}</bdi>)
+                </span>
+              )}
+            </div>
           </div>
-          <div className="usage-track" dir="ltr">
-            <span className={call.status === "error" ? "usage-bar-error" : "usage-bar-ok"}
-                  style={{ left: `${left}%`, width: `${width}%` }} />
-          </div>
-          <div className="usage-timeline-meta">
-            <span>{msLabel(call.latency_ms)}</span>
-            <span>{fill(tl.tokens, { in: countLabel(call.input_tokens), out: countLabel(call.output_tokens) })}</span>
-            <CostValue value={call.cost_usd} sources={{ [call.cost_source]: 1 }} />
-            {call.error && <span className="error-text">{tl.error}: <bdi dir="ltr">{call.error}</bdi></span>}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

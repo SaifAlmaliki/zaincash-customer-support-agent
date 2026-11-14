@@ -2999,25 +2999,75 @@ html[lang="en"] .ai-locality-tooltip {
   margin-bottom: 12px;
 }
 .usage-headline {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+/* Labels wrap instead of being cut off ("AI time per ticket", Arabic labels). */
+.usage-headline .metric-copy > span,
+.usage-headline .metric-card p {
+  white-space: normal;
+  overflow: visible;
+}
+.usage-groups,
+.usage-tickets,
+.usage-pair {
+  margin-bottom: 10px;
+}
+.usage-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 10px;
+}
+.usage-pair > * {
+  margin-bottom: 0;
 }
 .usage-scroll {
   overflow-x: auto;
 }
-.usage-groups th,
-.usage-groups td,
-.usage-tickets th,
-.usage-tickets td {
+.data-card.usage-groups table th,
+.data-card.usage-groups table td,
+.data-card.usage-tickets table th,
+.data-card.usage-tickets table td {
+  padding: 7px 10px;
   white-space: nowrap;
+}
+.data-card.usage-groups table td.usage-wrap {
+  white-space: normal;
+  min-width: 120px;
+}
+.usage-ticket-id {
+  display: inline-block;
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+@media (max-width: 1280px) {
+  .usage-col-wide {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .usage-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .usage-col-mid {
+    display: none;
+  }
 }
 .usage-model {
   display: inline-flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   align-items: center;
+}
+.usage-model bdi {
+  word-break: break-all;
 }
 .usage-share {
   display: inline-block;
-  width: 64px;
+  width: 44px;
   height: 6px;
   border-radius: 3px;
   background: var(--border);
@@ -3038,8 +3088,9 @@ html[lang="en"] .ai-locality-tooltip {
   font-weight: 600;
 }
 .usage-trend svg {
+  display: block;
   width: 100%;
-  max-height: 180px;
+  height: 110px;
 }
 .usage-trend text {
   font-size: 9px;
@@ -3051,6 +3102,9 @@ html[lang="en"] .ai-locality-tooltip {
 .usage-line {
   stroke: var(--blue);
   stroke-width: 2;
+}
+.usage-dot {
+  fill: var(--blue);
 }
 .usage-legend {
   display: flex;
@@ -3100,45 +3154,86 @@ html[lang="en"] .ai-locality-tooltip {
 html:not([dir="rtl"]) .usage-pager-icon {
   transform: scaleX(-1);
 }
+/* The dialog is portaled outside .workspace-app, so it needs the workspace colours itself. */
 .usage-dialog {
-  max-width: min(760px, calc(100% - 2rem)) !important;
+  --accent-ink: #ba2336;
+  --green: #277a59;
+  --amber: #a46316;
+  --blue: #4a71b9;
+  max-width: min(960px, calc(100% - 2rem)) !important;
+}
+.dark .usage-dialog {
+  --accent-ink: #f4a6b2;
+  --green: #72bc96;
+  --amber: #d4ae6a;
+  --blue: #8eaee2;
 }
 .usage-timeline {
   display: grid;
-  gap: 8px;
-  max-height: 60vh;
+  gap: 2px;
+  max-height: 65vh;
   overflow-y: auto;
 }
+/* One line per call: step + model · start · duration bar · ms, tokens, cost, error. */
 .usage-timeline-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) 2fr;
-  gap: 4px 12px;
+  grid-template-columns: minmax(150px, 1.2fr) auto minmax(80px, 1fr) minmax(0, 1.6fr);
+  gap: 2px 10px;
   align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
 }
 .usage-timeline-label {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   font-size: 12px;
+  line-height: 1.3;
 }
-.usage-timeline-meta {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 12px;
+.usage-timeline-label small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--muted-foreground);
 }
+.usage-timeline-clock {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.usage-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.usage-timeline-meta strong {
+  color: var(--foreground);
+}
+.usage-rejected {
+  color: var(--amber);
+}
 .usage-track {
-  position: relative;
-  height: 10px;
+  height: 8px;
   background: var(--border);
-  border-radius: 5px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 .usage-track > span {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: 5px;
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+@media (max-width: 760px) {
+  .usage-timeline-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .usage-track,
+  .usage-timeline-meta {
+    grid-column: 1 / -1;
+  }
 }
 .usage-bar-ok { background: var(--blue); }
 .usage-bar-error { background: var(--accent-ink); }

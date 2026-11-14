@@ -42,11 +42,11 @@ export function TicketCostTable({ page, sort, onSort, offset, limit, onPage, onO
                     <TableHead>{t.ticket}</TableHead>
                     <TableHead>{t.received}</TableHead>
                     <TableHead>{t.status}</TableHead>
-                    <TableHead>{t.category}</TableHead>
+                    <TableHead className="usage-col-wide">{t.category}</TableHead>
                     <TableHead>{t.cost}</TableHead>
-                    <TableHead>{t.breakdown}</TableHead>
+                    <TableHead className="usage-col-mid">{t.breakdown}</TableHead>
                     <TableHead>{t.aiTime}</TableHead>
-                    <TableHead>{t.draftTime}</TableHead>
+                    <TableHead className="usage-col-wide">{t.draftTime}</TableHead>
                     <TableHead>{t.errors}</TableHead>
                     <TableHead />
                   </TableRow>
@@ -54,20 +54,24 @@ export function TicketCostTable({ page, sort, onSort, offset, limit, onPage, onO
                 <TableBody>
                   {page.items.map((item) => (
                     <TableRow key={item.result_id}>
-                      <TableCell><bdi dir="ltr" className="ticket-id">{item.external_id}</bdi></TableCell>
+                      <TableCell>
+                        <bdi dir="ltr" className="ticket-id usage-ticket-id" title={item.external_id}>
+                          {item.external_id}
+                        </bdi>
+                      </TableCell>
                       <TableCell>
                         {dateLabel(item.received_at)}
                         <small className="block-muted">{timeLabel(item.received_at)}</small>
                       </TableCell>
                       <TableCell><StatusBadge status={item.status} /></TableCell>
-                      <TableCell>{categoryLabel(item.category)}</TableCell>
+                      <TableCell className="usage-col-wide">{categoryLabel(item.category)}</TableCell>
                       <TableCell>
                         {usd(item.total_cost_usd)}
                         {item.intake_cost_usd > 0 && (
                           <small className="block-muted">{fill(t.intake, { value: usd(item.intake_cost_usd) })}</small>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="usage-col-mid">
                         {item.detail_recorded ? (
                           <span className="usage-stack">
                             {costSegments(item.cost_by_process).map((s) => (
@@ -81,7 +85,7 @@ export function TicketCostTable({ page, sort, onSort, offset, limit, onPage, onO
                         )}
                       </TableCell>
                       <TableCell>{msLabel(item.ai_time_ms)}</TableCell>
-                      <TableCell>{msLabel(item.draft_time_ms)}</TableCell>
+                      <TableCell className="usage-col-wide">{msLabel(item.draft_time_ms)}</TableCell>
                       <TableCell className={item.errors ? "error-text" : undefined}>{item.errors}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon-sm" onClick={() => onOpen(item.result_id)}
