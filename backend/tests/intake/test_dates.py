@@ -24,6 +24,15 @@ def test_ambiguous_slash_date_is_not_fabricated():
     assert normalize_reported_date("2026-10-17", sent) == "2026-10-17"
 
 
+def test_day_month_year_with_a_year_uses_the_iraqi_order():
+    from app.intake.dates import normalize_reported_date
+    sent = datetime(2026, 10, 18, 0, 5, tzinfo=ZoneInfo("Asia/Baghdad"))
+    assert normalize_reported_date("06-10-2026", sent) == "2026-10-06"
+    assert normalize_reported_date("15.07.2026", sent) == "2026-07-15"
+    assert normalize_reported_date("15.07", sent) is None
+    assert normalize_reported_date("06-15-2026", sent) is None
+
+
 def test_utc_instant_just_before_baghdad_midnight_stays_on_the_previous_day():
     from datetime import timedelta
 

@@ -65,6 +65,18 @@ def test_arabic_customer_and_employee_share_one_narrative():
     assert review.customer_text == review.employee_text_ar
 
 
+def test_iso_date_matches_the_day_month_year_the_customer_wrote():
+    source = message("يوم 06-10-2026")
+    state = context([source], [fact("date", "06-10-2026", source)]).state
+    validate_review_numbers(state, ReviewText(
+        customer_text="حصل بتاريخ 2026-10-06", employee_text_ar="حصل بتاريخ 2026-10-06", fact_keys=["date"],
+    ))
+    with pytest.raises(InvalidEvidence):
+        validate_review_numbers(state, ReviewText(
+            customer_text="حصل بتاريخ 2026-06-10", employee_text_ar="حصل بتاريخ 2026-06-10", fact_keys=["date"],
+        ))
+
+
 def test_number_punctuation_is_not_part_of_the_value_but_reference_prefix_is():
     source = message("Amount 50000, reference DEMO-2410000123")
     state = context([source], [fact("amount", "50000", source), fact("txn_ref", "DEMO-2410000123", source)]).state

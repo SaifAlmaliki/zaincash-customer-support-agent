@@ -24,6 +24,8 @@ _WEEKDAYS = {
 }
 _ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _SLASH = re.compile(r"\d{1,2}\s*/\s*\d{1,2}")
+# Iraqi reports use day-month-year. A four-digit year keeps 06-10-2026 from being dropped.
+_DMY = re.compile(r"^(\d{1,2})[-.](\d{1,2})[-.](\d{4})$")
 
 
 def canonical_digits(value: str) -> str:
@@ -43,6 +45,13 @@ def normalize_reported_date(value: str, source_time: datetime) -> str | None:
         except ValueError:
             return None
         return text
+    dated = _DMY.fullmatch(text)
+    if dated:
+        day, month, year = (int(part) for part in dated.groups())
+        try:
+            return datetime(year, month, day).date().isoformat()
+        except ValueError:
+            return None
     folded = text.lower()
     if re.search(r"\bbefore\b|قبل", folded):
         return None

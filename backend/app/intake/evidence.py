@@ -152,7 +152,7 @@ def merge_analysis(context: TurnContext, analysis, *, visible_image_ids=None) ->
                 raise InvalidEvidence("Read the screenshot before using new observations.")
         return _validate_fact(update, messages, images)
 
-    facts = dict(context.state.facts)
+    facts = {key: _complete_normalization(item, messages) for key, item in context.state.facts.items()}
     for update in analysis.updates:
         if update.key == "customer_phone":
             continue  # set from the phone the customer signed in with
@@ -178,6 +178,15 @@ def merge_analysis(context: TurnContext, analysis, *, visible_image_ids=None) ->
     if customer_received_money(merged):
         merged = merged.model_copy(update={"facts": _sender_not_recipient(merged.facts)})
     return merged
+
+
+def _complete_normalization(fact: Fact, messages: dict) -> Fact:
+    if fact.status != "known" or fact.normalized or fact.key not in _PRECISE:
+        return fact
+    try:
+        return _normalize_precise(fact, messages)
+    except InvalidEvidence:
+        return fact
 
 
 def _sender_not_recipient(facts: dict[str, Fact]) -> dict[str, Fact]:

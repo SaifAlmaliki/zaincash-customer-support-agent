@@ -147,6 +147,33 @@ async def test_semantically_invalid_analysis_gets_one_bounded_repair():
     assert result.trace[0]["error"] == "InvalidEvidence"
 
 
+async def test_rejected_summary_keeps_the_stated_values():
+    from app.intake.contracts import ReviewText
+    from app.intake.policy import interview_plan
+    from tests.intake.helpers import fact
+
+    source = message("حولت 50000 دينار يوم 06-10-2026", language="ar")
+    state = context(
+        [source],
+        [fact("issue", "ما وصل التحويل", source), fact("amount", "50000", source, normalized="50000"), fact("date", "06-10-2026", source)],
+        category="general_inquiry",
+    ).state
+
+    class InventsAmount:
+        async def ainvoke(self, messages):
+            return {"raw": AIMessage(content="ok"), "parsed": ReviewText(
+                customer_text="المبلغ 99999 بتاريخ 2026-10-06",
+                employee_text_ar="المبلغ 99999 بتاريخ 2026-10-06",
+                fact_keys=list(interview_plan(state)[0]),
+            )}
+
+    model = IntakeModel(Settings(_env_file=None), runnable_factory=lambda schema: InventsAmount())
+    result = await model.summarize(state, "ar", ModelBudget(60, 3))
+    assert "99999" not in result.value.customer_text
+    assert "50000" in result.value.customer_text
+    assert "06-10-2026" in result.value.customer_text
+
+
 def test_budget_choice_selects_provider_model_and_local_timeout():
     from app.models_config.types import ModelChoice
     from tests.models_config_fakes import FakeProvider, fake_registry

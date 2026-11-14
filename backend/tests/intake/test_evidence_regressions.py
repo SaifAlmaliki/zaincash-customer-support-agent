@@ -15,6 +15,13 @@ def proposal(*updates, issues=()):
     return Analysis(language="en", category="failed_transfer", updates=list(updates), additional_issues=list(issues))
 
 
+def test_stored_day_month_year_is_normalized_on_the_next_merge():
+    source = message("حولت 50000 دينار يوم 06-10-2026")
+    ctx = context([source], [fact("date", "06-10-2026", source)])
+    result = merge_analysis(ctx, proposal())
+    assert result.facts["date"].normalized == "2026-10-06"
+
+
 def test_date_is_normalized_from_its_message_and_rejects_fabrication():
     source = message("It failed yesterday", at=datetime(2026, 10, 17, 21, 5, tzinfo=UTC))
     ctx = context([source])

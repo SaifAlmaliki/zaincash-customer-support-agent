@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from uuid import uuid4
 
 from app.intake.contracts import Fact, IntakeState, ReviewSnapshot, ReviewText, TurnContext
@@ -32,15 +33,69 @@ def _tokens(text: str) -> set[str]:
     return {token.rstrip(".,:،;") for token in _TOKEN.findall(_compact(text or ""))}
 
 
+def _calendar_days(token: str) -> set[str]:
+    """Dates the token can mean. Day and month stay in the order they were written."""
+    if re.search(r"[A-Za-z]", token):
+        return set()
+    days: set[str] = set()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", token):
+        try:
+            days.add(datetime.strptime(token, "%Y-%m-%d").date().isoformat())
+        except ValueError:
+            pass
+    dated = re.fullmatch(r"(\d{1,2})[-.](\d{1,2})[-.](\d{4})", token)
+    if dated:
+        day, month, year = (int(part) for part in dated.groups())
+        try:
+            days.add(datetime(year, month, day).date().isoformat())
+        except ValueError:
+            pass
+    return days
+
+
 def validate_review_numbers(state: IntakeState, text: ReviewText) -> None:
     allowed: set[str] = set()
+    allowed_days: set[str] = set()
     for fact in [*state.facts.values(), *state.additional_issues]:
         for value in (fact.value, fact.normalized):
-            if value:
-                allowed |= _tokens(value)
+            if not value:
+                continue
+            for token in _tokens(value):
+                allowed.add(token)
+                allowed_days |= _calendar_days(token)
     for rendered in (text.customer_text, text.employee_text_ar):
-        if not _tokens(rendered).issubset(allowed):
+        for token in _tokens(rendered):
+            if token in allowed or _calendar_days(token) & allowed_days:
+                continue
             raise InvalidEvidence("Summary contains an unsupported identifier or number.")
+
+
+def grounded_review_text(state: IntakeState, language: str) -> ReviewText:
+    """A summary that copies stated values and adds no identifiers of its own."""
+    required, _ = interview_plan(state)
+    parts: list[str] = []
+    for key in dict.fromkeys([*required, *state.facts, *(item.key for item in state.additional_issues)]):
+        fact = state.facts.get(key) or next((item for item in state.additional_issues if item.key == key), None)
+        if fact is None or key == "customer_phone":
+            continue
+        if fact.status == "known":
+            shown = (fact.value or fact.normalized or "").strip()
+        elif fact.status == "conflicting":
+            shown = f"متعارض: {(fact.value or '').strip()}".strip()
+        elif fact.status == "unknown":
+            shown = "غير معروف"
+        elif fact.status == "not_applicable":
+            shown = "لا ينطبق"
+        else:
+            shown = ""
+        if shown:
+            parts.append(shown)
+    narrative = " ".join(parts).strip() or "التفاصيل المسجلة"
+    return ReviewText(
+        customer_text=narrative,
+        employee_text_ar=narrative,
+        fact_keys=list(dict.fromkeys([*required, *state.facts])),
+    )
 
 
 def _render_value(fact) -> str:
