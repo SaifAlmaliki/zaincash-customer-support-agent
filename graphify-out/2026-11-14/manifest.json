@@ -810,9 +810,9 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/components/shared/workspace-ui.tsx": {
-    "mtime": 1794575657.0671237,
-    "seen": 1794576226.6478512,
-    "ast_hash": "c8fb8ba8f9cae921fec2e553645f2438",
+    "mtime": 1794647603.5403318,
+    "seen": 1794647654.627258,
+    "ast_hash": "d1c19a40275c7bfbc76c61af4f6e7174",
     "semantic_hash": ""
   },
   "employee-frontend/src/components/theme-provider.tsx": {
@@ -3327,6 +3327,12 @@
     "mtime": 1794647284.9608479,
     "seen": 1794647539.9399102,
     "ast_hash": "6a4b0bf7d9036707130bef64374e7015",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-11-14-ai-usage-dashboard-part2.md": {
+    "mtime": 1794647651.2080426,
+    "seen": 1794647654.642116,
+    "ast_hash": "18fe05c8d18d9527fca67277477b05b4",
     "semantic_hash": ""
   }
 }

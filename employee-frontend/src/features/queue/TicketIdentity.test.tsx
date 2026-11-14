@@ -14,4 +14,6 @@ it("leads with the customer phone and links to the customer page and the ticket"
   expect(html).toContain('href="/customers/07809876543"')
   expect(html).toContain('href="/tickets/7"')
   expect(html.indexOf("07809876543")).toBeLessThan(html.indexOf("S-001"))
+  expect(html.indexOf('class="ticket-ref"')).toBeLessThan(html.indexOf('class="ticket-when"'))
+  expect(html).not.toContain("S-001 ·")
 })
