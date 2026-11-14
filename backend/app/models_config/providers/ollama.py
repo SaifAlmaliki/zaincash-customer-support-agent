@@ -126,7 +126,7 @@ class OllamaProvider:
     def embedder(self, model: str, *, dimensions: int) -> OpenAICompatibleEmbedder:
         return OpenAICompatibleEmbedder(model=model, dimensions=dimensions,
                                         url=f"{self._base}/v1/embeddings", send_dimensions=False,
-                                        transport=self._transport)
+                                        transport=self._transport, provider="ollama", local=True)
 
     def classifier(self, model: str):
         raise UnsupportedOperation("Ollama does not provide the Jev classifier.")

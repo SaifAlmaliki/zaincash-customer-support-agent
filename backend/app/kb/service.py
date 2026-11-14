@@ -20,6 +20,8 @@ from app.kb.documents import document_view
 from app.kb.models import KnowledgeChunk, KnowledgeDocumentIndex
 from app.kb.parse import DocumentParseError, parse_document
 from app.taxonomy import load_taxonomy
+from app.telemetry.calls import call_context
+from app.telemetry.store import persist_calls
 
 INDEXING_TIMEOUT_S = 120
 CHUNKING_VERSION = "unicode-1200-overlap-180-v1"
@@ -261,6 +263,14 @@ class KnowledgeService:
                                  cost_usd=cost) from None
 
     async def index_document(self, document_id: int, *, category_tags: list[str] | None = None) -> dict:
+        with call_context(document_id=document_id) as calls:
+            try:
+                return await self._index_document(document_id, category_tags=category_tags)
+            finally:
+                await asyncio.to_thread(persist_calls, self._sessions, calls.calls,
+                                        document_id=document_id)
+
+    async def _index_document(self, document_id: int, *, category_tags: list[str] | None = None) -> dict:
         """Reindex a source; an active claim returns its current projection without work.
 
         Failures return a retryable failed projection. Cancellation propagates after

@@ -93,7 +93,7 @@ class OpenRouterProvider:
         return OpenAICompatibleEmbedder(
             model=model, dimensions=dimensions, url=f"{OPENROUTER_API}/embeddings",
             api_key=self._settings.openrouter_api_key, price_per_m=self._settings.price_embedding_in,
-            transport=self._transport,
+            transport=self._transport, provider="openrouter",
         )
 
     def classifier(self, model: str):

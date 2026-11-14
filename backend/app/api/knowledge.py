@@ -20,6 +20,8 @@ from app.kb.documents import (
 from app.kb.embeddings import EmbeddingError
 from app.kb.service import DocumentNotFoundError, KnowledgeError, KnowledgeExecutionError
 from app.services.knowledge_runtime import knowledge_configured
+from app.telemetry.calls import call_context
+from app.telemetry.store import persist_calls
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +74,26 @@ def _require_provider(request):
 async def search_knowledge(body: KnowledgeSearchInput, request: Request):
     _validate_categories(request, [] if body.category is None else [body.category])
     _require_provider(request)
-    try:
-        # Search's adapter timeout is also inside the overall request budget.
-        async with asyncio.timeout(request.app.state.settings.agent_timeout_s):
-            result = await request.app.state.knowledge.search(body.query, category=body.category, k=body.k)
-        return asdict(result)
-    except (EmbeddingError, KnowledgeError, TimeoutError):
-        raise HTTPException(
-            503, "Knowledge search unavailable; check the provider and index, then retry.",
-        ) from None
-    except Exception as exc:
-        diagnostic_type = (
-            exc.diagnostic_type if isinstance(exc, KnowledgeExecutionError) else type(exc).__name__
-        )
-        logger.warning("Knowledge search failed with %s", diagnostic_type)
-        raise HTTPException(
-            503, "Knowledge search unavailable; check the provider and index, then retry.",
-        ) from None
+    with call_context() as calls:
+        try:
+            # Search's adapter timeout is also inside the overall request budget.
+            async with asyncio.timeout(request.app.state.settings.agent_timeout_s):
+                result = await request.app.state.knowledge.search(body.query, category=body.category, k=body.k)
+            return asdict(result)
+        except (EmbeddingError, KnowledgeError, TimeoutError):
+            raise HTTPException(
+                503, "Knowledge search unavailable; check the provider and index, then retry.",
+            ) from None
+        except Exception as exc:
+            diagnostic_type = (
+                exc.diagnostic_type if isinstance(exc, KnowledgeExecutionError) else type(exc).__name__
+            )
+            logger.warning("Knowledge search failed with %s", diagnostic_type)
+            raise HTTPException(
+                503, "Knowledge search unavailable; check the provider and index, then retry.",
+            ) from None
+        finally:
+            await run_in_threadpool(persist_calls, request.app.state.session_factory, calls.calls)
 
 
 @router.post("/{document_id}/index", status_code=202)

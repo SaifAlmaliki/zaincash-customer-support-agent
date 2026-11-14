@@ -9,6 +9,7 @@ import httpx
 
 from app.config import Settings
 from app.kb.contracts import EmbeddingBatch
+from app.telemetry.calls import AiCall, Timer, embed_process, record
 
 EMBEDDING_BATCH_SIZE = 32
 EMBEDDING_TIMEOUT_S = 20.0
@@ -35,23 +36,25 @@ def _nonnegative_number(value: Any) -> float:
     return number
 
 
-def _response_cost(payload: dict, price_per_m: float) -> float:
+def _response_cost(payload: dict, price_per_m: float) -> tuple[float, str, int | None]:
     usage = payload.get("usage")
     if usage is None:
         usage = {}
     if not isinstance(usage, dict):
         raise EmbeddingError("Embedding provider returned invalid usage or cost.")
-    # A reported zero is real, not a signal to use the fallback estimate.
+    tokens = usage.get("prompt_tokens", usage.get("total_tokens"))
+    if tokens is not None and (isinstance(tokens, bool) or not isinstance(tokens, int)):
+        raise EmbeddingError("Embedding provider returned invalid token usage.")
     cost = usage.get("cost")
     if cost is None:
         cost = payload.get("cost")
+    # A reported zero is real, not a signal to use the fallback estimate.
     if cost is not None:
-        return _nonnegative_number(cost)
-    tokens = usage.get("prompt_tokens", usage.get("total_tokens", 0))
-    if isinstance(tokens, bool) or not isinstance(tokens, int):
-        raise EmbeddingError("Embedding provider returned invalid token usage.")
-    # No token usage means no estimate; do not invent a tokenizer/character estimate.
-    return _nonnegative_number(_nonnegative_number(tokens) / 1_000_000 * price_per_m)
+        return _nonnegative_number(cost), "provider", tokens
+    if tokens is None:
+        # No token usage means no estimate; do not invent a tokenizer/character estimate.
+        return 0.0, "unknown", None
+    return _nonnegative_number(_nonnegative_number(tokens) / 1_000_000 * price_per_m), "estimate", tokens
 
 
 def _ordered_vectors(payload: dict, count: int, dimensions: int) -> list[tuple[float, ...]]:
@@ -99,6 +102,7 @@ class OpenAICompatibleEmbedder:
         self, *, model: str, dimensions: int, url: str, api_key: str = "",
         price_per_m: float = 0.0, send_dimensions: bool = True,
         transport: httpx.AsyncBaseTransport | None = None,
+        provider: str = "openrouter", local: bool = False,
     ) -> None:
         self.model = model
         self.dimensions = dimensions
@@ -107,6 +111,8 @@ class OpenAICompatibleEmbedder:
         self._price_per_m = price_per_m
         self._send_dimensions = send_dimensions
         self._transport = transport
+        self._provider = provider
+        self._local = local
 
     async def embed(self, texts: list[str]) -> EmbeddingBatch:
         if not texts:
@@ -122,8 +128,17 @@ class OpenAICompatibleEmbedder:
             ) as client:
                 for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
                     batch = texts[start:start + EMBEDDING_BATCH_SIZE]
-                    payload = await self._request(client, batch)
-                    cost_usd = _nonnegative_number(cost_usd + _response_cost(payload, self._price_per_m))
+                    timer = Timer()
+                    try:
+                        payload = await self._request(client, batch)
+                        cost, source, tokens = _response_cost(payload, self._price_per_m)
+                    except EmbeddingError:
+                        self._record(timer, None, 0.0, "unknown", "EmbeddingError")
+                        raise
+                    if self._local:
+                        cost, source = 0.0, "local"
+                    self._record(timer, tokens, cost, source, None)
+                    cost_usd = _nonnegative_number(cost_usd + cost)
                     batch_vectors = _ordered_vectors(payload, len(batch), self.dimensions)
                     vectors.extend(batch_vectors)
         except (EmbeddingError, asyncio.CancelledError) as exc:
@@ -132,6 +147,12 @@ class OpenAICompatibleEmbedder:
             exc.cost_usd = cost_usd
             raise
         return EmbeddingBatch(tuple(vectors), cost_usd)
+
+    def _record(self, timer: Timer, tokens: int | None, cost: float, source: str,
+                error: str | None) -> None:
+        record(AiCall(embed_process(), self._provider, self.model, "local" if self._local else "cloud",
+                      timer.started_at, timer.ms(), input_tokens=tokens, cost_usd=cost,
+                      cost_source=source, status="error" if error else "ok", error=error))
 
     async def _request(self, client: httpx.AsyncClient, texts: list[str]) -> dict:
         body: dict[str, Any] = {"input": texts, "model": self.model, "encoding_format": "float"}
