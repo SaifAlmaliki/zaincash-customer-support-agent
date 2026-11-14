@@ -12,6 +12,9 @@ class DraftModelInfo:
     token_prices: tuple[float, float]
     timeout_s: float
     embedding_model: str
+    provider: str = "openrouter"
+    locality: str = "cloud"
+    prices_known: bool = True
 
     @classmethod
     def from_settings(cls, settings: Settings) -> DraftModelInfo:

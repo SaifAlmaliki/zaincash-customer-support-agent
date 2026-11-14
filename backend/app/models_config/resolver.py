@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from typing import Any, Literal
 
 from app.config import Settings
+from app.models_config.pricing import prices_for
 from app.models_config.providers.registry import ProviderRegistry
 from app.models_config.steps import (
     DEFAULT_TEMPERATURE,
@@ -89,25 +90,19 @@ class ActiveModels:
         choice = self.choice(Step.CLASSIFY)
         return self.registry.get(choice.provider).classifier(choice.model)
 
+    def prices(self, step: Step) -> tuple[float, float] | None:
+        return prices_for(self.settings, step, self.choice(step), self.locality(step))
+
     def token_prices(self, step: Step) -> tuple[float, float]:
-        if self.is_local(step):
-            return 0.0, 0.0
-        settings = self.settings
-        if step is Step.CLASSIFY:
-            return settings.price_jev_in, 0.0
-        if step is Step.EMBED:
-            return settings.price_embedding_in, 0.0
-        if step is Step.DRAFT:
-            if self.choice(step) == env_defaults(settings)[Step.DRAFT]:
-                return settings.draft_token_prices
-            if self.choice(step).model.startswith("anthropic/"):
-                return settings.price_anthropic_in, settings.price_anthropic_out
-        return settings.price_gemini_flash_in, settings.price_gemini_flash_out
+        return self.prices(step) or (0.0, 0.0)
 
     def draft_info(self) -> DraftModelInfo:
         return DraftModelInfo(model=self.choice(Step.DRAFT).model, token_prices=self.token_prices(Step.DRAFT),
                               timeout_s=draft_timeout_s(self.settings, self.locality(Step.DRAFT)),
-                              embedding_model=self.choice(Step.EMBED).model)
+                              embedding_model=self.choice(Step.EMBED).model,
+                              provider=self.choice(Step.DRAFT).provider,
+                              locality=self.locality(Step.DRAFT),
+                              prices_known=self.prices(Step.DRAFT) is not None)
 
     def model_ids(self) -> dict[str, str]:
         return {step.value: self.choice(step).ref for step in Step}

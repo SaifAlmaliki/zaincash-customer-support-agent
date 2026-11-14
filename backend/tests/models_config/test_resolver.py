@@ -88,3 +88,12 @@ def test_ready_and_summary_follow_provider_status():
     assert summary["locality"] == "mixed"
     assert summary["steps"]["draft"] == {"provider": "ollama", "model": "qwen3:4b",
                                          "locality": "local", "status": "unreachable"}
+
+
+def test_unknown_admin_model_has_no_price():
+    settings = Settings(_env_file=None)
+    models = ActiveModels(settings, {Step.EXTRACT: ModelChoice("openrouter", "mistralai/unknown")},
+                          fake_registry(settings))
+    assert models.prices(Step.EXTRACT) is None
+    assert models.token_prices(Step.EXTRACT) == (0.0, 0.0)
+    assert models.draft_info().provider == "openrouter" and models.draft_info().prices_known is True

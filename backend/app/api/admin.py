@@ -19,8 +19,9 @@ from starlette.concurrency import run_in_threadpool
 
 from app.models_config.catalog import step_catalog
 from app.models_config.embedding_switch import SwitchConflict
+from app.models_config.pricing import with_catalog_prices
 from app.models_config.probe import probe
-from app.models_config.steps import PROVIDERS_FOR_STEP
+from app.models_config.steps import CATALOG_KIND, PROVIDERS_FOR_STEP
 from app.models_config.types import ModelChoice, Step
 
 
@@ -69,12 +70,21 @@ def _check_provider(step: Step, choice: ModelChoice) -> None:
         raise HTTPException(422, f"{choice.provider} cannot run the {step.value} step.")
 
 
+async def _priced(request: Request, step: Step, choice: ModelChoice) -> ModelChoice:
+    try:
+        entries = await request.app.state.catalog.entries(choice.provider, CATALOG_KIND[step])
+    except Exception:
+        return choice  # an unreachable catalog only means no saved price
+    return with_catalog_prices(choice, entries)
+
+
 async def _tested(request: Request, step: Step, body: ChoiceInput):
     choice = body.choice()
     _check_provider(step, choice)
     result = await probe(step, choice, _store(request).registry)
     if not result.ok:
         raise HTTPException(422, f"Model test failed: {result.error}")
+    choice = await _priced(request, step, choice)
     return choice, result
 
 

@@ -5,7 +5,7 @@ from sqlalchemy.engine import make_url
 from app.config import Settings
 from app.db.session import make_engine, make_sessionmaker, reset_db
 from app.main import create_app
-from app.models_config.types import Capability, CatalogEntry
+from app.models_config.types import Capability, CatalogEntry, Step
 from tests.models_config_fakes import FakeProvider, fake_registry
 from tests.rag_fakes import ScriptedChat, answer, call
 
@@ -97,3 +97,17 @@ def test_save_rejections_change_nothing(make_client):
                                  "options": {"api_key": "x"}})
         assert extra.status_code == 422
         assert client.get("/api/admin/models/audit", headers=HEADERS).json()["items"] == []
+
+
+def test_saved_choice_keeps_catalog_prices_but_hides_them(make_client):
+    with make_client() as client:
+        app = client.app
+        app.state.model_store.registry.get("openrouter").chat = _tool_chat
+        app.state.model_store.registry.get("openrouter").entries = [
+            CatalogEntry("x/y", "x/y", frozenset({Capability.TOOLS}), 1.5, 6.0)]
+        saved = client.put("/api/admin/models/draft", headers=HEADERS,
+                           json={"provider": "openrouter", "model": "x/y", "changed_by": "Sara"})
+        assert saved.status_code == 200, saved.text
+        assert "price_in_per_m" not in saved.json()["options"]
+        assert app.state.model_store.choice(Step.DRAFT).options["price_in_per_m"] == 1.5
+        assert app.state.model_store.active().prices(Step.DRAFT) == (1.5, 6.0)

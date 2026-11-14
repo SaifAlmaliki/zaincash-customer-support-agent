@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.config import Settings
 from app.intake.db_models import IntakeSessionRow
 from app.models_config.db_models import ModelSettingAuditRow, ModelSettingRow
+from app.models_config.pricing import PRICE_KEYS
 from app.models_config.providers.registry import ProviderRegistry, UnknownProvider
 from app.models_config.resolver import ActiveModels
 from app.models_config.steps import PROVIDERS_FOR_STEP, REQUIREMENTS, intake_timeout_s
@@ -74,7 +75,8 @@ class ModelSettingsStore:
             status = active.step_status(step)
             described.append({
                 "step": step.value, "provider": choice.provider, "model": choice.model,
-                "options": dict(choice.options), "source": "admin" if entry else "env",
+                "options": {k: v for k, v in choice.options.items() if k not in PRICE_KEYS},
+                "source": "admin" if entry else "env",
                 "updated_at": _iso(entry["updated_at"]) if entry else None,
                 "updated_by": entry["updated_by"] if entry else None,
                 "locality": status.locality, "status": status.state, "status_detail": status.detail,
