@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { afterEach, expect, it } from "vitest"
 import { getLocale, setLocale } from "@/lib/locale"
-import type { AiSummary } from "@/lib/types"
+import type { AiSummary, CostSource } from "@/lib/types"
+import { CostValue } from "./CostValue"
 import { DailyTrend } from "./DailyTrend"
 import { emptySummary, summaryFixture } from "./fixtures"
 import { GroupTable } from "./GroupTable"
@@ -52,6 +53,34 @@ it("renders the summary in Arabic without English UI text", () => {
   expect(html).toContain("محلي · $0")
   for (const english of ["Total AI cost", "Reply drafting", "In use", "Cost and time by", "Not tied to a ticket"])
     expect(html, english).not.toContain(english)
+})
+
+it("renders Arabic tooltips and duration units without English", () => {
+  setLocale("ar")
+  const html = all()
+  expect(html).toContain('title="الوسيط: نصف الاستدعاءات أسرع من هذا الزمن"')
+  for (const english of ["Median latency", "95th percentile", "Share of", "Estimated from tokens", "Price unknown"])
+    expect(html, english).not.toContain(english)
+  expect(html).toContain("مللي ث")
+  expect(html).not.toMatch(/\d (ms|s)\b/)
+})
+
+it("shows unknown cost as a dash, partly unknown with a marker, and keeps est. and local", () => {
+  setLocale("en")
+  const cost = (sources: Partial<Record<CostSource, number>>) =>
+    renderToStaticMarkup(<CostValue value={0.0123} sources={sources} />)
+  const unknown = cost({ unknown: 2 })
+  expect(unknown).toContain('title="Price unknown"')
+  expect(unknown).toContain(">—<")
+  expect(unknown).not.toContain("$")
+  const partial = cost({ provider: 1, unknown: 1 })
+  expect(partial).toContain("$0.0123")
+  expect(partial).toContain("partly unknown")
+  expect(cost({ estimate: 1 })).toContain("est.")
+  expect(cost({ local: 2 })).toContain("Local · $0")
+  setLocale("ar")
+  expect(cost({ provider: 1, unknown: 1 })).toContain("جزء منها غير معروف")
+  expect(cost({ unknown: 1 })).toContain('title="السعر غير معروف"')
 })
 
 it("UsageHeadline renders dashes for an empty period", () => {

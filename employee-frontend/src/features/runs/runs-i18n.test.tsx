@@ -36,6 +36,8 @@ it("renders the runs pages in Arabic without English UI text", () => {
   expect(markup).toContain("تمت معالجة 2 من 4 تذكرة")
   expect(markup).toContain("احتيال محتمل")
   for (const text of ENGLISH) expect(markup, text).not.toContain(text)
+  expect(markup).toContain("1.5 ث")
+  expect(markup).not.toMatch(/\d (ms|s)\b/)
 })
 
 it("keeps English in English", () => {

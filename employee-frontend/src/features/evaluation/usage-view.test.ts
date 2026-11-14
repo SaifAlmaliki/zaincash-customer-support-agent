@@ -5,6 +5,7 @@ import { summaryFixture, ticketCalls } from "./fixtures"
 import {
   costSegments,
   isInUse,
+  mergeModels,
   periodRange,
   processLabel,
   shareWidth,
@@ -34,7 +35,18 @@ it("clamps share bars and summarizes cost sources", () => {
   expect(sourceMark({ provider: 3 })).toBeNull()
   expect(sourceMark({ local: 2 })).toBe("local")
   expect(sourceMark({ provider: 1, estimate: 1 })).toBe("estimate")
-  expect(sourceMark({ estimate: 1, unknown: 1 })).toBe("unknown")
+  expect(sourceMark({ unknown: 2 })).toBe("unknown")
+  expect(sourceMark({ estimate: 1, unknown: 1 })).toBe("partial")
+  expect(sourceMark({ provider: 1, unknown: 1 })).toBe("partial")
+  expect(sourceMark({ local: 1, unknown: 1 })).toBe("partial")
+  expect(sourceMark({})).toBeNull()
+})
+
+it("keeps every model seen so the filter never shrinks", () => {
+  const first = mergeModels([], ["b:x", "a:y"])
+  expect(first).toEqual(["a:y", "b:x"])
+  expect(mergeModels(first, ["a:y"])).toBe(first)
+  expect(mergeModels(first, ["c:z"])).toEqual(["a:y", "b:x", "c:z"])
 })
 
 it("detects models in use from health.ai", () => {

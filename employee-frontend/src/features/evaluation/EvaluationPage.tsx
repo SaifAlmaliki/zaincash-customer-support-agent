@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { ErrorState, LoadingState, PageHeader } from "@/components/shared/workspace-ui"
+import { useLastData } from "@/hooks/use-last-data"
 import { useResource } from "@/hooks/use-resource"
 import { useCopy } from "@/lib/locale"
 import type { Run, UsageFilters as Filters, UsageSummary, UsageTicketPage } from "@/lib/types"
@@ -11,7 +12,7 @@ import { TicketTimeline } from "./TicketTimeline"
 import { UnattributedCard } from "./UnattributedCard"
 import { UsageFilters } from "./UsageFilters"
 import { UsageHeadline } from "./UsageHeadline"
-import { periodRange, usageQuery } from "./usage-view"
+import { mergeModels, periodRange, usageQuery } from "./usage-view"
 
 const REFRESH_MS = 30_000
 const PAGE_SIZE = 25
@@ -38,6 +39,15 @@ export function EvaluationPage() {
     `/ai-usage/tickets?${usageQuery(filters, range, { sort, limit: PAGE_SIZE, offset })}`, workspace.revision)
   const runs = useResource<Run[]>("/runs", workspace.revision)
 
+  // A refresh moves the range, so `data` is briefly null; keep showing the last result meanwhile.
+  const lastSummary = useLastData(summary.data)
+  const lastTickets = useLastData(tickets.data)
+  const summaryData = summary.error ? null : lastSummary
+  const ticketData = tickets.error ? null : lastTickets
+  const [seenModels, setSeenModels] = useState<string[]>([])
+  const models = mergeModels(seenModels, (lastSummary?.by_model ?? []).map((g) => g.key))
+  if (models !== seenModels) setSeenModels(models)
+
   const change = (next: Filters) => {
     setFilters(next)
     setOffset(0)
@@ -47,29 +57,29 @@ export function EvaluationPage() {
     <>
       <PageHeader title={copy.pages.evaluationTitle} description={copy.pages.evaluationDescription} />
       <UsageFilters filters={filters} onChange={change}
-                    models={(summary.data?.by_model ?? []).map((g) => g.key)}
+                    models={models}
                     runs={(runs.data ?? []).slice(0, 50).map((r) => r.id)}
                     onRefresh={() => setNow(Date.now())} />
       {summary.error && <ErrorState message={summary.error} retry={summary.reload} />}
-      {!summary.data ? (
+      {!summaryData ? (
         !summary.error && <LoadingState />
       ) : (
         <>
-          <UsageHeadline totals={summary.data.totals} />
+          <UsageHeadline totals={summaryData.totals} />
           <div className="two-column">
-            <GroupTable kind="process" groups={summary.data.by_process} />
-            <DailyTrend days={summary.data.daily} />
+            <GroupTable kind="process" groups={summaryData.by_process} />
+            <DailyTrend days={summaryData.daily} />
           </div>
-          <GroupTable kind="model" groups={summary.data.by_model} ai={workspace.health?.ai} />
+          <GroupTable kind="model" groups={summaryData.by_model} ai={workspace.health?.ai} />
         </>
       )}
       {tickets.error && <ErrorState message={tickets.error} retry={tickets.reload} />}
-      {tickets.data && (
-        <TicketCostTable page={tickets.data} sort={sort}
+      {ticketData && (
+        <TicketCostTable page={ticketData} sort={sort}
                          onSort={(value) => { setSort(value); setOffset(0) }}
                          offset={offset} limit={PAGE_SIZE} onPage={setOffset} onOpen={setOpen} />
       )}
-      {summary.data && <UnattributedCard data={summary.data.unattributed} />}
+      {summaryData && <UnattributedCard data={summaryData.unattributed} />}
       <TicketTimeline resultId={open} onClose={() => setOpen(null)} />
     </>
   )

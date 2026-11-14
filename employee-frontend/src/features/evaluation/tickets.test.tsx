@@ -33,6 +33,19 @@ it("TicketCostTable marks rows without recorded detail", () => {
   expect(html).not.toContain("Detail not recorded")
 })
 
+it("renders the timeline in Arabic with localised units and a dash for unknown cost", () => {
+  setLocale("ar")
+  const unknownCall = { ...ticketCalls.calls[1], id: 4, cost_usd: 0, cost_source: "unknown" as const }
+  const html = renderToStaticMarkup(
+    <TimelineView data={{ ...ticketCalls, calls: [...ticketCalls.calls, unknownCall] }} />)
+  expect(html).toContain("800 مللي ث")
+  expect(html).toContain('title="السعر غير معروف">—<')
+  expect(html).not.toMatch(/\d (ms|s)\b/)
+  expect(html).not.toContain("Price unknown")
+  expect(renderToStaticMarkup(<TicketCostTable page={ticketPage} sort="cost" onSort={() => {}} offset={0}
+                              limit={25} onPage={() => {}} onOpen={() => {}} />)).not.toMatch(/\d (ms|s)\b/)
+})
+
 it("renders the timeline in order with errors and local cost", () => {
   setLocale("en")
   const html = renderToStaticMarkup(<TimelineView data={ticketCalls} />)

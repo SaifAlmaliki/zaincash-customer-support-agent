@@ -56,8 +56,10 @@ export const timeLabel = (value: string) =>
     minute: "2-digit",
     timeZone: "Asia/Baghdad",
   }).format(new Date(value))
-export const duration = (ms: number) =>
-  ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`
+export const duration = (ms: number) => {
+  const units = getCopy().common.units
+  return ms < 1000 ? `${ms} ${units.ms}` : `${(ms / 1000).toFixed(1)} ${units.s}`
+}
 export const usd = (value?: number | null) =>
   value == null ? "—"
     : value === 0 ? "$0"

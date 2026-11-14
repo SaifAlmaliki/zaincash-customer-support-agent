@@ -37,12 +37,21 @@ export function shareWidth(value?: number | null) {
   return `${Number(pct.toFixed(1))}%`
 }
 
-export function sourceMark(sources: Partial<Record<CostSource, number>>): CostSource | null {
+export type CostMark = "local" | "estimate" | "unknown" | "partial" | null
+
+// "unknown": every call lacks a price; "partial": some do, so the shown cost is a lower bound.
+export function sourceMark(sources: Partial<Record<CostSource, number>>): CostMark {
   const used = (Object.keys(sources) as CostSource[]).filter((s) => (sources[s] ?? 0) > 0)
   if (used.length && used.every((s) => s === "local")) return "local"
-  if (used.includes("unknown")) return "unknown"
+  if (used.length && used.every((s) => s === "unknown")) return "unknown"
+  if (used.includes("unknown")) return "partial"
   if (used.includes("estimate")) return "estimate"
   return null
+}
+
+export function mergeModels(seen: string[], current: string[]) {
+  const missing = current.filter((model) => !seen.includes(model))
+  return missing.length ? [...seen, ...missing].sort() : seen
 }
 
 export function isInUse(group: UsageGroup, ai?: AiSummary) {

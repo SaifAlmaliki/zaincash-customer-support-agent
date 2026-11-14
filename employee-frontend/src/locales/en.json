@@ -56,7 +56,11 @@
     "loadError": "Couldn’t load the workspace",
     "unassigned": "Unassigned",
     "unclassified": "Unclassified",
-    "notStated": "Not stated"
+    "notStated": "Not stated",
+    "units": {
+      "ms": "ms",
+      "s": "s"
+    }
   },
   "channels": {
     "app": "App",
@@ -775,6 +779,7 @@
       "local": "Local · $0",
       "unknown": "Price unknown"
     },
-    "estimated": "est."
+    "estimated": "est.",
+    "partlyUnknown": "partly unknown"
   }
 }
