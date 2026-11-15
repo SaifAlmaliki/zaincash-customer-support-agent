@@ -44,13 +44,14 @@ What to know:
 - **Only suitable models are listed.** Drafting needs tool calling, intake needs vision, and embeddings must be 768 dimensions. You can also type any model ID.
 - **A model is saved only after a live test passes.**
 - **Changes apply to new batches and new customer chats.** Customers never see a change, and a chat keeps one model from start to finish.
-- **No silent fallback.** If the chosen provider is down, the step fails and the ticket goes to a person with the reason. Nothing switches to another provider on its own.
+- **No silent fallback (Intentional).** If the chosen provider is down, the step fails and the ticket goes to a person with the reason. Nothing switches to another provider on its own.
 - **Changing the embedding model re-indexes the knowledge base.** New batches wait until it finishes, and the switch cannot start while a batch is running.
 - The top bar shows **AI: Local**, **AI: Cloud**, or **AI: Mixed**, so everyone can see where ticket data goes. Each run page lists the models it used.
 
 ### AI usage and performance (`/evaluation`)
 
 Every AI call is recorded in the `ai_calls` table:
+
 - customer intake, Jev classification, detail extraction and reply drafting;
 - knowledge search during drafting and the credential check;
 - knowledge indexing, manual knowledge search and admin model tests.
@@ -59,6 +60,7 @@ Each row holds the model, start time, latency, tokens, cost, cost source (provid
 estimated, local or unknown) and errors. Prompts and ticket text are never stored.
 
 The Evaluation page shows, for a chosen period, process, model or batch run:
+
 - total AI cost, cost per ticket and AI time per ticket;
 - cost and time by process and by model, with local models shown as **Local · $0**;
 - a daily trend;
@@ -70,31 +72,59 @@ Results processed before tracking began show only their totals.
 
 ## Quick start
 
-You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter key.
+You need WSL Ubuntu, Docker, Node.js, a TypeSafe key, and an OpenRouter key. You also need [`uv`](https://docs.astral.sh/uv/) installed inside that Ubuntu shell. The shell only sees programs installed in Ubuntu.
 
-1. **Configure.** Create a `.env` file in the repository root (it is gitignored):
+1. **Configure.** Create a `.env` file in the repository root (it is gitignored). Copy the block below in full: it is the file the demo and the test suite run with. Replace the three secrets and keep the other values so your run matches this repository.
+
    ```bash
-    TYPESAFE_API_KEY=...
-    OPENROUTER_API_KEY=...
-    # Empty disables the admin page.
-    ADMIN_TOKEN=...
-    # Drafting and customer intake models; if empty, both use GEMINI_MODEL.
-    ANTHROPIC_MODEL=anthropic/claude-sonnet-5.5
-    INTAKE_MODEL=anthropic/claude-sonnet-5.5
+   # --- Providers (required to process a ticket) ---
+   OPENROUTER_API_KEY=...
+   TYPESAFE_API_KEY=...
+
+   # --- Models ---
+   # Drafting uses ANTHROPIC_MODEL when set, otherwise GEMINI_MODEL
+   # (default google/gemini-3.8-flash, also the extraction model).
+   ANTHROPIC_MODEL=anthropic/claude-sonnet-5.5
+   # Intake uses this model. It must support vision and structured output.
+   # Empty falls back to GEMINI_MODEL.
+   INTAKE_MODEL=anthropic/claude-sonnet-5.5
+
+   # --- Classification and pipeline ---
+   JEV_MODEL=jev-1.13.0
+   T_JEV=0.6
+   JEV_MIN_TOP_PROB=0.60
+   PIPELINE_CONCURRENCY=20
+   MAX_STATE_CHARS=6000
+   AGENT_MAX_TOOL_CALLS=6
+   AGENT_TIMEOUT_S=30
+
+   # --- Embeddings ---
+   # Must stay 768 to match the knowledge index schema.
+   EMBED_DIM=768
+
+   # --- Tests (host pytest only; Compose clears this inside the API container) ---
+   TEST_DATABASE_URL=postgresql+psycopg://support:support@localhost:5433/support_test
+
+   # --- Local models and admin ---
+   OLLAMA_BASE_URL=http://localhost:11434
+   # Empty disables the admin page. Any non-empty value turns it on.
+   ADMIN_TOKEN=...
    ```
 
-    Every other setting has a default in [`backend/app/config.py`](backend/app/config.py); add a line to `.env` only to override one. Do not set `DATABASE_URL`: the API container builds it from `secrets/`. Copy each file in `secrets/` from its `.example` version, removing the `.example` suffix.
+   `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` have to be real keys before a batch or a customer chat can call a model. `ADMIN_TOKEN` is the password for **Admin → AI models**. `TEST_DATABASE_URL` is what `uv run pytest` connects to on the host; its user and password must match `secrets/` (the examples are `support` / `support`). The database name stays `support_test`.
+
+   Anything not listed here has a default in [`backend/app/config.py`](backend/app/config.py). Add a line only to override one. Leave `DATABASE_URL` unset: the API container builds it from the Compose secrets. Those secrets are the tracked files `secrets/postgres_user.example`, `secrets/postgres_password.example`, and `secrets/postgres_db.example` (each is `support`).
 2. **Start the database and API:**
    ```bash
-    docker compose up --build -d
+     docker compose up --build -d
    ```
 3. **Start the employee workspace:**
    ```bash
-    cd employee-frontend && npm ci && npm run dev
+     cd employee-frontend && npm ci && npm run dev
    ```
 4. **Start the customer intake app** (optional):
    ```bash
-    cd users-frontend && npm ci && npm --workspace web run dev
+     cd users-frontend && npm ci && npm --workspace web run dev
    ```
 
 | App | Address |
@@ -123,9 +153,9 @@ Then load the demo data: in pgAdmin (database `support`, `localhost:5433`), run 
 
 1. Pull the models:
    ```bash
-    ollama pull qwen3:4b          # extract and draft
-    ollama pull nomic-embed-text  # embeddings (768 dimensions)
-    ollama pull gemma3:4b         # intake (needs vision; qwen3:4b has none)
+     ollama pull qwen3:4b          # extract and draft
+     ollama pull nomic-embed-text  # embeddings (768 dimensions)
+     ollama pull gemma3:4b         # intake (needs vision; qwen3:4b has none)
    ```
 2. Make Ollama reachable from the API and set `OLLAMA_BASE_URL` in `.env`:
    - **Ollama on Windows, API in WSL or Docker inside WSL:** set the Windows user variable `OLLAMA_HOST=0.0.0.0:11434`, restart Ollama, and use `http://<windows-ip>:11434`. Run `ip route show default` in WSL to get the IP. Alternatively, enable WSL mirrored networking and use `http://localhost:11434`.
@@ -134,14 +164,82 @@ Then load the demo data: in pgAdmin (database `support`, `localhost:5433`), run 
 
 Local models are slower. The settings `LOCAL_AGENT_TIMEOUT_S`, `LOCAL_INTAKE_TIMEOUT_S`, `LOCAL_NUM_CTX` (context window), and `LOCAL_PIPELINE_CONCURRENCY` (tickets processed at once) control them. Because Jev runs in the cloud, an all-Ollama setup shows **AI: Mixed**.
 
+## Assumptions
+
+Routing follows the [FAZAA design brief](presentation/SaifAlmaliki_Topic06_FAZAA_Design_Brief.pptx). [`data/taxonomy.yaml`](data/taxonomy.yaml) is the source of truth for categories, teams, and priority minimums. The classifier names the issue. Code in [`backend/app/pipeline/stage5_decide/rules.py`](backend/app/pipeline/stage5_decide/rules.py) assigns the team and the final urgency. A person reviews every outcome.
+
+- One ticket has one category, and that category belongs to one team.
+- The model proposes the category and an urgency. The team comes from the category.
+- The final priority is the most urgent of the model's proposal, the category minimum, and the risk rules below. Those rules only raise urgency.
+- A fraud flag keeps the category's team. The reviewer can reassign.
+- Escalation is a review status. The ticket keeps its team, and the reason is saved with it.
+- Failed transfer, wrong recipient, agent dispute, bill payment, and refund request need a transaction match. The other seven categories do not.
+
+### Priorities
+
+P1 is the most urgent. The values below are minimums. A ticket's final priority can be more urgent.
+
+| Priority | Meaning |
+|---|---|
+| P1 | Money at risk now, or fraud |
+| P2 | Money lost or stuck |
+| P3 | A service is blocked |
+| P4 | A request for information |
+
+A fraud score above 0.5 sets the priority to P1. A fraud report is already P1, and it is always escalated. A money-lost score above 0.5 raises the priority to at least P2, so a card issue that starts at P3 becomes P2 when money is missing. Low confidence, several issues in one ticket, a request for a person, missing details, or a transaction that is missing, ambiguous, or inconsistent escalates the ticket and leaves the category's team in place.
+
+### Teams
+
+Seven teams. Each one is assumed to own one kind of work, and the categories are assigned on that basis.
+
+| Team | Assumed ownership | Categories |
+|---|---|---|
+| Payments Ops | Money movement that did not complete: transfers and bills | Failed transfer, bill payment |
+| Disputes | Money that went to the wrong place, or that a merchant should return | Wrong recipient, refund request |
+| Account & Security | The account itself: access, identity, and fraud | Login / access, account / KYC, fraud report |
+| Agent Network | A ZainCash agent or shop | Agent dispute |
+| Cards | The Mastercard or virtual card | Card issue |
+| Tech Support | The app, when no money is missing | App bug |
+| General Care | Questions, and anything that fits nowhere else | General inquiry, other |
+
+### Categories
+
+Twelve categories. Each row is the assumption the classifier and the rulebook share: what the category covers, who owns it, and the lowest priority it can have.
+
+| Category | Team | Minimum | What it covers |
+|---|---|---|---|
+| Failed transfer | Payments Ops | P2 | A transfer that failed, is pending, or left the wallet and did not arrive |
+| Bill payment | Payments Ops | P3 | A bill or top-up that failed, or that the biller did not apply |
+| Wrong recipient | Disputes | P2 | Money sent to the wrong number or person by mistake |
+| Refund request | Disputes | P3 | Money back from a merchant or a cancelled service |
+| Login / access | Account & Security | P3 | Cannot log in, a forgotten PIN, a missing verification code, or a locked account |
+| Account / KYC | Account & Security | P4 | Verification, account level, ID documents, limits, or a change of account details |
+| Fraud report | Account & Security | P1 | A scam, a request for the OTP or PIN, an unauthorized transaction, or a hacked account |
+| Agent dispute | Agent Network | P2 | Cash-in or cash-out not credited, an extra fee, or a refused service at an agent |
+| Card issue | Cards | P3 | A card declined, blocked, not delivered, or charged twice for one purchase |
+| App bug | Tech Support | P3 | A crash, an error, or a feature that does not work, with no money lost |
+| General inquiry | General Care | P4 | Fees, limits, how to do something, agent locations, or promotions |
+| Other | General Care | P4 | Anything else, including a complaint with no clear request |
+
+Neighboring categories stay separate. A transfer that failed technically is a failed transfer. A number the customer typed wrong is a wrong recipient. A bill or top-up is a bill payment. Someone else inside the account is a fraud report. An app error that also lost money stays with the money category. A question with no incident is a general inquiry.
+
 ## Try the demo
 
-1. Index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf). That folder is the only policy reference:
+1. This architecture uses retrieval-augmented generation (RAG) to index ZainCash policy, then search that index when it drafts a reply. Index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf) first. That folder is the only policy text the demo searches. Run the command below from the repository root, in the **Ubuntu** shell (the prompt looks like `saif@...:/mnt/c/Dev/zaincash-customer-support-agent$`). The database from the quick start must already be running.
+
+   If Ubuntu prints `uv: command not found`, install `uv` there once, then open a new Ubuntu shell:
+
    ```bash
-    uv --directory backend run support ingest-kb ../data/kb-pdf
+   curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-    Wait until each file is **Indexed**.
+   Then index the folder:
+
+   ```bash
+   uv --directory backend run support ingest-kb ../data/kb-pdf
+   ```
+
+   The command prints one JSON line per file and keeps running until it finishes. Each line is done when `"status"` is `"indexed"`. In the employee workspace, open **Knowledge base**: the same files show the badge **Indexed**. A line with `"failed"` was not indexed.
 2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing. Every ticket in a batch file needs a `customer_phone`. The customer intake app asks for the phone number before the chat starts.
 3. Open the results. Edit a reply and choose **Save & approve**.
 
@@ -174,7 +272,7 @@ cd backend && uv run pytest -q && uv run ruff check app tests
 cd employee-frontend && npm test && npm run lint && npm run build
 ```
 
-Backend integration tests use the separate `support_test` database. To process a file of tickets from the command line:
+Backend integration tests use the separate `support_test` database at `TEST_DATABASE_URL` from `.env`. Start the database first (`docker compose up -d db`) so that URL can connect. To process a file of tickets from the command line:
 
 ```bash
 uv --directory backend run support run-batch ../data/demo/rag_tickets.jsonl --out ../out/run.json

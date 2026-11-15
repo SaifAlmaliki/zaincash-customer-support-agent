@@ -61,9 +61,11 @@ volumes:
   pgdata:
 
 secrets:
+  # These example files are in git. Compose used to require untracked copies,
+  # which a fresh checkout does not have, so Postgres booted with an empty password.
   postgres_user:
-    file: ./secrets/postgres_user
+    file: ./secrets/postgres_user.example
   postgres_password:
-    file: ./secrets/postgres_password
+    file: ./secrets/postgres_password.example
   postgres_db:
-    file: ./secrets/postgres_db
+    file: ./secrets/postgres_db.example
