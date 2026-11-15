@@ -72,7 +72,7 @@ Results processed before tracking began show only their totals.
 
 ## Quick start
 
-You need WSL Ubuntu, Docker, Node.js, a TypeSafe key, and an OpenRouter key. You also need [`uv`](https://docs.astral.sh/uv/) installed inside that Ubuntu shell. The shell only sees programs installed in Ubuntu.
+You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter key.
 
 1. **Configure.** Create a `.env` file in the repository root (it is gitignored). Copy the block below in full: it is the file the demo and the test suite run with. Replace the three secrets and keep the other values so your run matches this repository.
 
@@ -225,22 +225,13 @@ Neighboring categories stay separate. A transfer that failed technically is a fa
 
 ## Try the demo
 
-1. This architecture uses retrieval-augmented generation (RAG) to index ZainCash policy, then search that index when it drafts a reply. Index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf) first. That folder is the only policy text the demo searches. Run the command below from the repository root, in the **Ubuntu** shell (the prompt looks like `saif@...:/mnt/c/Dev/zaincash-customer-support-agent$`). The database from the quick start must already be running.
-
-   If Ubuntu prints `uv: command not found`, install `uv` there once, then open a new Ubuntu shell:
-
+1. This architecture uses retrieval-augmented generation (RAG) to index ZainCash policy, then search that index when it drafts a reply. Index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf) first:
    ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
+     uv --directory backend run support ingest-kb ../data/kb-pdf
    ```
 
-   Then index the folder:
-
-   ```bash
-   uv --directory backend run support ingest-kb ../data/kb-pdf
-   ```
-
-   The command prints one JSON line per file and keeps running until it finishes. Each line is done when `"status"` is `"indexed"`. In the employee workspace, open **Knowledge base**: the same files show the badge **Indexed**. A line with `"failed"` was not indexed.
-2. Open **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and start processing. Every ticket in a batch file needs a `customer_phone`. The customer intake app asks for the phone number before the chat starts.
+   Wait until each file is **Indexed**.
+2. Start the API and the employee workspace if they are not already running (Quick start steps 2 and 3). The customer intake app is not needed for this step. In the browser, open http://localhost:5173, click **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and click **Start processing**.
 3. Open the results. Edit a reply and choose **Save & approve**.
 
 The demo data and the files in `data/kb-pdf/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).
