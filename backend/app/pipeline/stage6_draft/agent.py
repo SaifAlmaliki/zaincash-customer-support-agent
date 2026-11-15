@@ -35,7 +35,7 @@ from app.pipeline.stage6_draft.tools import _bounded, _json, build_tools
 from app.pipeline.state import PipelineState
 from app.telemetry.calls import AiCall, Timer, cost_for, count, record
 
-PROMPT_VERSION = "draft_v1"
+PROMPT_VERSION = "draft_v2"
 SYSTEM_PROMPT = Path(__file__).with_name("prompts").joinpath(f"{PROMPT_VERSION}.md").read_text(encoding="utf-8")
 _PROVIDER_ERRORS = provider_errors()
 

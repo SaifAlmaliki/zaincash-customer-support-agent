@@ -54,6 +54,17 @@ async def test_anthropic_fallback_prices_and_provider_cost_precedence(reported, 
     assert ledger.cost_usd == pytest.approx(expected)
 
 
+def test_prompt_v2_requires_recent_transactions_without_a_confirmed_match():
+    from pathlib import Path
+
+    from app.pipeline.stage6_draft import agent
+
+    assert agent.PROMPT_VERSION == "draft_v2"
+    assert "get_customer_recent_transactions" in agent.SYSTEM_PROMPT
+    assert "not `matched`" in agent.SYSTEM_PROMPT
+    assert (Path(agent.__file__).with_name("prompts") / "draft_v1.md").exists()
+
+
 async def test_real_agent_search_submit_keeps_sources_usage_and_existing_escalation():
     agent, model = drafter()
     state = draft_state(reasons=("fraud_suspected",))
