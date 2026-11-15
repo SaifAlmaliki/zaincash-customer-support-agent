@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.engine import make_url
 
 from app.config import REPO_ROOT, Settings
-from app.db.models import CustomerRow, TicketRow
+from app.db.models import CustomerRow, TicketRow, TransactionRow
 from app.db.session import make_engine, make_sessionmaker, reset_db
 
 pytestmark = pytest.mark.integration
@@ -30,8 +30,12 @@ def test_demo_seed_gives_every_ticket_a_customer():
         with make_sessionmaker(engine)() as session:
             phones = list(session.scalars(select(TicketRow.customer_phone)))
             customers = set(session.scalars(select(CustomerRow.phone)))
+            refs = set(session.scalars(select(TransactionRow.txn_ref)))
         assert len(phones) == 7
         assert set(phones) <= customers
+        assert {
+            "ZC2410001001", "ZC2410001002", "ZC2410001003", "ZC2410001004",
+        } <= refs
         assert all(re.fullmatch(r"07[3-9][0-9]{8}", phone) for phone in phones)
     finally:
         reset_db(engine)

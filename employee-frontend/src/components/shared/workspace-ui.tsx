@@ -32,7 +32,9 @@ export function StatusBadge({ status }: { status: string }) {
 }
 export function PriorityBadge({ priority }: { priority: string | null }) {
   return (
-    <span className={`priority priority-${priority}`}>{priority || "—"}</span>
+    <span className={`priority-badge priority-${priority || "none"}`}>
+      {priority || "—"}
+    </span>
   )
 }
 export function Confidence({ value }: { value: number | null }) {

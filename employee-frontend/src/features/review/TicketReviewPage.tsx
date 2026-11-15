@@ -28,7 +28,7 @@ import { api } from "@/lib/api"
 import { dateLabel, teamLabel, teams, timeLabel, humanize } from "@/lib/format"
 import { fill, useCopy } from "@/lib/locale"
 import type { Result, ReviewInput } from "@/lib/types"
-import { EscalationCallout, SourceEvidence, TransactionCard } from "./SourceEvidence"
+import { CustomerMessage, EscalationCallout, SourceEvidence, TransactionCard } from "./SourceEvidence"
 import { TicketFlow } from "./TicketFlow"
 import { TicketHeader } from "./TicketHeader"
 import { IntakeEvidence, ReportedDetails } from "./IntakeEvidence"
@@ -317,6 +317,7 @@ export function TicketReviewPage() {
       <TicketHeader result={result} />
       <div className="review-layout">
         <div className="review-column">
+          <CustomerMessage result={result} />
           <IntakeEvidence intake={result.intake} omitDetails omitSummary />
           <div className="compare-pair">
             <ReportedDetails intake={result.intake} />

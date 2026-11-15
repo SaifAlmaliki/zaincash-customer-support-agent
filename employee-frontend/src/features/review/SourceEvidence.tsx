@@ -1,6 +1,7 @@
 import {
   FileSearch,
   Hash,
+  MessageSquareText,
   ShieldAlert,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,8 +24,8 @@ function ledgerValue(key: string, value: string | number, arabic: boolean): stri
     ? { pending: "معلّقة", completed: "مكتملة", failed: "فاشلة" }
     : { pending: "Pending", completed: "Completed", failed: "Failed" }
   const type = arabic
-    ? { p2p: "تحويل لشخص", bill: "فاتورة" }
-    : { p2p: "Person to person", bill: "Bill" }
+    ? { p2p: "تحويل لشخص", bill: "فاتورة", cash_in: "شحن عن طريق وكيل", merchant: "شراء من متجر" }
+    : { p2p: "Person to person", bill: "Bill", cash_in: "Agent cash-in", merchant: "Merchant purchase" }
   if (key === "status") return status[String(value) as keyof typeof status] || String(value)
   if (key === "type") return type[String(value) as keyof typeof type] || String(value)
   return String(value)
@@ -59,6 +60,25 @@ export function TransactionCard({ result }: { result: Result }) {
             {result.lookup_status === "not_applicable" ? text.lookupSkipped : text.lookupMissing}
           </p>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function CustomerMessage({ result }: { result: Result }) {
+  const text = useCopy().evidence
+  const message = result.ticket.text.trim()
+  if (!message) return null
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="section-title">
+          <MessageSquareText size={17} />
+          {text.message}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="passage-text" dir="auto" lang="ar">{message}</p>
       </CardContent>
     </Card>
   )

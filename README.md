@@ -261,26 +261,6 @@ Load the demo database first (`docker/db/cleanup.sql`, then `docker/db/seed_demo
 
    وصلني تحويل 200,000 دينار يوم 2026-10-07 من رقم 07501112233 وانا ما اعرف المرسل. رقم العملية ZC2410000789.
 
-## Checks
-
-```bash
-cd backend && uv run pytest -q && uv run ruff check app tests
-cd employee-frontend && npm test && npm run lint && npm run build
-```
-
-Backend integration tests use the separate `support_test` database at `TEST_DATABASE_URL` from `.env`. Start the database first (`docker compose up -d db`) so that URL can connect. To process a file of tickets from the command line:
-
-```bash
-uv --directory backend run support run-batch ../data/demo/rag_tickets.jsonl --out ../out/run.json
-```
-
-## More documentation
-
-- [Demo walkthrough and open work](docs/demo-readiness.md)
-- [Pipeline design](docs/superpowers/specs/2026-10-07-support-pipeline-design.md)
-- [Admin model configuration design](docs/superpowers/specs/2026-11-12-admin-model-config-design.md)
-- Verification records: [RAG drafting](docs/verification/2026-10-17-rag-drafting.md), [customer intake](docs/verification/2026-10-18-customer-intake.md)
-
 ## License
 
 This project is proprietary. The [license](LICENSE) lets a recipient read and study the source and ask the copyright holder questions. Publishing, selling, sharing it outside that recipient, or reusing it requires Saif Almaliki's prior written approval.
