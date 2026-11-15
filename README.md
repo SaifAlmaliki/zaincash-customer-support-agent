@@ -260,6 +260,24 @@ Load the demo database first (`docker/db/cleanup.sql`, then `docker/db/seed_demo
 5. **Receiver got money from someone they do not know.** Phone `07901234567`. Same completed transfer, from the receiver's side.
 
    وصلني تحويل 200,000 دينار يوم 2026-10-07 من رقم 07501112233 وانا ما اعرف المرسل. رقم العملية ZC2410000789.
+6. **Money sent to the wrong number.** Phone `07821110001`. Matches completed `ZC2410001001`, 100,000 IQD to 07706543210 on 2026-10-07.
+
+   غلطت بالرقم وحولت 100,000 دينار يوم 2026-10-07 على رقم 07706543210 ووصلت لشخص غير معروف. اريد ارجعهن. رقم العملية ZC2410001001.
+7. **That wrong recipient received the money.** Phone `07706543210`. Same completed transfer, from the receiver's side.
+
+   وصلني تحويل 100,000 دينار يوم 2026-10-07 من رقم 07821110001 وانا ما اعرف المرسل. رقم العملية ZC2410001001.
+8. **Agent cash-in that never landed.** Phone `07841110003`. Matches failed `ZC2410001002`, 200,000 IQD, agent AG-JU, on 2026-10-07.
+
+   رحت لوكيل زين كاش وانطيته 200,000 دينار يوم 2026-10-07 حتى يشحن حسابي وما نزلت. رقم العملية ZC2410001002.
+9. **Asia top-up marked paid but not applied.** Phone `07861110005`. Matches completed bill `ZC2410001003`, 10,000 IQD, biller آسيا سيل, on 2026-10-07.
+
+   شحنت رصيد آسيا سيل 10,000 دينار يوم 2026-10-07 وطلعت ناجحة بالتطبيق بس الرصيد ما وصل للخط. رقم العملية ZC2410001003.
+10. **Cancelled merchant purchase.** Phone `07881110007`. Matches completed `ZC2410001004`, 25,000 IQD at متجر النور on 2026-10-07.
+
+    اشتريت من متجر النور بـ 25,000 دينار يوم 2026-10-07 على رقم 07890001122 والغيت الطلب. اريد فلوسي ترجع. رقم العملية ZC2410001004.
+11. **Merchant received that purchase.** Phone `07890001122`. Same completed purchase, from the store's side.
+
+    وصلني دفع 25,000 دينار يوم 2026-10-07 من رقم 07881110007 باسم متجر النور. رقم العملية ZC2410001004.
 
 ## License
 
