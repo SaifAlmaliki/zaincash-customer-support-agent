@@ -21,20 +21,43 @@ function ledgerValue(key: string, value: string | number, arabic: boolean): stri
     if (!Number.isNaN(date.getTime())) return `${dateLabel(String(value))} ${timeLabel(String(value))}`
   }
   const status = arabic
-    ? { pending: "معلّقة", completed: "مكتملة", failed: "فاشلة" }
-    : { pending: "Pending", completed: "Completed", failed: "Failed" }
+    ? { pending: "معلّقة", completed: "مكتملة", failed: "فاشلة", declined: "مرفوضة" }
+    : { pending: "Pending", completed: "Completed", failed: "Failed", declined: "Declined" }
   const type = arabic
-    ? { p2p: "تحويل لشخص", bill: "فاتورة", cash_in: "شحن عن طريق وكيل", merchant: "شراء من متجر" }
-    : { p2p: "Person to person", bill: "Bill", cash_in: "Agent cash-in", merchant: "Merchant purchase" }
+    ? { p2p: "تحويل لشخص", bill: "فاتورة", cash_in: "شحن عن طريق وكيل", merchant: "شراء من متجر", card: "دفع بالبطاقة" }
+    : { p2p: "Person to person", bill: "Bill", cash_in: "Agent cash-in", merchant: "Merchant purchase", card: "Card payment" }
   if (key === "status") return status[String(value) as keyof typeof status] || String(value)
   if (key === "type") return type[String(value) as keyof typeof type] || String(value)
   return String(value)
+}
+
+const FOUND_FIELDS = ["created_at", "receiver_name", "amount_iqd", "type", "status", "failure_reason", "txn_ref"]
+
+function LedgerRows({ entries, labels, arabic }: {
+  entries: [string, string | number | null][]
+  labels: Record<string, string>
+  arabic: boolean
+}) {
+  return (
+    <dl className="compare-rows">
+      {entries
+        .filter((entry): entry is [string, string | number] => entry[1] !== null && entry[1] !== "")
+        .map(([key, value]) => (
+          <div key={key}>
+            <dt>{labels[key] || humanize(key)}</dt>
+            <dd><bdi dir="ltr">{ledgerValue(key, value, arabic)}</bdi></dd>
+          </div>
+        ))}
+    </dl>
+  )
 }
 
 export function TransactionCard({ result }: { result: Result }) {
   const { locale } = useLocale()
   const text = useCopy().evidence
   const labels = text.txn as Record<string, string>
+  const arabic = locale === "ar"
+  const found = result.investigated_transactions ?? []
   return (
     <Card className="compare-card">
       <CardHeader>
@@ -45,16 +68,22 @@ export function TransactionCard({ result }: { result: Result }) {
       </CardHeader>
       <CardContent>
         {result.transaction ? (
-          <dl className="compare-rows">
-            {Object.entries(result.transaction)
-              .filter(([, value]) => value !== null && value !== "")
-              .map(([key, value]) => (
-                <div key={key}>
-                  <dt>{labels[key] || humanize(key)}</dt>
-                  <dd><bdi dir="ltr">{ledgerValue(key, value as string | number, locale === "ar")}</bdi></dd>
-                </div>
-              ))}
-          </dl>
+          <LedgerRows entries={Object.entries(result.transaction)} labels={labels} arabic={arabic} />
+        ) : found.length > 0 ? (
+          <div className="evidence-stack">
+            <strong>{text.found}</strong>
+            <p className="muted">{text.foundHelp}</p>
+            {found.map((txn, index) => (
+              <LedgerRows
+                key={String(txn.txn_ref ?? index)}
+                entries={FOUND_FIELDS.map((key) => [
+                  key, key === "receiver_name" ? txn.receiver_name ?? txn.receiver_phone ?? null : txn[key] ?? null,
+                ])}
+                labels={labels}
+                arabic={arabic}
+              />
+            ))}
+          </div>
         ) : (
           <p className="muted">
             {result.lookup_status === "not_applicable" ? text.lookupSkipped : text.lookupMissing}

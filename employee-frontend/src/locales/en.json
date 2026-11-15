@@ -338,10 +338,13 @@
       "status": "Status",
       "created_at": "Created",
       "biller": "Biller",
-      "currency": "Currency"
+      "currency": "Currency",
+      "failure_reason": "Failure reason"
     },
     "lookupSkipped": "This issue does not require a transaction lookup.",
-    "lookupMissing": "No matched transaction is available. Investigate before confirming transaction details."
+    "lookupMissing": "No matched transaction is available. Investigate before confirming transaction details.",
+    "found": "Found by the AI search (not confirmed)",
+    "foundHelp": "The assistant found these by the customer's phone. Verify before confirming any detail to the customer."
   },
   "citations": {
     "title": "Cited policy evidence",

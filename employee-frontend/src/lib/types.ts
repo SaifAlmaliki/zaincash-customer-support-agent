@@ -95,8 +95,10 @@ export type Result = {
   jev_model_version?: string | null
   reviews?: Review[]
   transaction?: Record<string, string | number | null> | null
+  investigated_transactions?: InvestigatedTransaction[]
   intake?: IntakeEvidenceData | null
 }
+export type InvestigatedTransaction = Record<string, string | number | null>
 export type ReviewInput = {
   action: "approve" | "edit_approve" | "reject" | "reassign"
   reviewer: string
