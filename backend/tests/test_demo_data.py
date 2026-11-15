@@ -1,4 +1,6 @@
 """The demo tickets must match the transaction fixture the API seeds at startup."""
+from datetime import timedelta
+
 import pytest
 
 from app.config import REPO_ROOT
@@ -59,3 +61,14 @@ def test_payment_demo_ticket_matches_seeded_transaction(external_id, tax):
 
     assert (result.status, result.txn.txn_ref if result.txn else None) == ("matched", expected)
     assert result.txn.created_at <= ticket.received_at
+
+
+def test_card_ticket_customer_has_declined_card_attempts():
+    ticket = {t.external_id: t for t in load_tickets(RAG_TICKETS)}["RAG-DEMO-CARD"]
+    repo = InMemoryTransactionRepo(txn_from_dict(r) for r in load_jsonl(FIXTURES / "sample_transactions.jsonl"))
+    rows = repo.search(phone=ticket.customer_phone, amount_min=None, amount_max=None,
+                       start=ticket.received_at - timedelta(days=14), end=ticket.received_at)
+    assert [r.txn_ref for r in rows] == ["ZC2410001007", "ZC2410001006", "ZC2410001005"]
+    assert {(r.type, r.status, r.failure_reason) for r in rows} == {
+        ("card", "declined", "الدفع الإلكتروني غير مفعّل على البطاقة")}
+    assert all(r.receiver_name for r in rows)

@@ -13,7 +13,7 @@ Everything in `../kb-pdf/` and `rag_tickets.jsonl` is **synthetic, fictional dem
 | `RAG-DEMO-WRONG-RECIPIENT` | Completed `ZC2410001001`, 100,000 IQD from `07821110001` to `07706543210` on 2026-10-07. |
 | `RAG-DEMO-LOGIN` | Forgotten PIN and a verification code that never arrives. No stolen money. |
 | `RAG-DEMO-AGENT` | Failed cash-in `ZC2410001002`, 200,000 IQD, agent `AG-JU`, on the morning of 2026-10-07. |
-| `RAG-DEMO-CARD` | Mastercard declined at merchants, with no wallet debit. |
+| `RAG-DEMO-CARD` | Mastercard declined at merchants, with no wallet debit. No reference is given, so lookup stays skipped; the drafting agent lists the customer's recent transactions and finds declined card payments `ZC2410001005`–`ZC2410001007` (2026-10-06 evening to 2026-10-07), each with reason `الدفع الإلكتروني غير مفعّل على البطاقة`. |
 | `RAG-DEMO-BILL` | Completed Asia top-up `ZC2410001003`, 10,000 IQD, on 2026-10-07. |
 | `RAG-DEMO-KYC` | Identity document rejected while raising the account level. |
 | `RAG-DEMO-REFUND` | Completed merchant purchase `ZC2410001004`, 25,000 IQD at متجر النور, on 2026-10-07. |
