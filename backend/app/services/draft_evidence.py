@@ -1,7 +1,11 @@
 """Validate historical trace fragments without consulting mutable knowledge tables."""
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+
+from app.datetime import parse_dt
+
+TRANSACTION_TOOLS = frozenset({"lookup_transaction", "search_transactions", "get_customer_recent_transactions"})
 
 
 class _TraceModel(BaseModel):
@@ -25,6 +29,36 @@ class CitationSource(_TraceModel):
         if self.page_start is not None and self.page_end < self.page_start:
             raise ValueError("Invalid page range.")
         return self
+
+
+class InvestigatedTransaction(_TraceModel):
+    """A row a drafting tool returned: a candidate for the reviewer, never a confirmed match."""
+
+    txn_ref: str = Field(min_length=1, max_length=32)
+    sender_phone: str = Field(max_length=32)
+    receiver_phone: str | None = Field(default=None, max_length=32)
+    receiver_name: str | None = Field(default=None, max_length=2000)
+    amount_iqd: int = Field(ge=0)
+    type: str = Field(max_length=64)
+    status: str = Field(max_length=64)
+    created_at: str = Field(max_length=40)
+    biller: str | None = Field(default=None, max_length=2000)
+    agent_id: str | None = Field(default=None, max_length=64)
+    failure_reason: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("created_at")
+    @classmethod
+    def parseable(cls, value):
+        parse_dt(value)
+        return value
+
+
+def _transactions(event):
+    if event.get("kind") != "tool" or event.get("status") != "ok" or event.get("tool") not in TRANSACTION_TOOLS:
+        return []
+    result = event.get("result")
+    rows = result if isinstance(result, list) else [result]
+    return [txn for item in rows if (txn := _validated(InvestigatedTransaction, item)) is not None]
 
 
 class _Guardrail(_TraceModel):
@@ -53,11 +87,13 @@ def draft_evidence(trace, citations):
     First valid snapshot wins; a later malformed or conflicting trace entry must
     not replace evidence actually retrieved. Only persisted cited IDs are exposed.
     """
-    sources, findings = {}, []
+    sources, findings, investigated = {}, [], {}
     degraded = credentials = internal_note = None
     for event in trace if isinstance(trace, list) else []:
         if not isinstance(event, dict):
             continue
+        for txn in _transactions(event):
+            investigated.setdefault(txn.txn_ref, txn)
         snapshots = event.get("retrieved_passages", [])
         if event.get("kind") == "draft":
             snapshots = event.get("citation_sources", [])
@@ -81,4 +117,6 @@ def draft_evidence(trace, citations):
     return {"citation_sources": [sources[c] for c in cited if c in sources],
             "guardrail_findings": list(dict.fromkeys(findings)),
             "credential_check_degraded": degraded, "requests_credentials": credentials,
-            "internal_note": internal_note}
+            "internal_note": internal_note,
+            "investigated_transactions": [
+                txn.model_dump() for txn in sorted(investigated.values(), key=lambda t: parse_dt(t.created_at), reverse=True)]}

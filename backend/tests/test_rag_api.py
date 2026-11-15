@@ -273,6 +273,7 @@ def test_old_or_invalid_traces_have_safe_unknown_defaults(evidence_client, kb_en
     assert detail["guardrail_findings"] == []
     assert detail["credential_check_degraded"] is None
     assert detail["requests_credentials"] is None and detail["internal_note"] is None
+    assert detail["investigated_transactions"] == []
 
 
 @pytest.mark.parametrize("evidence_client", [0.8], indirect=True)
