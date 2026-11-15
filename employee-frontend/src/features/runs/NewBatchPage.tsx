@@ -161,20 +161,22 @@ export function NewBatchPage() {
                     onChange={(e) => void readFile(e.target.files?.[0])}
                   />
                 </div>
-                <button
-                  className="example-button"
-                  onClick={() => {
-                    setTickets(exampleTickets)
-                    setFileName(text.sampleName)
-                    setError("")
-                  }}
-                >
-                  <FlaskConical size={16} />
-                  <span>
-                    {text.trySample} <strong>{text.loadSample}</strong>
-                  </span>
-                  <ArrowRight size={15} />
-                </button>
+                {tickets.length === 0 && (
+                  <button
+                    className="example-button"
+                    onClick={() => {
+                      setTickets(exampleTickets)
+                      setFileName(text.sampleName)
+                      setError("")
+                    }}
+                  >
+                    <FlaskConical size={16} />
+                    <span>
+                      {text.trySample} <strong>{text.loadSample}</strong>
+                    </span>
+                    <ArrowRight size={15} />
+                  </button>
+                )}
                 {tickets.length > 0 && (
                   <div className="batch-preview">
                     <div>

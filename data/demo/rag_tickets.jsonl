@@ -2,3 +2,12 @@
 {"external_id":"RAG-DEMO-GENERAL","text":"شلون أشرح مشكلتي للدعم بأمان؟ شنو المعلومات غير السرية اللي أذكرها؟","channel":"app","customer_phone":"07745556677","received_at":"2026-10-07T13:00:00+03:00"}
 {"external_id":"RAG-DEMO-FRAUD","text":"واحد اتصل بيه يكول انه موظف زين كاش وطلب الرمز اللي وصلني، انطيته وبعدها انسحب من حسابي 200 الف!! الحكوني","channel":"whatsapp","customer_phone":"07501112233","received_at":"2026-10-07T10:05:00+03:00"}
 {"external_id":"RAG-DEMO-UNSUPPORTED","text":"اشرحلي بالتفصيل شلون التشابك الكمي يشتغل بين فوتونين داخل مختبر فيزياء؟","channel":"app","customer_phone":"07756667788","received_at":"2026-10-07T14:00:00+03:00"}
+{"external_id":"RAG-DEMO-WRONG-RECIPIENT","text":"غلطت برقم واحد وحولت 100 الف على 07706543210 ووصلت لشخص غريب. اريد ارجعهن.","channel":"whatsapp","customer_phone":"07821110001","received_at":"2026-10-07T14:15:00+03:00"}
+{"external_id":"RAG-DEMO-LOGIN","text":"نسيت الرمز السري وانقفل الحساب، وما دا يوصلني رمز التحقق حتى افتحه.","channel":"app","customer_phone":"07831110002","received_at":"2026-10-07T14:30:00+03:00"}
+{"external_id":"RAG-DEMO-AGENT","text":"رحت لوكيل زين كاش بحي الجامعة وانطيته 200 الف يشحن حسابي من الصبح وما نزلت بالحساب.","channel":"call_note","customer_phone":"07841110003","received_at":"2026-10-07T14:45:00+03:00"}
+{"external_id":"RAG-DEMO-CARD","text":"الماستر كارد مالتي ترفض بكل موقع من امس، وما انسحب من رصيدي شي.","channel":"app","customer_phone":"07851110004","received_at":"2026-10-07T15:00:00+03:00"}
+{"external_id":"RAG-DEMO-BILL","text":"شحنت رصيد اسيا بـ 10 الاف اليوم وطلعت العملية ناجحة بس الرصيد ما وصل للخط.","channel":"whatsapp","customer_phone":"07861110005","received_at":"2026-10-07T15:15:00+03:00"}
+{"external_id":"RAG-DEMO-KYC","text":"رفعت هوية للتوثيق حتى ارفع مستوى الحساب واحول اكثر، ورفضوها. شلون اعيد التقديم؟","channel":"app","customer_phone":"07871110006","received_at":"2026-10-07T15:30:00+03:00"}
+{"external_id":"RAG-DEMO-REFUND","text":"اشتريت من متجر بالزين كاش بـ 25 الف والغيت الطلب. يمته ترجع فلوسي؟","channel":"whatsapp","customer_phone":"07881110007","received_at":"2026-10-07T15:45:00+03:00"}
+{"external_id":"RAG-DEMO-APP-BUG","text":"بعد التحديث التطبيق يطفي اول ما افتحه. الرصيد نفس ما هو وما ضاعت اي فلوس.","channel":"app","customer_phone":"07891110008","received_at":"2026-10-07T16:00:00+03:00"}
+{"external_id":"RAG-DEMO-OTHER","text":"عندي ملاحظة على الخدمة بشكل عام، الانتظار طويل وماكو جواب واضح على مراجعتي.","channel":"call_note","customer_phone":"07921110009","received_at":"2026-10-07T16:15:00+03:00"}

@@ -72,9 +72,13 @@ Results processed before tracking began show only their totals.
 
 ## Quick start
 
-You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter key.
+Run every command in **Ubuntu (WSL)**, from the repository root, unless a step says to change directory. You need Docker, Node.js, a TypeSafe key, and an OpenRouter key.
 
-1. **Configure.** Create a `.env` file in the repository root (it is gitignored). Copy the block below in full: it is the file the demo and the test suite run with. Replace the three secrets and keep the other values so your run matches this repository.
+1. **Install `uv` once.** Then open a new Ubuntu terminal:
+   ```bash
+     curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+2. **Configure.** Create a `.env` file in the repository root (it is gitignored). Copy the block below in full: it is the file the demo and the test suite run with. Replace the three secrets and keep the other values so your run matches this repository.
 
    ```bash
    # --- Providers (required to process a ticket) ---
@@ -114,15 +118,16 @@ You need WSL Ubuntu, Docker, `uv`, Node.js, a TypeSafe key, and an OpenRouter ke
    `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` have to be real keys before a batch or a customer chat can call a model. `ADMIN_TOKEN` is the password for **Admin → AI models**. `TEST_DATABASE_URL` is what `uv run pytest` connects to on the host; its user and password must match `secrets/` (the examples are `support` / `support`). The database name stays `support_test`.
 
    Anything not listed here has a default in [`backend/app/config.py`](backend/app/config.py). Add a line only to override one. Leave `DATABASE_URL` unset: the API container builds it from the Compose secrets. Those secrets are the tracked files `secrets/postgres_user.example`, `secrets/postgres_password.example`, and `secrets/postgres_db.example` (each is `support`).
-2. **Start the database and API:**
+3. **Start the database and API.** Docker starts only these two. The website is the next step.
    ```bash
      docker compose up --build -d
    ```
-3. **Start the employee workspace:**
+4. **Start the employee workspace** in a second Ubuntu terminal. Leave that terminal open:
    ```bash
      cd employee-frontend && npm ci && npm run dev
    ```
-4. **Start the customer intake app** (optional):
+   Then open http://localhost:5173.
+5. **Start the customer intake app** (optional), in a third terminal. Leave it open:
    ```bash
      cd users-frontend && npm ci && npm --workspace web run dev
    ```
@@ -225,13 +230,13 @@ Neighboring categories stay separate. A transfer that failed technically is a fa
 
 ## Try the demo
 
-1. This architecture uses retrieval-augmented generation (RAG) to index ZainCash policy, then search that index when it drafts a reply. Index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf) first:
+1. This architecture uses retrieval-augmented generation (RAG) to index ZainCash policy, then search that index when it drafts a reply. With the database running, index the twelve policy PDFs in [`data/kb-pdf`](data/kb-pdf) from the repository root:
    ```bash
      uv --directory backend run support ingest-kb ../data/kb-pdf
    ```
 
    Wait until each file is **Indexed**.
-2. Start the API and the employee workspace if they are not already running (Quick start steps 2 and 3). The customer intake app is not needed for this step. In the browser, open http://localhost:5173, click **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and click **Start processing**.
+2. With the employee workspace terminal still open, go to http://localhost:5173. Click **New batch**, upload [`data/demo/rag_tickets.jsonl`](data/demo/rag_tickets.jsonl), and click **Start processing**.
 3. Open the results. Edit a reply and choose **Save & approve**.
 
 The demo data and the files in `data/kb-pdf/` are fictional, not real ZainCash policies. See the [demo walkthrough](docs/demo-readiness.md).
