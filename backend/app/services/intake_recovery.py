@@ -26,6 +26,29 @@ def fail_intake_placeholders(session: Session, run_id: int, reason: str) -> int:
     return count
 
 
+def fail_open_placeholders(session: Session, run_id: int, reason: str) -> int:
+    """Fail a processing result that was not created by customer intake, such as a ticket reprocess."""
+    rows = list(session.scalars(select(TicketResultRow).where(
+        TicketResultRow.run_id == run_id, TicketResultRow.status == "processing"
+    )))
+    count = 0
+    for row in rows:
+        linked = session.scalar(select(IntakeSubmissionRow.id).where(IntakeSubmissionRow.ticket_id == row.ticket_id))
+        if linked is not None:
+            continue
+        row.status = "failed"
+        row.error = reason
+        count += 1
+    return count
+
+
+def close_unfinished_results(session: Session, run: RunRow, reason: str) -> int:
+    count = fail_intake_placeholders(session, run.id, reason) + fail_open_placeholders(session, run.id, reason)
+    if count:
+        reconcile_intake_run(session, run)
+    return count
+
+
 def reconcile_intake_run(session: Session, run: RunRow) -> None:
     rows = list(session.scalars(select(TicketResultRow).where(TicketResultRow.run_id == run.id)))
     durable = [row for row in rows if row.status != "processing"]

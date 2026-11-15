@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import {
   ArrowLeft,
   Check,
@@ -280,8 +280,11 @@ function ReviewEditor({
 
 export function TicketReviewPage() {
   const { id } = useParams(),
+    navigate = useNavigate(),
     workspace = useWorkspace()
   const textCopy = useCopy().review
+  const [confirmReprocess, setConfirmReprocess] = useState(false)
+  const [reprocessing, setReprocessing] = useState(false)
   const query = useResource<Result>(`/results/${id}`, workspace.revision)
   const result = query.data
   const reload = useRef(query.reload)
@@ -307,6 +310,24 @@ export function TicketReviewPage() {
         </Button>
       </EmptyState>
     )
+  async function reprocess() {
+    if (reprocessing) return
+    setReprocessing(true)
+    try {
+      const created = await api.reprocess(result.id)
+      workspace.notify(textCopy.reprocessStarted)
+      workspace.refresh()
+      setConfirmReprocess(false)
+      if (created.id !== result.id) navigate(`/tickets/${created.id}`)
+    } catch (error) {
+      workspace.notify(
+        error instanceof Error ? error.message : textCopy.reprocessFailed,
+        true
+      )
+    } finally {
+      setReprocessing(false)
+    }
+  }
   return (
     <>
       <EscalationCallout result={result} />
@@ -314,7 +335,20 @@ export function TicketReviewPage() {
         <ArrowLeft size={15} />
         {textCopy.back}
       </Link>
-      <TicketHeader result={result} />
+      <TicketHeader
+        result={result}
+        reprocessing={reprocessing}
+        onReprocess={() => setConfirmReprocess(true)}
+      />
+      <ConfirmDialog
+        open={confirmReprocess}
+        onClose={() => setConfirmReprocess(false)}
+        title={textCopy.reprocessTitle}
+        description={textCopy.reprocessBody}
+        action={reprocessing ? textCopy.reprocessing : textCopy.reprocessAction}
+        confirmVariant="default"
+        onConfirm={() => void reprocess()}
+      />
       <div className="review-layout">
         <div className="review-column">
           <CustomerMessage result={result} />

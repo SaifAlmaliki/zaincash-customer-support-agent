@@ -205,6 +205,7 @@ export function ConfirmDialog({
   description,
   action,
   onConfirm,
+  confirmVariant = "destructive",
 }: {
   open: boolean
   onClose: () => void
@@ -212,6 +213,7 @@ export function ConfirmDialog({
   description: string
   action: string
   onConfirm: () => void
+  confirmVariant?: "default" | "destructive"
 }) {
   const copy = useCopy()
   return (
@@ -230,7 +232,7 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={onClose}>
             {copy.common.cancel}
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button variant={confirmVariant} onClick={onConfirm}>
             {action}
           </Button>
         </DialogFooter>

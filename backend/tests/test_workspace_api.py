@@ -47,6 +47,34 @@ def start_run(client, tickets=None):
     assert response.status_code == 202, response.text
     return response.json()["id"]
 
+def test_reprocess_runs_the_same_ticket_again(client):
+    start_run(client)
+    original = client.get("/api/results").json()["items"][0]
+    response = client.post(f"/api/results/{original['id']}/reprocess")
+    assert response.status_code == 202, response.text
+    created = response.json()
+    assert created["id"] != original["id"]
+    assert created["ticket"]["text"] == original["ticket"]["text"]
+    assert created["ticket"]["id"] == original["ticket"]["id"]
+    latest = client.get("/api/results").json()["items"]
+    assert [row["id"] for row in latest] == [created["id"]]
+    assert latest[0]["status"] == "pending_review"
+    assert latest[0]["category"] == "general_inquiry"
+    assert client.get(f"/api/results/{original['id']}").status_code == 200
+    assert client.post("/api/results/99999/reprocess").status_code == 404
+
+
+def test_reprocess_rejects_a_ticket_that_is_still_running(client, monkeypatch):
+    monkeypatch.setattr("app.api.results.run_job", lambda *args, **kwargs: None)
+    start_run(client)
+    original = client.get("/api/results").json()["items"][0]
+    first = client.post(f"/api/results/{original['id']}/reprocess")
+    assert first.status_code == 202, first.text
+    assert first.json()["status"] == "processing"
+    second = client.post(f"/api/results/{original['id']}/reprocess")
+    assert second.status_code == 409, second.text
+
+
 def test_batch_and_queue_expose_real_results(client):
     run_id = start_run(client)
     run = client.get(f"/api/runs/{run_id}").json()
