@@ -263,4 +263,4 @@ Load the demo database first (`docker/db/cleanup.sql`, then `docker/db/seed_demo
 
 ## License
 
-This project is proprietary. The [license](LICENSE) lets a recipient read and study the source and ask the copyright holder questions. Publishing, selling, sharing it outside that recipient, or reusing it requires Saif Almaliki's prior written approval.
+This project is for hackathon purposes. It is not for sale, and it is not for internal use without contacting the owner of the code, Saif Almaliki. The full terms are in the [license](LICENSE).
