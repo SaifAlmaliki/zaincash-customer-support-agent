@@ -168,10 +168,15 @@ _GENERIC = {
     "ar": ("ممكن توضح هالنقطة أكثر؟", "هالتفصيلة ضرورية حتى نفهم المشكلة."),
 }
 # A transfer the customer received. "ما وصلني" means it did not arrive, so it is not incoming.
+# "جاني اشعار" and "استلمت رسالة" mean a notice arrived, not the money. "دفعت" means the customer paid.
 _MONEY = re.compile(r"تحويل|فلوس|مبلغ|دينار|دولار|حوالة|transfer|money|dinar", re.IGNORECASE)
-_OUTBOUND_ACT = re.compile(r"حولت|دزيت|أرسلت|ارسلت|\bI\s+sent\b|\bI\s+transferred\b", re.IGNORECASE)
+_OUTBOUND_ACT = re.compile(
+    r"حولت|دزيت|أرسلت|ارسلت|دفعت(?!لي)|سددت(?!لي)|\bI\s+sent\b|\bI\s+transferred\b|\bI\s+paid\b",
+    re.IGNORECASE,
+)
+_NOTICE = r"\s+(?:اشعار|إشعار|أشعار|اخطار|إخطار|رسالة|رسائل|تنبيه|خطأ|ايميل|إيميل|notification|message|alert|sms|email)"
 _INCOMING = re.compile(
-    r"(?<!ما\s)(?<!ما)(?:وصلني|استلمت|جاني|جاءني|جايني)"
+    r"(?<!ما\s)(?<!ما)(?:وصلني|استلمت|جاني|جاءني|جايني)(?!" + _NOTICE + r")"
     r"|ما\s*[^\s]{0,3}عرف\s*(?:منو\s*)?المرسل"
     r"|unknown sender|don'?t know (?:the )?sender|don'?t know who sent"
     r"|received (?:a )?(?:transfer|money)|someone sent me",

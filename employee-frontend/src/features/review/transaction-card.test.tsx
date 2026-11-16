@@ -29,6 +29,21 @@ it("shows found rows when there is no confirmed transaction", () => {
   expect(html).not.toContain(SKIPPED)
 })
 
+it("shows the record creation date with the year and Baghdad 24-hour time", () => {
+  const result = resultFixture(10, {
+    lookup_status: "date_mismatch",
+    transaction: {
+      txn_ref: "ZC2410000123",
+      status: "pending",
+      created_at: "2026-10-06T15:10:00+00:00",
+    },
+  })
+  const html = renderToStaticMarkup(<TransactionCard result={result} />)
+  expect(html).toContain("2026-10-06، 18:10")
+  expect(html).not.toContain("تشرين")
+  expect(html).not.toContain("06:10")
+})
+
 it("shows the confirmed transaction instead of found rows", () => {
   const result = resultFixture(9, {
     lookup_status: "matched", matched_txn_ref: "ZC2410001004",

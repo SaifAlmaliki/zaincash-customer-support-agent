@@ -7,19 +7,32 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Confidence } from "@/components/shared/workspace-ui"
-import { categoryLabel, dateLabel, humanize, percentage, reasonLabel, timeLabel } from "@/lib/format"
+import { categoryLabel, humanize, percentage, reasonLabel } from "@/lib/format"
 import { useCopy, useLocale } from "@/lib/locale"
 import type { Result } from "@/lib/types"
 import { CitationEvidence } from "./CitationEvidence"
+
+function createdAtLabel(value: string, arabic: boolean): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Baghdad",
+  }).formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? ""
+  return `${part("year")}-${part("month")}-${part("day")}${arabic ? "، " : ", "}${part("hour")}:${part("minute")}`
+}
 
 function ledgerValue(key: string, value: string | number, arabic: boolean): string {
   if ((key === "amount_iqd" || key === "amount") && Number.isFinite(Number(value))) {
     return `${Number(value).toLocaleString("en-US")} IQD`
   }
-  if (key === "created_at") {
-    const date = new Date(String(value))
-    if (!Number.isNaN(date.getTime())) return `${dateLabel(String(value))} ${timeLabel(String(value))}`
-  }
+  if (key === "created_at") return createdAtLabel(String(value), arabic)
   const status = arabic
     ? { pending: "معلّقة", completed: "مكتملة", failed: "فاشلة", declined: "مرفوضة" }
     : { pending: "Pending", completed: "Completed", failed: "Failed", declined: "Declined" }

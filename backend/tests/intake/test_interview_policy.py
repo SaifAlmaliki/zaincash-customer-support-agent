@@ -11,6 +11,7 @@ from app.intake.policy import (
     ask_once_keys,
     assess_readiness,
     choose_question,
+    customer_received_money,
     material_keys,
     progress,
 )
@@ -262,3 +263,47 @@ def test_received_details_stay_visible_while_asking_what_to_do(taxonomy):
     assert shown["date"] == "07-10-2026"
     assert shown["sender_phone"] == "07501112233"
     assert shown["txn_ref"] == "ZC2410000789"
+
+
+def test_paid_bill_then_unpaid_notice_is_not_money_the_customer_received(taxonomy):
+    """دفعت فاتورة … جاني اشعار means a bill looked paid, then a notice said it was not."""
+    source = message(
+        "دفعت فاتورة الكهرباء 35,000 دينار يوم الخميس وطلعت ناجحة بس بعدها جاني اشعار انها ما مدفوعة"
+    )
+    state = context([source], [
+        fact("issue", "دفعت فاتورة الكهرباء وطلعت ناجحة بس بعدها جاني اشعار انها ما مدفوعة", source),
+        fact("biller", "الكهرباء", source),
+        fact("amount", "35,000", source, normalized="35000"),
+        fact("date", "يوم الخميس", source, normalized="2026-11-12"),
+    ], category="bill_payment").state
+    assert customer_received_money(state) is False
+    suggested = Question(
+        key="sender_phone", text="من أي رقم وصلتك الفلوس؟",
+        reason="حتى نعرف منو اللي دز التحويل.", basis_revision=0,
+    )
+    question = choose_question(state, suggested, 1, taxonomy)
+    assert question is not None
+    assert question.key == "txn_ref"
+    assert "وصلتك" not in question.text
+    assert "المرسل" not in question.text
+
+
+@pytest.mark.parametrize("text", [
+    "جاني تحويل 50000 دينار",
+    "وصلني مبلغ ٥٠ الف",
+    "استلمت الفلوس",
+])
+def test_money_that_arrived_is_still_an_incoming_transfer(text):
+    source = message(text)
+    state = context([source], [fact("issue", text, source)]).state
+    assert customer_received_money(state) is True
+
+
+@pytest.mark.parametrize("text", [
+    "جاني اشعار ان الفاتورة 35,000 دينار ما مدفوعة",
+    "استلمت رسالة انو المبلغ 35,000 دينار ما انخصم",
+])
+def test_a_notice_about_money_is_not_money_received(text):
+    source = message(text)
+    state = context([source], [fact("issue", text, source)]).state
+    assert customer_received_money(state) is False

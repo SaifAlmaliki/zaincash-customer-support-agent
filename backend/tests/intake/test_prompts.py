@@ -8,6 +8,7 @@ def test_intake_prompt_knows_the_recipient_name_and_implied_answers():
     vocabulary = next(line for line in text.splitlines() if line.startswith("- Fact keys in updates:"))
     assert "recipient_name" in vocabulary
     assert "ما وصلت" in text and "انقطعت" in text
+    assert "دفعت فاتورة" in text and "جاني اشعار" in text
     assert "reason" in text and "why" in text.lower()
 
 

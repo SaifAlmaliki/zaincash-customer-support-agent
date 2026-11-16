@@ -4,6 +4,12 @@ Back-office automation for Iraqi Arabic support tickets. Each ticket is classifi
 
 Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation**.
 
+## Authors
+
+- **Saif Almaliki** — saif.wsm@gmail.com
+
+This repository has one author. There is no teammate.
+
 > **A person approves every reply.** The system never sends messages, moves money, or changes accounts. Anything uncertain or unsafe is escalated with a reason.
 
 ## How it works

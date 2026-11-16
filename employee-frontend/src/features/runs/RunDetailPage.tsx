@@ -141,7 +141,7 @@ export function RunDetailView({
             <Link to={`/tickets/${result.id}`} className="run-flow-ticket">
               {result.ticket.external_id}
             </Link>
-            <TicketFlow result={result} layout="horizontal" />
+            <TicketFlow result={result} />
           </div>
         ))}
         {!results?.length && !resultsLoading && (

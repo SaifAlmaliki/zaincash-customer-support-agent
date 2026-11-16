@@ -26,25 +26,13 @@ import { useResource } from "@/hooks/use-resource"
 import { useWorkspace } from "@/lib/workspace"
 import { api } from "@/lib/api"
 import { dateLabel, teamLabel, teams, timeLabel, humanize } from "@/lib/format"
-import { fill, useCopy } from "@/lib/locale"
+import { fill, useCopy, useLocale } from "@/lib/locale"
 import type { Result, ReviewInput } from "@/lib/types"
 import { CustomerMessage, EscalationCallout, SourceEvidence, TransactionCard } from "./SourceEvidence"
-import { TicketFlow } from "./TicketFlow"
 import { TicketHeader } from "./TicketHeader"
 import { IntakeEvidence, ReportedDetails } from "./IntakeEvidence"
 import { canReview } from "./review-availability"
-
-function reviewerNote(result: Result) {
-  const own = result.internal_note?.trim()
-  if (own) return own
-  const parts = (result.escalation_note ?? "").split(/(?<=\.)\s+/).map((part) => part.trim()).filter(Boolean)
-  const seen = new Set<string>()
-  const unique = parts.filter((part) => (seen.has(part) ? false : seen.add(part)))
-  const escalated = unique.filter((part) => part.startsWith("Escalated:"))
-  const analysis = unique.filter((part) => !part.startsWith("Escalated:"))
-  const summary = escalated.sort((a, b) => b.length - a.length)[0]
-  return [summary, ...analysis].filter(Boolean).join(" ")
-}
+import { noteIsArabic, reviewerNote } from "./reviewer-note"
 
 function ReviewEditor({
   result,
@@ -54,6 +42,7 @@ function ReviewEditor({
   onSaved: () => void
 }) {
   const workspace = useWorkspace()
+  const { locale } = useLocale()
   const textCopy = useCopy().review
   const [text, setText] = useState(result.final_text || result.draft_text || "")
   const [reviewer, setReviewer] = useState(textCopy.reviewerDefault),
@@ -63,7 +52,7 @@ function ReviewEditor({
   const approved = ["approved", "edited"].includes(result.status)
   const reviewable = canReview(result.status)
   const findings = result.guardrail_findings ?? []
-  const note = reviewerNote(result)
+  const note = reviewerNote(result, locale === "ar")
   async function save(action: ReviewInput["action"]) {
     if (saving) return
     setSaving(true)
@@ -120,7 +109,7 @@ function ReviewEditor({
             <p>{result.credential_check_degraded === true ? textCopy.credentialDegradedBody : result.credential_check_degraded == null ? textCopy.credentialUnknownBody : textCopy.credentialOkBody}</p>
             {result.requests_credentials != null && <p>{fill(textCopy.credentialScore, { score: result.requests_credentials.toFixed(3) })}</p>}
           </div>
-          <div className="internal-note"><strong>{textCopy.internalNote}</strong>{note ? <p className="passage-text" dir="auto">{note}</p> : <p className="field-help">{textCopy.noNote}</p>}</div>
+          <div className="internal-note"><strong>{textCopy.internalNote}</strong>{note ? <p className="passage-text" dir={noteIsArabic(note) ? "rtl" : "auto"} lang={noteIsArabic(note) ? "ar" : undefined}>{note}</p> : <p className="field-help">{textCopy.noNote}</p>}</div>
         </CardContent>
       </Card>
       )}
@@ -358,7 +347,6 @@ export function TicketReviewPage() {
             <TransactionCard result={result} />
           </div>
           <SourceEvidence result={result} omitTransaction />
-          <TicketFlow result={result} />
         </div>
         <ReviewEditor
           key={result.id}

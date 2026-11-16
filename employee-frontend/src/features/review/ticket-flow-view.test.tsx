@@ -72,26 +72,13 @@ function result(patch: Partial<Result> = {}): Result {
   }
 }
 
-it("renders the pipeline as a thought chain with step names and findings", () => {
-  const html = renderToStaticMarkup(<TicketFlow result={result()} />)
-  expect(html).toContain("تجهيز")
-  expect(html).toContain("تصنيف")
-  expect(html).not.toContain("جيف")
-  expect(html).not.toContain("جيميناي")
-  expect(html).toContain("مسودة")
-  expect(html).toContain("قُرئت رسالة تطبيق زين كاش")
-  expect(html).not.toContain("التحويل لم يصل")
-  expect(html).toContain("لم يُحفظ رد")
-  expect(html).not.toContain("ما وجده كل خطوة")
-})
-
 it("marks the latest used step as in progress while the run is still processing", () => {
   const html = renderToStaticMarkup(<TicketFlow result={result({ status: "processing" })} />)
   expect(html).toContain("قيد التنفيذ")
 })
 
 it("lays a batch pipeline out as one horizontal rail", () => {
-  const html = renderToStaticMarkup(<TicketFlow result={result()} layout="horizontal" />)
+  const html = renderToStaticMarkup(<TicketFlow result={result()} />)
   expect(html).toContain("flow-rail")
   expect(html).toContain("تجهيز")
   expect(html).toContain("تصنيف")
