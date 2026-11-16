@@ -54,6 +54,10 @@ What to know:
 - **Changing the embedding model re-indexes the knowledge base.** New batches wait until it finishes, and the switch cannot start while a batch is running.
 - The top bar shows **AI: Local**, **AI: Cloud**, or **AI: Mixed**, so everyone can see where ticket data goes. Each run page lists the models it used.
 
+Each step is chosen on its own. One step can run on a model on this machine while the others stay in the cloud. No restart, and no change to the code. In the page below, reply drafting uses local Ollama `qwen3.5:4b`. Intake, extraction, and embeddings stay on OpenRouter. Classification stays on TypeSafe Jev. The draft card is marked **Local**, and the top bar shows **AI: Mixed**.
+
+![Admin AI models page. Reply drafting is ollama/qwen3.5:4b, marked local. The other four steps stay on their cloud models.](docs/images/admin-models-local-draft.png)
+
 ## Quick start
 
 Run every command in **Ubuntu (WSL)**, from the repository root, unless a step says to change directory. You need Docker, Node.js, a TypeSafe key, and an OpenRouter key.
@@ -94,6 +98,7 @@ Run every command in **Ubuntu (WSL)**, from the repository root, unless a step s
    TEST_DATABASE_URL=postgresql+psycopg://support:support@localhost:5433/support_test
 
    # --- Local models and admin ---
+   # Docker Desktop cannot use localhost here. See "Local models with Ollama".
    OLLAMA_BASE_URL=http://localhost:11434
    # Empty disables the admin page. Any non-empty value turns it on.
    ADMIN_TOKEN=...
@@ -140,16 +145,20 @@ Then load the demo data: in pgAdmin (database `support`, `localhost:5433`), run 
 
 ## Local models with Ollama
 
-1. Pull the models:
+1. Pull the models you want. The name you pick on the admin page must match `ollama list`.
    ```bash
+     ollama pull qwen3.5:4b        # intake, extract, and draft (vision, tools, thinking)
      ollama pull qwen3:4b          # extract and draft
      ollama pull nomic-embed-text  # embeddings (768 dimensions)
-     ollama pull gemma3:4b         # intake (needs vision; qwen3:4b has none)
+     ollama pull gemma3:4b         # intake, if the chat model has no vision
    ```
-2. Make Ollama reachable from the API and set `OLLAMA_BASE_URL` in `.env`:
+2. Make Ollama reachable from the API. Put a single `OLLAMA_BASE_URL` in `.env`. A later line with the same name replaces the earlier one.
+   - **Docker Desktop** (API in Compose, Ollama on Windows): `http://host.docker.internal:11434`. Inside the container, `localhost` is the container, so the API cannot see Ollama on the host.
    - **Ollama on Windows, API in WSL or Docker inside WSL:** set the Windows user variable `OLLAMA_HOST=0.0.0.0:11434`, restart Ollama, and use `http://<windows-ip>:11434`. Run `ip route show default` in WSL to get the IP. Alternatively, enable WSL mirrored networking and use `http://localhost:11434`.
-   - **Docker Desktop:** `http://host.docker.internal:11434`.
-3. Choose the Ollama models on **Admin → AI models**.
+3. Restart the API (`docker compose up -d --force-recreate --no-deps api`), then open **Admin → AI models**.
+4. On the step you want to move, click **Change model**, open **Ollama · local**, select the installed model (for drafting, `qwen3.5:4b`), click **Test model**, then **Save**. Leave thinking off for drafting. The test has to pass before Save enables.
+
+The screenshot in [Choosing models](#choosing-models) is that setup: drafting on `ollama:qwen3.5:4b`, every other step still on its cloud model.
 
 Local models are slower. The settings `LOCAL_AGENT_TIMEOUT_S`, `LOCAL_INTAKE_TIMEOUT_S`, `LOCAL_NUM_CTX` (context window), and `LOCAL_PIPELINE_CONCURRENCY` (tickets processed at once) control them. Because Jev runs in the cloud, an all-Ollama setup shows **AI: Mixed**.
 
