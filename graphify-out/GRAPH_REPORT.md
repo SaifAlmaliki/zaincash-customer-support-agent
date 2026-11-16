@@ -1,16 +1,16 @@
-# Graph Report - zaincash-customer-support-agent  (2026-11-15)
+# Graph Report - zaincash-customer-support-agent  (2026-11-16)
 
 ## Corpus Check
-- 450 files · ~503,700 words
+- 454 files · ~507,452 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4354 nodes · 12315 edges · 242 communities (200 shown, 42 thin omitted)
-- Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 3832 edges (avg confidence: 0.57)
+- 4394 nodes · 12429 edges · 242 communities (199 shown, 43 thin omitted)
+- Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 3877 edges (avg confidence: 0.57)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e1ceabd9`
+- Built from commit: `e9534de5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -239,28 +239,28 @@
 - [[_COMMUNITY_Community 241|Community 241]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `Settings` - 253 edges
-2. `Step` - 109 edges
+1. `Settings` - 254 edges
+2. `Step` - 114 edges
 3. `ModelChoice` - 91 edges
 4. `useCopy()` - 84 edges
 5. `IntakeState` - 72 edges
-6. `TicketRow` - 66 edges
+6. `TicketRow` - 69 edges
 7. `ActiveModels` - 66 edges
 8. `context()` - 66 edges
 9. `InvalidEvidence` - 63 edges
-10. `ProviderRegistry` - 58 edges
+10. `TicketResultRow` - 61 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Cascade Mode` --semantically_similar_to--> `Cascade Classifier`  [INFERRED] [semantically similar]
   README.md → docs/superpowers/specs/2026-10-07-support-pipeline-design.md
 - `Red-Flag Escalation` --semantically_similar_to--> `Routing and Escalation Rules`  [INFERRED] [semantically similar]
   README.md → docs/superpowers/plans/2026-10-07-plan1-core-pipeline-part2.md
+- `Plan 1 Live Smoke` --conceptually_related_to--> `Fraud Report`  [AMBIGUOUS]
+  README.md → data/taxonomy.yaml
 - `OpenRouter Provider Migration` --semantically_similar_to--> `OpenRouter`  [INFERRED] [semantically similar]
   docs/superpowers/specs/2026-10-07-support-pipeline-design.md → README.md
 - `NullDrafter` --semantically_similar_to--> `NullDrafter`  [INFERRED] [semantically similar]
   docs/superpowers/plans/2026-10-07-plan1-core-pipeline-part3.md → README.md
-- `Weekly Pattern Report` --semantically_similar_to--> `check_service_status`  [INFERRED] [semantically similar]
-  docs/superpowers/specs/2026-10-07-support-pipeline-design.md → backend/app/pipeline/runner.md
 
 ## Import Cycles
 - 1-file cycle: `backend/app/api/ai_usage.py -> backend/app/api/ai_usage.py`
@@ -288,59 +288,59 @@
 - **Drafting Agent Toolset** — backend_app_pipeline_runner_lookup_transaction, backend_app_pipeline_runner_search_transactions, backend_app_pipeline_runner_get_customer_recent_transactions, backend_app_pipeline_runner_get_customer_ticket_history, backend_app_pipeline_runner_check_service_status, backend_app_pipeline_runner_search_knowledge_base, backend_app_pipeline_runner_flag_for_human, backend_app_pipeline_runner_submit_draft [EXTRACTED 1.00]
 - **Ticket Processing Stage Flow** — backend_app_pipeline_runner_prepare, backend_app_pipeline_runner_jev_classify, backend_app_pipeline_runner_gemini_classify, backend_app_pipeline_runner_extract, backend_app_pipeline_runner_lookup, backend_app_pipeline_runner_decide, backend_app_pipeline_runner_draft [EXTRACTED 1.00]
 
-## Communities (242 total, 42 thin omitted)
+## Communities (242 total, 43 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.07
-Nodes (59): CostValue(), DailyTrend(), emptySummary, summaryFixture, ticketCalls, ticketPage, GroupTable(), AI (+51 more)
+Nodes (60): CostValue(), DailyTrend(), emptySummary, summaryFixture, ticketCalls, ticketPage, GroupTable(), AI (+52 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.11
-Nodes (9): ActiveModels, EmbeddingBatch, ConfiguredEmbedder, An Embedder for the long-lived KnowledgeService that follows the current embed s, _Store, _Store, test_configured_embedder_follows_the_current_setting(), IndexJobs (+1 more)
+Cohesion: 0.12
+Nodes (9): ConfiguredEmbedder, An Embedder for the long-lived KnowledgeService that follows the current embed s, _Store, test_configured_embedder_follows_the_current_setting(), IndexJobs, make_knowledge_service(), Application wiring and bounded admission; KnowledgeService owns index state/cost, Single-process admission, including the gap before BackgroundTasks starts. (+1 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.10
-Nodes (8): repo(), test_blank_intake_model_is_rejected(), test_non_positive_image_limit_is_rejected(), test_relative_upload_directory_is_rooted_in_the_repository(), repo(), turns(), pytest, tax()
+Cohesion: 0.15
+Nodes (4): repo(), test_blank_intake_model_is_rejected(), test_non_positive_image_limit_is_rejected(), test_relative_upload_directory_is_rooted_in_the_repository()
 
 ### Community 3 - "Community 3"
-Cohesion: 0.53
-Nodes (5): Any, TicketOutcome, outcome_to_dict(), outcome_to_row(), TicketOutcome to JSON-safe dicts. Used by the DB repository and the CLI --out fi
+Cohesion: 0.33
+Nodes (7): Any, TicketOutcome, outcome_to_dict(), outcome_to_row(), TicketOutcome to JSON-safe dicts. Used by the DB repository and the CLI --out fi, test_failed_outcome_and_dict_form(), test_full_outcome_is_json_safe()
 
 ### Community 4 - "Community 4"
-Cohesion: 0.18
-Nodes (19): parse_dt(), Shared datetime parsing and the pipeline's Baghdad timezone convention., Any, PipelineState, TxnRecord, normalize_phone(), _datetime(), _days() (+11 more)
+Cohesion: 0.20
+Nodes (18): parse_dt(), Any, PipelineState, TxnRecord, normalize_phone(), _datetime(), _days(), _field() (+10 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.22
-Nodes (15): load_jsonl(), load_tickets(), Load judge/user ticket files: .jsonl, .json (a list or {"tickets": [...]}), and, _rows(), Any, datetime, Path, csv (+7 more)
+Cohesion: 0.12
+Nodes (20): load_jsonl(), load_tickets(), Load judge/user ticket files: .jsonl, .json (a list or {"tickets": [...]}), and, _rows(), Any, datetime, Path, csv (+12 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.17
-Nodes (39): answer(), call(), Checker, draft_state(), Knowledge, Script only the external model/retrieval boundaries; run the real agent/tools., script(), test_real_search_fault_carries_safe_draft_execution_error() (+31 more)
+Nodes (35): answer(), Checker, draft_state(), Knowledge, drafter(), events(), test_anthropic_fallback_prices_and_provider_cost_precedence(), test_callback_partial_response_and_error_cost_are_alternatives() (+27 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.14
-Nodes (39): IntakeState, Taxonomy, answer_choices(), answer_kind(), ask_for(), ask_once_keys(), asked_count(), assess_readiness() (+31 more)
+Nodes (38): IntakeState, Taxonomy, answer_choices(), answer_kind(), ask_for(), ask_once_keys(), asked_count(), assess_readiness() (+30 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.05
-Nodes (46): CustomerProfileView(), originalLocale, originalLocale, DocumentListProps, knowledgeDocument(), listProps(), originalLocale, AiLocalityChip() (+38 more)
+Cohesion: 0.07
+Nodes (41): UnlockedModels(), CustomerPage(), EvaluationPage(), originalLocale, useResource(), InsightsPage(), AiLocalityChip(), base (+33 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.13
 Nodes (26): test_batch_concurrency_stays_within_bounds(), test_cloud_runs_keep_the_ticket_timeout(), test_local_drafts_get_room_for_their_longer_deadline(), test_local_extract_alone_extends_the_ticket_timeout(), test_local_extract_or_draft_lowers_batch_concurrency(), test_short_local_deadlines_never_shrink_the_ticket_timeout(), _settings(), test_a_saved_model_removed_from_the_provider_is_missing_and_not_ready() (+18 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.09
-Nodes (33): SqlTransactionRepo, _to_record(), run_batch(), FakeJevRunnable, FakeStructuredLLM, Mimics TypeSafeClassifier.ainvoke and records each request., Returns the queued responses in order. Exceptions become failed Samples. The las, Jev adapter tests use the existing runnable shape and real SDK question models. (+25 more)
+Cohesion: 0.11
+Nodes (31): run_batch(), FakeJevRunnable, FakeStructuredLLM, Mimics TypeSafeClassifier.ainvoke and records each request., Returns the queued responses in order. Exceptions become failed Samples. The las, Jev adapter tests use the existing runnable shape and real SDK question models., External boundary: deterministic malformed/provider outputs without network., ResponseRunnable (+23 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.19
+Cohesion: 0.20
 Nodes (25): create_app(), sessionmaker, init_db(), initialize_database(), make_engine(), make_sessionmaker(), reset_db(), Engine (+17 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.11
-Nodes (50): Sort, Resource, categories, categoryLabel(), channelLabel(), dateLabel(), downloadJson(), duration() (+42 more)
+Nodes (32): CustomerMissing(), Sort, Resource, request(), categoryLabel(), downloadJson(), percentage(), reasonLabel() (+24 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.29
@@ -348,11 +348,11 @@ Nodes (6): ref_eslint, ref_eslint_js, ref_eslint_plugin_react_hooks, ref_eslint_
 
 ### Community 14 - "Community 14"
 Cohesion: 0.07
-Nodes (44): ExtractedField, buildTicketFlow(), AR, channelName(), checkLines(), EN, fieldLabel(), FIELDS (+36 more)
+Nodes (47): humanize(), ExtractedField, TraceEvent, source, renderableTrace(), reviewEvidence(), source, buildTicketFlow() (+39 more)
 
 ### Community 15 - "Support Taxonomy Categories"
-Cohesion: 0.20
-Nodes (24): lookup, Account KYC, Account & Security, Agent Dispute, Agent Network, App Bug, Bill Payment, Card Issue (+16 more)
+Cohesion: 0.22
+Nodes (22): lookup, Account KYC, Account & Security, Agent Dispute, Agent Network, App Bug, Bill Payment, Card Issue (+14 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.10
@@ -363,20 +363,20 @@ Cohesion: 0.10
 Nodes (19): devDependencies, prettier, prettier-plugin-tailwindcss, turbo, typescript, engines, node, name (+11 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.12
-Nodes (14): load_taxonomy(), most_urgent(), priority_rank(), Raised when taxonomy.yaml is inconsistent., TaxonomyError, Path, transfers(), taxonomy() (+6 more)
+Cohesion: 0.09
+Nodes (20): load_taxonomy(), most_urgent(), priority_rank(), Raised when taxonomy.yaml is inconsistent., TaxonomyError, Path, main(), Opt-in live checks: uv run python -m tests.intake.live_probe [transfers].  Uses (+12 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.09
 Nodes (32): createIntakeApi(), session, UploadResult, IntakeRequestError, malformed, populated, fakeApi(), review (+24 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.09
-Nodes (23): csvRows(), parseTicketFile(), asciiDigits(), customerPath(), normalizeCustomerPhone(), resultFixture(), Ticket, TicketInput (+15 more)
+Cohesion: 0.15
+Nodes (15): csvRows(), parseTicketFile(), asciiDigits(), normalizeCustomerPhone(), TicketInput, exampleTickets, NewBatchPage(), originalLocale (+7 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.09
-Nodes (27): adminErrorMessage(), AdminUnlock(), AuditList(), EmbeddingSwitchStatus(), ModelsPage(), embed, originalLocale, ModelStepCard() (+19 more)
+Cohesion: 0.11
+Nodes (23): adminErrorMessage(), ModelsPage(), embed, originalLocale, ModelStepCard(), AdminSession, getAdminSession(), listeners (+15 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.16
@@ -387,8 +387,8 @@ Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.11
-Nodes (42): AgentMiddleware, LLMUnavailable, The generative model could not produce a usable answer., Sample, Any, AsyncBaseTransport, AsyncClient, EmbeddingBatch (+34 more)
+Cohesion: 0.10
+Nodes (46): AgentMiddleware, LLMUnavailable, The generative model could not produce a usable answer., AsyncCallbackHandler, Any, AsyncBaseTransport, AsyncClient, EmbeddingBatch (+38 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.08
@@ -396,35 +396,39 @@ Nodes (23): compilerOptions, allowArbitraryExtensions, allowImportingTsExtension
 
 ### Community 28 - "Community 28"
 Cohesion: 0.07
-Nodes (22): Accept legacy .env model names while recording the OpenRouter model ID., All runtime configuration. Environment variable names are the upper-cased field, Settings, BaseException, BaseSettings, test_registry_includes_ollama_and_its_errors(), test_registry_rejects_unknown_providers_and_exposes_errors(), provider_errors() (+14 more)
+Nodes (31): Accept legacy .env model names while recording the OpenRouter model ID., All runtime configuration. Environment variable names are the upper-cased field, Settings, BaseSettings, _provider(), _tags_handler(), test_catalog_lists_installed_models_with_reported_capabilities(), test_chat_model_sets_the_configured_context_window() (+23 more)
 
 ### Community 29 - "Classify and Extract Prompts"
-Cohesion: 0.22
-Nodes (13): extract, gemini_classify, Pipeline Graph Orchestration, jev_classify, prepare, Cascade Combine, GeminiClassifier, JevClassifier (+5 more)
+Cohesion: 0.39
+Nodes (8): extract, gemini_classify, jev_classify, prepare, Cascade Combine, GeminiClassifier, JevClassifier, Failure Handling
 
 ### Community 30 - "Community 30"
 Cohesion: 0.14
 Nodes (30): Ticket, Recognize common Arabic/Iraqi/English disclosure requests, with local negation., requests_credentials(), make_ticket(), check(), Draft checks exercise evidence boundaries, not arbitrary numeric substrings., state(), test_aggregation_is_deduplicated_and_has_no_state_side_effects() (+22 more)
 
 ### Community 31 - "Pipeline Design Spec"
-Cohesion: 0.09
-Nodes (24): pgvector Postgres Service, pgdata Volume, Idempotent Persistence, OpenRouter Provider Migration, AI usage and performance (`/evaluation`), Assumptions, Cascade Mode, Categories (+16 more)
+Cohesion: 0.12
+Nodes (17): pgvector Postgres Service, pgdata Volume, Idempotent Persistence, AI usage and performance (`/evaluation`), Assumptions, Categories, Choosing models, How it works (+9 more)
+
+### Community 32 - "Community 32"
+Cohesion: 0.14
+Nodes (17): originalLocale, dateLabel(), duration(), timeLabel(), getLocale(), customerPath(), resultFixture(), Ticket (+9 more)
 
 ### Community 33 - "Drafting Plan Concepts"
-Cohesion: 0.15
-Nodes (15): check_service_status, decide, draft, Plan 1 Part 2, support CLI, Plan 1 Core Pipeline, Five-Plan Roadmap, Support Workspace UI Plan (+7 more)
+Cohesion: 0.25
+Nodes (9): check_service_status, decide, draft, Five-Plan Roadmap, Bounded Drafting Agent, Draft Guardrails, Synthetic Data and Held-Out Split, Weekly Pattern Report (+1 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.06
-Nodes (73): Validate/upsert source bytes. The caller owns commit/rollback of this session., store_document(), psycopg, FakeEmbedder, GatedEmbedder, LateEmbedder, PaidEmbedder, Deterministic embedding doubles; database behavior stays real in KB tests. (+65 more)
+Cohesion: 0.05
+Nodes (78): concurrent_futures, _payload(), test_second_request_id_reuses_the_approved_review(), test_submission_replay_creates_one_ticket(), Validate/upsert source bytes. The caller owns commit/rollback of this session., store_document(), psycopg, FakeEmbedder (+70 more)
 
 ### Community 36 - "Community 36"
 Cohesion: 0.05
 Nodes (39): 10. Testing and CI, 11. Documentation deliverables, 12. Configuration (`.env.example`), 13. Risks, 14. Implementation notes (added 2026-10-07, before implementation started), 1. Goal and success criteria, 2. Key decisions, 3. Repository layout (+31 more)
 
 ### Community 37 - "Pipeline Spec Rules"
-Cohesion: 0.33
-Nodes (6): Routing and Escalation Rules, Span-Anchored Extraction, Transaction Lookup, Classification Thresholds, Schema and Lookup Deviations, Red-Flag Escalation
+Cohesion: 0.29
+Nodes (7): Routing and Escalation Rules, Span-Anchored Extraction, Transaction Lookup, Classification Thresholds, Schema and Lookup Deviations, Taxonomy Specification, Red-Flag Escalation
 
 ### Community 38 - "Community 38"
 Cohesion: 0.13
@@ -435,8 +439,8 @@ Cohesion: 0.32
 Nodes (16): FakeClassifier, make_output(), Returns a preset output (or raises). Tracks how many calls are in flight at once, _deps(), _run(), test_concurrency_is_limited(), test_draft_node_never_retries_or_restarts_paid_work(), test_drafter_reasons_escalate() (+8 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.12
-Nodes (42): Attachment, Credentials, ImageInput, IntakeAttachmentRow, IntakeSessionRow, Path, sessionmaker, SessionView (+34 more)
+Cohesion: 0.13
+Nodes (43): Attachment, Credentials, ImageInput, IntakeAttachmentRow, IntakeSessionRow, Path, sessionmaker, SessionView (+35 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.05
@@ -467,8 +471,8 @@ Cohesion: 0.06
 Nodes (35): dependencies, @base-ui/react, class-variance-authority, cn, @fontsource/tajawal, @fontsource-variable/plus-jakarta-sans, react, react-dom (+27 more)
 
 ### Community 55 - "Tests Package"
-Cohesion: 0.13
-Nodes (24): CatalogOption(), ChangeModelDialog(), buildOptions(), canSave(), catalogView(), choiceKey(), filterModels(), isValidTemperature() (+16 more)
+Cohesion: 0.07
+Nodes (44): CatalogOption(), ChangeModelDialog(), buildOptions(), canSave(), catalogView(), choiceKey(), filterModels(), isValidTemperature() (+36 more)
 
 ### Community 56 - "Project Root"
 Cohesion: 0.10
@@ -479,8 +483,8 @@ Cohesion: 0.16
 Nodes (23): asks_for_secret(), choose_question(), test_full_payment_card_question_uses_safe_fallback(), asked(), complete_transfer(), _received_unknown_sender(), test_ask_once_detail_is_never_asked_twice(), test_customer_chosen_question_ignores_the_ask_limit() (+15 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.14
-Nodes (58): ImageInput, Session, UUID, Attachment, Credentials, IntakeAttachmentRow, IntakeMessageRow, IntakeSessionRow (+50 more)
+Cohesion: 0.15
+Nodes (47): Attachment, Credentials, IntakeAttachmentRow, IntakeMessageRow, IntakeSessionRow, IntakeState, Session, sessionmaker (+39 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.06
@@ -491,24 +495,24 @@ Cohesion: 0.17
 Nodes (31): ANSWER_KINDS, CHOICES, FACT_STATUSES, finiteNonnegative(), invalid(), isRecord(), language(), nullableString() (+23 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.06
-Nodes (51): get_customer(), get_session(), get_result(), list_results(), read_intake_attachment(), review_result(), get_run(), list_runs() (+43 more)
+Cohesion: 0.09
+Nodes (44): get_customer(), get_session(), get_result(), list_results(), read_intake_attachment(), reprocess_result(), review_result(), ReviewInput (+36 more)
 
 ### Community 62 - "Community 62"
 Cohesion: 0.06
 Nodes (31): 10. Verification and acceptance, 1. Outcome and success criteria, 2. Audit baseline, 3. Selected approach and sequence, 4. Boundaries and non-goals, 5.1 Dead-code cleanup, 5.2 Extraction ownership, 5.3 Knowledge-service boundary (+23 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.22
-Nodes (12): CatalogEntry, ModelChoice, Settings, Step, prices_for(), with_catalog_prices(), test_env_defaults_keep_their_prices(), test_env_prices_apply_only_to_the_env_default_model_of_the_step() (+4 more)
+Cohesion: 0.23
+Nodes (22): audit(), catalog(), _check_provider(), ChoiceInput, embedding_switch(), models(), _priced(), ProbeInput (+14 more)
 
 ### Community 64 - "Community 64"
 Cohesion: 0.11
 Nodes (18): dependsOn, inputs, outputs, cache, persistent, dependsOn, dependsOn, $schema (+10 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.14
-Nodes (24): _configured(), delete_document(), download_document(), index_document(), list_chunks(), list_documents(), _require_provider(), search_knowledge() (+16 more)
+Cohesion: 0.15
+Nodes (27): _configured(), delete_document(), download_document(), index_document(), list_chunks(), list_documents(), _require_provider(), search_knowledge() (+19 more)
 
 ### Community 68 - "Community 68"
 Cohesion: 0.32
@@ -523,60 +527,60 @@ Cohesion: 0.16
 Nodes (30): alias, _filter(), usage_summary(), usage_ticket_calls(), usage_tickets(), datetime, ge, le (+22 more)
 
 ### Community 72 - "Community 72"
-Cohesion: 0.14
-Nodes (25): _command_settings(), ingest_kb_cmd(), init_db_cmd(), Mode, `support` CLI: database setup, batches and shared knowledge ingestion., Run the pipeline over a batch of tickets and print the run summary., Index at most 100 sources, sequentially; print one JSON status per source., Create the database schema (idempotent). (+17 more)
+Cohesion: 0.19
+Nodes (19): _command_settings(), ingest_kb_cmd(), init_db_cmd(), Mode, `support` CLI: database setup, batches and shared knowledge ingestion., Run the pipeline over a batch of tickets and print the run summary., Index at most 100 sources, sequentially; print one JSON status per source., Create the database schema (idempotent). (+11 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.13
-Nodes (22): Any, CatalogEntry, CatalogKind, ProviderRegistry, Step, CatalogEntry, CatalogKind, ProviderStatus (+14 more)
+Cohesion: 0.22
+Nodes (10): TurnContext, TurnResult, QuestionRecord, IntakeGraph, _invitation(), One customer turn: interpret, merge evidence, then ask or prepare a review., IntakeService, langgraph_graph (+2 more)
 
 ### Community 74 - "Community 74"
-Cohesion: 0.27
-Nodes (12): Any, NormalizedTicket, Taxonomy, langchain_typesafe, build_order_check(), build_questions(), build_state(), category_criteria() (+4 more)
+Cohesion: 0.19
+Nodes (16): Any, Candidates, ClassifierOutput, FieldPick, NormalizedTicket, Taxonomy, langchain_typesafe, ClassificationResult (+8 more)
 
 ### Community 75 - "Community 75"
-Cohesion: 0.34
-Nodes (3): Any, PipelineState, _Nodes
+Cohesion: 0.15
+Nodes (13): Taxonomy, Any, PipelineState, TicketOutcome, langgraph_types, _default_retry(), _Nodes, outcome_from_state() (+5 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.18
-Nodes (27): OpenRouterEmbedder, The .env-configured OpenRouter embedder (kept for the CLI and existing tests)., embedder_for(), item(), response_payload(), settings(), test_33_inputs_are_batched_and_each_batch_maps_its_own_indexes(), test_billed_batch_cost_survives_cancellation_without_cross_call_leakage() (+19 more)
+Cohesion: 0.10
+Nodes (35): Any, ChatResult, OpenRouterEmbedder, The .env-configured OpenRouter embedder (kept for the CLI and existing tests)., langchain_core_outputs, langchain_openrouter, langchain_openrouter_chat_models, DraftProviderResponseError (+27 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.24
-Nodes (5): Any, ModelChoice, Step, ActiveModels, Provider status, downgraded when the chosen model has been removed from a ready
+Cohesion: 0.17
+Nodes (8): Any, ModelChoice, ProviderRegistry, Settings, Step, ActiveModels, Provider status, downgraded when the chosen model has been removed from a ready, Whether Ollama has the model installed; None when that cannot be determined.
 
 ### Community 78 - "Community 78"
-Cohesion: 0.24
-Nodes (6): BaseChatModel, _tool_chat(), drafter(), test_each_model_response_is_a_draft_row(), test_local_draft_model_is_free(), ScriptedChat
+Cohesion: 0.17
+Nodes (14): TextChunk, Embedder, Exception, Passage, sessionmaker, Settings, _append_chunks(), _check_extracted_size() (+6 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.04
 Nodes (44): dependencies, @base-ui/react, class-variance-authority, cn, @fontsource/tajawal, @fontsource-variable/plus-jakarta-sans, lucide-react, motion (+36 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.05
-Nodes (46): Structured-output sampling over any LangChain chat model, behind a small protoco, asyncio, TicketOutcome, FieldPick, NormalizedTicket, collections_abc, contextvars, dataclasses (+38 more)
+Cohesion: 0.09
+Nodes (24): get_settings(), Shared datetime parsing and the pipeline's Baghdad timezone convention., ModelChoice, collections_abc, Per-provider model listings, cached briefly and filtered by what a step needs., prices_for(), Per-1M token prices used for cost estimates. Unknown models have no price (spec, with_catalog_prices() (+16 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.08
 Nodes (25): 10. Out of scope, 1. Outcome and success criteria, 2. Current state, 3. Decisions, 4.1 Module layout, 4.2 Provider protocol, 4.3 Storage, 4.4 Snapshot semantics (+17 more)
 
 ### Community 82 - "Community 82"
-Cohesion: 0.16
-Nodes (17): ActiveModels, Any, datetime, ModelChoice, ProviderRegistry, Session, sessionmaker, Settings (+9 more)
+Cohesion: 0.14
+Nodes (19): ActiveModels, Any, datetime, ModelChoice, ProviderRegistry, Session, sessionmaker, Settings (+11 more)
 
 ### Community 83 - "Community 83"
-Cohesion: 0.11
-Nodes (46): start_run(), BatchInput, SessionDep, BackgroundTasks, Request, SessionDep, datetime, Any (+38 more)
+Cohesion: 0.05
+Nodes (83): get_run(), list_runs(), start_run(), BatchInput, SessionDep, BackgroundTasks, Request, SessionDep (+75 more)
 
 ### Community 84 - "Community 84"
 Cohesion: 0.08
 Nodes (25): 1. Outcome and success criteria, 2. Current state, 3. Decisions, 4.10 API, 4.11 CLI, 4.1 Prerequisite: shared provider adapters, 4.2 Usage metering, 4.3 `LlmClassifier` (+17 more)
 
 ### Community 85 - "Community 85"
-Cohesion: 0.09
-Nodes (41): TextChunk, _append_chunks(), _check_extracted_size(), _combining_only(), _is_ltr(), _is_rtl(), _line_text(), _logical_page_text() (+33 more)
+Cohesion: 0.16
+Nodes (24): parse_document(), Parse .txt/.md UTF-8 or .pdf bytes; PDF page metadata is one-based.      Raises, make_pdf(), Generate real text/blank PDFs in memory without external fixtures or tools., test_arabic_text_and_bom_are_preserved(), test_blank_pdf_tells_operator_to_use_ocr(), test_chunk_limit_is_enforced(), test_chunking_is_deterministic_bounded_and_overlapping() (+16 more)
 
 ### Community 86 - "Community 86"
 Cohesion: 0.08
@@ -587,56 +591,56 @@ Cohesion: 0.17
 Nodes (23): Candidates, date, datetime, ExtractedField, FieldPick, NormalizedTicket, FieldExtractor, _field() (+15 more)
 
 ### Community 88 - "Community 88"
-Cohesion: 0.12
-Nodes (15): External provider doubles; storage, retrieval and indexing remain real., client(), evidence_client(), Real HTTP/pgvector lifecycle with fake external providers only., test_concurrent_index_requests_share_active_work(), test_disabled_or_missing_provider_stores_without_indexing(), test_explicit_retry_tags_search_and_chunk_pagination(), test_health_distinguishes_failed_from_empty() (+7 more)
+Cohesion: 0.13
+Nodes (13): client(), evidence_client(), Real HTTP/pgvector lifecycle with fake external providers only., test_concurrent_index_requests_share_active_work(), test_disabled_or_missing_provider_stores_without_indexing(), test_explicit_retry_tags_search_and_chunk_pagination(), test_health_distinguishes_failed_from_empty(), test_health_requires_compatible_nonempty_index() (+5 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.18
-Nodes (24): UnlockedModels(), CustomerMissing(), CustomerPage(), EvaluationPage(), TicketTimeline(), useResource(), InsightsPage(), DocumentList() (+16 more)
+Cohesion: 0.10
+Nodes (40): AdminUnlock(), AuditList(), EmbeddingSwitchStatus(), CustomerProfileView(), DocumentList(), DocumentListProps, knowledgeDocument(), listProps() (+32 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.20
-Nodes (12): Capability, Locality, draft_timeout_s(), eligibility(), intake_timeout_s(), What each pipeline step needs, who may serve it, and today's .env defaults., _settings(), test_eligibility() (+4 more)
+Cohesion: 0.23
+Nodes (12): Locality, Settings, draft_timeout_s(), env_defaults(), intake_timeout_s(), What each pipeline step needs, who may serve it, and today's .env defaults., _settings(), test_eligibility() (+4 more)
 
 ### Community 91 - "Community 91"
-Cohesion: 0.15
-Nodes (13): Any, Category, date, datetime, ExtractedField, LookupResult, TxnRecord, _as_date() (+5 more)
+Cohesion: 0.19
+Nodes (10): Category, date, datetime, ExtractedField, LookupResult, TxnRecord, _as_date(), InMemoryTransactionRepo (+2 more)
 
 ### Community 92 - "Community 92"
-Cohesion: 0.09
-Nodes (22): ShimmerText(), Passage, Result, TraceEvent, CitationEvidence(), source, renderableTrace(), reviewEvidence() (+14 more)
+Cohesion: 0.06
+Nodes (24): ShimmerText(), LanguageToggle(), Locale, useLocale(), Passage, Result, projectQueue(), QueueFilters (+16 more)
 
 ### Community 93 - "Community 93"
 Cohesion: 0.17
 Nodes (18): analyze_calls(), ask(), complete_without_reference(), opening(), opening_with_amount(), Guided interview over the real intake API with the scripted model., reference_answer(), send() (+10 more)
 
 ### Community 94 - "Community 94"
-Cohesion: 0.15
-Nodes (16): HTTP boundary tests use the real graph and test database; only model calls are f, review_payload(), start_run(), test_batch_and_queue_expose_real_results(), test_batch_failure_is_isolated_and_conflicting_ids_rejected(), test_customer_profile_lists_the_latest_result_of_each_ticket(), test_only_jev_mode_is_configured_and_retired_modes_are_rejected(), test_progress_counts_only_durable_results_after_save_failure() (+8 more)
+Cohesion: 0.14
+Nodes (18): HTTP boundary tests use the real graph and test database; only model calls are f, review_payload(), start_run(), test_batch_and_queue_expose_real_results(), test_batch_failure_is_isolated_and_conflicting_ids_rejected(), test_customer_profile_lists_the_latest_result_of_each_ticket(), test_only_jev_mode_is_configured_and_retired_modes_are_rejected(), test_progress_counts_only_durable_results_after_save_failure() (+10 more)
 
 ### Community 95 - "Community 95"
 Cohesion: 0.10
 Nodes (11): AgentChat, AgentChatProps, AgentMessage, AttachedFile, AttachedImage, ChatStatus, cn(), ErrorBubble() (+3 more)
 
 ### Community 96 - "Community 96"
-Cohesion: 0.10
-Nodes (29): BaseException, ModelChoice, ProbeResult, Provider, ProviderRegistry, Step, Any, BaseChatModel (+21 more)
+Cohesion: 0.13
+Nodes (28): BaseException, ModelChoice, ProbeResult, Provider, ProviderRegistry, Step, Any, BaseChatModel (+20 more)
 
 ### Community 97 - "Community 97"
-Cohesion: 0.09
-Nodes (31): mask_cards(), Shared, length-preserving digit and sensitive-card normalization., Arabic-Indic and Persian digits to ASCII. Length-preserving., Replace all but the last 4 digits of card-like numbers with '*'. Length-preservi, to_ascii_digits(), NormalizedTicket, Ticket, customer_phone_or_none() (+23 more)
+Cohesion: 0.11
+Nodes (24): mask_cards(), Shared, length-preserving digit and sensitive-card normalization., Replace all but the last 4 digits of card-like numbers with '*'. Length-preservi, NormalizedTicket, Ticket, A customer is identified by the canonical ZainCash phone number 07XXXXXXXXX., Keep explicitly labelled receipt IDs while masking card-like numbers elsewhere., re (+16 more)
 
 ### Community 98 - "Community 98"
-Cohesion: 0.32
-Nodes (20): AnswerKind, Taxonomy, AskedQuestion, datetime, Fact, Choice, AskedQuestion, _aware() (+12 more)
+Cohesion: 0.35
+Nodes (19): AnswerKind, AskedQuestion, datetime, Fact, Choice, AskedQuestion, _aware(), Fact (+11 more)
 
 ### Community 99 - "Community 99"
 Cohesion: 0.13
-Nodes (6): BaseException, _abandoned(), _check_deadline(), _DatabaseCall, Borrower-local database deadlines, cancellation, and commit handoff., One worker's cancellation fence, never configuration on the shared engine.
+Nodes (7): BaseException, _abandoned(), _check_deadline(), _DatabaseCall, Borrower-local database deadlines, cancellation, and commit handoff., One worker's cancellation fence, never configuration on the shared engine., math
 
 ### Community 100 - "Community 100"
-Cohesion: 0.23
-Nodes (14): _provider(), _tags_handler(), test_catalog_lists_installed_models_with_reported_capabilities(), test_chat_model_sets_the_configured_context_window(), test_chat_model_targets_the_configured_server(), test_embedder_uses_openai_compatible_endpoint_without_dimensions(), test_has_model_is_unknown_when_ollama_is_unreachable_or_unusable(), test_has_model_listing_is_cached_for_the_status_ttl() (+6 more)
+Cohesion: 0.22
+Nodes (13): _combining_only(), _is_ltr(), _is_rtl(), _line_text(), _logical_page_text(), Bounded, deterministic Unicode chunking; PDF chunks never cross page boundaries., Read a page in logical order.      These policy PDFs paint each glyph from left, Undo a line drawn left-to-right in visual order.      Arabic ligatures stay inta (+5 more)
 
 ### Community 101 - "Community 101"
 Cohesion: 0.10
@@ -647,8 +651,8 @@ Cohesion: 0.14
 Nodes (23): datetime, Fact, canonical_digits(), normalize_reported_date(), Conservative date and digit normalization for customer reports., Resolve an unambiguous calendar date. Never invents an hour., _apply(), _check_reference() (+15 more)
 
 ### Community 104 - "Community 104"
-Cohesion: 0.18
-Nodes (12): acceptIndexRequest(), canRequestIndex(), PendingIndexes, persistPendingIndexes(), pollKnowledge(), PollOptions, restorePendingIndexes(), pending (+4 more)
+Cohesion: 0.20
+Nodes (11): Pipeline Graph Orchestration, Plan 1 Part 2, Batch Runner, NullDrafter, support CLI, Plan 1 Core Pipeline, Live Batch API, Support Workspace UI Plan (+3 more)
 
 ### Community 105 - "Community 105"
 Cohesion: 0.10
@@ -663,20 +667,20 @@ Cohesion: 0.10
 Nodes (19): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+11 more)
 
 ### Community 108 - "Community 108"
-Cohesion: 0.11
-Nodes (9): Local support workspace API. Start with uvicorn app.main:app --port 8000., contextlib, fastapi_middleware_cors, fastapi_responses, inspect, Customer intake application service. Model calls happen outside the database tra, sqlalchemy_exc, starlette_concurrency (+1 more)
+Cohesion: 0.20
+Nodes (8): Local support workspace API. Start with uvicorn app.main:app --port 8000., contextlib, fastapi_middleware_cors, fastapi_responses, inspect, Customer intake application service. Model calls happen outside the database tra, sqlalchemy_exc, starlette_concurrency
 
 ### Community 109 - "Community 109"
 Cohesion: 0.10
 Nodes (19): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+11 more)
 
 ### Community 110 - "Community 110"
-Cohesion: 0.21
-Nodes (15): _safe_dispatch(), ActiveModels, batch_concurrency(), _current_models(), _local_pipeline(), process_batch(), Run the existing graph; checkpoint completed tickets using independent sessions., Cloud tickets keep the fixed budget; local extract or draft need room for their (+7 more)
+Cohesion: 0.08
+Nodes (40): _safe_dispatch(), ActiveModels, Session, AiCall, AiCallRow, Any, Session, _submit() (+32 more)
 
 ### Community 111 - "Community 111"
-Cohesion: 0.33
-Nodes (4): _DatabaseCall, KnowledgeService, Reindex a source; an active claim returns its current projection without work., Startup-only recovery for this single-worker app, before scheduling jobs.
+Cohesion: 0.24
+Nodes (6): TicketInput, customer_phone_or_none(), normalize_customer_phone(), test_accepted_formats_become_the_canonical_phone(), test_invalid_input_is_rejected(), test_optional_lookup_never_raises()
 
 ### Community 112 - "Community 112"
 Cohesion: 0.11
@@ -687,12 +691,12 @@ Cohesion: 0.29
 Nodes (6): compilerOptions, module, moduleResolution, skipLibCheck, strict, target
 
 ### Community 114 - "Community 114"
-Cohesion: 0.20
-Nodes (16): Candidates, Candidate, _add(), find_candidates(), _overlaps(), parse_amount(), Recall-tuned regex candidate finders. Jev later picks among these spans (spec §6, Over-collect candidate spans. `match_text` must already have ASCII digits. (+8 more)
+Cohesion: 0.21
+Nodes (15): Candidates, Candidate, _add(), find_candidates(), _overlaps(), Recall-tuned regex candidate finders. Jev later picks among these spans (spec §6, Over-collect candidate spans. `match_text` must already have ASCII digits., test_amount_forms() (+7 more)
 
 ### Community 115 - "Community 115"
-Cohesion: 0.15
-Nodes (10): FieldPick, NormalizedTicket, pathlib, Fill <<KEY>> markers. `ticket` is always substituted last, so marker-like text i, render_prompt(), ExtractedSpan, _Fields, GeminiFields (+2 more)
+Cohesion: 0.11
+Nodes (19): Structured-output sampling over any LangChain chat model, behind a small protoco, Sample, Any, BaseModel, FieldPick, NormalizedTicket, pydantic, ExtractedSpan (+11 more)
 
 ### Community 116 - "Community 116"
 Cohesion: 0.12
@@ -707,48 +711,44 @@ Cohesion: 0.33
 Nodes (7): date, datetime, Resolve date phrases against the ticket's received_at. Arithmetic stays in code, resolve_date(), _safe_date(), test_resolve(), test_unresolvable_is_none()
 
 ### Community 119 - "Community 119"
-Cohesion: 0.17
-Nodes (13): Path, Public factory for sibling read-only KB/investigation adapters.          Each ad, _submit(), test_committed_but_unscheduled_ticket_survives_recovery(), test_failed_outcome_save_preserves_placeholder_and_reconciles_counts(), test_processing_ticket_rejects_review(), itertools, recover_intake_processing() (+5 more)
+Cohesion: 0.32
+Nodes (7): Path, itertools, ingest_one(), ingest_paths(), ingest_status(), Bounded CLI ingestion; source storage and index/cost ownership stay in kb/., retry_ids()
 
 ### Community 120 - "Community 120"
-Cohesion: 0.26
-Nodes (14): AiCall, AiCallRow, Any, Session, add_calls(), call_rows(), persist_calls(), Insert inside the owner's transaction; a failure rolls back only the savepoint. (+6 more)
+Cohesion: 0.22
+Nodes (9): Any, txn_from_dict(), _first_candidates(), The demo tickets must match the transaction fixture the API seeds at startup., Stand in for Jev's picks: the first candidate of each field, as stage 3 would fi, test_payment_demo_ticket_matches_seeded_transaction(), test_txn_from_dict_parses_datetime(), The API seeds sample_transactions.jsonl at startup; both sources must hold the s (+1 more)
 
 ### Community 122 - "Community 122"
-Cohesion: 0.08
-Nodes (66): Analysis, TurnContext, IntakeState, TurnContext, ModelChoice, TurnContext, TurnResult, UUID (+58 more)
+Cohesion: 0.10
+Nodes (56): Analysis, TurnContext, IntakeState, TurnContext, ModelChoice, UUID, datetime, Exception (+48 more)
 
 ### Community 123 - "Community 123"
-Cohesion: 0.15
-Nodes (16): _calendar_days(), _compact(), Freeze a customer-approved summary without adding unsupported numbers., Dates the token can mean. Day and month stay in the order they were written., _render_value(), _tokens(), validate_review_numbers(), test_arabic_customer_and_employee_share_one_narrative() (+8 more)
+Cohesion: 0.18
+Nodes (17): build_review(), _calendar_days(), _compact(), Freeze a customer-approved summary without adding unsupported numbers., Dates the token can mean. Day and month stay in the order they were written., _render_value(), _ticket_text(), _tokens() (+9 more)
 
 ### Community 124 - "Community 124"
-Cohesion: 0.36
-Nodes (5): MODEL_STEPS, ModelStep, LEGACY, RunModelRow, runModelRows()
+Cohesion: 0.22
+Nodes (8): Agent-Found Transactions Implementation Plan, Global Constraints, Review Focus, Task 1: Declined card attempts in the demo data, Task 2: Drafting prompt v2, Task 3: `investigated_transactions` in the result detail, Task 4: Found rows in دليل العملية, Task 5: Full verification
 
 ### Community 125 - "Community 125"
-Cohesion: 0.09
-Nodes (47): audit(), catalog(), _check_provider(), ChoiceInput, embedding_switch(), ModelOptions, models(), _priced() (+39 more)
+Cohesion: 0.07
+Nodes (39): ModelOptions, BackgroundTasks, ge, le, Query, ActiveModels, EmbeddingBatch, ModelChoice (+31 more)
 
 ### Community 126 - "Community 126"
-Cohesion: 0.23
-Nodes (14): datetime, Passage, PipelineState, Decimal, check_draft(), _citation_findings(), _exact_amount(), _grounding_findings() (+6 more)
+Cohesion: 0.19
+Nodes (18): Arabic-Indic and Persian digits to ASCII. Length-preserving., to_ascii_digits(), datetime, Passage, PipelineState, Decimal, parse_amount(), check_draft() (+10 more)
 
 ### Community 127 - "Community 127"
-Cohesion: 0.20
-Nodes (31): DraftContext, KnowledgeService, SqlInvestigationRepo, BaseTool, copy, pydantic, DraftAlreadySubmitted, DraftContext (+23 more)
+Cohesion: 0.18
+Nodes (30): sessionmaker, DraftContext, KnowledgeService, SqlInvestigationRepo, BaseTool, copy, DraftAlreadySubmitted, DraftContext (+22 more)
 
 ### Community 128 - "Community 128"
 Cohesion: 0.12
 Nodes (15): Completion and review record — 2026-10-17, Execution handoff, File map and shared interfaces, Global Constraints, Plan 3 RAG Drafting Implementation Plan, Plan self-review, Review Focus, Task 1: Testable parsing and embedding boundary (+7 more)
 
 ### Community 129 - "Community 129"
-Cohesion: 0.24
-Nodes (8): raw(), _Chat, _FailingExtractor, llm(), _S, test_each_attempt_is_recorded(), test_failed_parse_cost_reaches_the_ticket(), test_unknown_price_and_local_sources()
-
-### Community 130 - "Community 130"
-Cohesion: 0.18
-Nodes (8): Any, ChatResult, langchain_core_outputs, langchain_openrouter, langchain_openrouter_chat_models, DraftProviderResponseError, Narrow normalization of known non-streaming OpenRouter response failures., Unusable provider response with usage retained before AIMessage creation.      T
+Cohesion: 0.20
+Nodes (9): langchain_core_messages, raw(), _Chat, _FailingExtractor, llm(), _S, test_each_attempt_is_recorded(), test_failed_parse_cost_reaches_the_ticket() (+1 more)
 
 ### Community 131 - "Community 131"
 Cohesion: 0.23
@@ -759,8 +759,8 @@ Cohesion: 0.12
 Nodes (15): Admin model configuration — backend implementation plan, File structure, Global Constraints, Review Focus, Task 10: Guarded embedding switch, Task 11: Configuration, Docker and documentation, Task 1: Settings, model types and step rules, Task 2: OpenRouter and TypeSafe providers, registry, generic embedder (+7 more)
 
 ### Community 133 - "Community 133"
-Cohesion: 0.08
-Nodes (29): Retry transient failures at most max_retries times per sample; record every atte, AsyncCallbackHandler, Timer, Timer, Any, BaseException, _has_response_usage(), _ModelUsage (+21 more)
+Cohesion: 0.10
+Nodes (23): Retry transient failures at most max_retries times per sample; record every atte, Timer, Any, BaseException, _bounded(), Keep JSON-shaped evidence while bounding arbitrary rejected arguments/results., cost_for(), count() (+15 more)
 
 ### Community 134 - "Community 134"
 Cohesion: 0.12
@@ -771,12 +771,12 @@ Cohesion: 0.13
 Nodes (13): Evidence by layer, Known limitations and remaining work, Repeatable local walkthrough, Synthetic demo readiness, Current capability boundaries, Data source, Modular file map, Open the right project (+5 more)
 
 ### Community 136 - "Community 136"
-Cohesion: 0.26
-Nodes (16): Session, create_run(), finish_run(), load_incidents(), load_transactions(), Upsert by txn_ref. Returns the number of records passed in; duplicates collapse, save_outcomes(), _upsert() (+8 more)
+Cohesion: 0.57
+Nodes (7): upsert_tickets(), _count(), sf(), test_rerun_is_idempotent(), test_upsert_tickets_is_idempotent(), test_upsert_tickets_rejects_a_missing_or_invalid_phone(), test_upsert_tickets_stores_one_canonical_customer()
 
 ### Community 137 - "Community 137"
 Cohesion: 0.08
-Nodes (43): Any, AsyncClient, CatalogEntry, CatalogKind, OpenAICompatibleEmbedder, ProviderStatus, Settings, Any (+35 more)
+Nodes (55): Any, CatalogEntry, CatalogKind, ProviderRegistry, Step, CatalogEntry, CatalogKind, Any (+47 more)
 
 ### Community 138 - "Community 138"
 Cohesion: 0.12
@@ -787,16 +787,16 @@ Cohesion: 0.12
 Nodes (15): Backend, Canonical phone format, Customer phone identity design, Data model, Decisions, Employee API, employee-frontend, Error handling (+7 more)
 
 ### Community 140 - "Community 140"
-Cohesion: 0.20
-Nodes (12): fastapi_testclient, Real support_test fixtures for intake. Never resets the development database., reviewed(), make_client(), test_admin_is_disabled_without_a_token(), test_model_tests_are_recorded(), test_models_and_catalog(), test_non_ascii_and_blank_tokens_are_rejected() (+4 more)
+Cohesion: 0.42
+Nodes (8): make_client(), test_admin_is_disabled_without_a_token(), test_model_tests_are_recorded(), test_models_and_catalog(), test_non_ascii_and_blank_tokens_are_rejected(), test_save_rejections_change_nothing(), test_saved_choice_keeps_catalog_prices_but_hides_them(), test_test_save_and_audit()
 
 ### Community 142 - "Community 142"
-Cohesion: 0.08
-Nodes (21): main(), Opt-in live checks: uv run python -m tests.intake.live_probe [transfers].  Uses, png_bytes(), repo(), store(), test_active_turn_rejects_upload(), test_changed_invalid_bytes_conflict_before_decoding_replay(), test_concurrent_uploads_stop_at_the_session_cap() (+13 more)
+Cohesion: 0.09
+Nodes (17): png_bytes(), repo(), store(), test_active_turn_rejects_upload(), test_changed_invalid_bytes_conflict_before_decoding_replay(), test_concurrent_uploads_stop_at_the_session_cap(), test_cross_session_read_and_removal(), test_decoder_decompression_limit_is_a_safe_image_rejection() (+9 more)
 
 ### Community 143 - "Community 143"
-Cohesion: 0.13
-Nodes (24): BaseException, Embedder, EmbeddingBatch, Exception, Passage, Session, sessionmaker, Settings (+16 more)
+Cohesion: 0.14
+Nodes (17): BaseException, EmbeddingBatch, Session, TextChunk, UploadedDocument, _DatabaseCall, _Claim, DocumentNotFoundError (+9 more)
 
 ### Community 144 - "Community 144"
 Cohesion: 0.19
@@ -823,8 +823,8 @@ Cohesion: 0.29
 Nodes (13): _ex(), _match(), test_ambiguous_then_disambiguated_by_counterpart(), test_amount_and_date_mismatch(), test_fraud_reference_missing_from_the_ledger_is_not_found(), test_fraud_search_by_phone_amount_and_date(), test_fraud_with_a_real_reference_is_matched(), test_fraud_without_a_cited_payment_stays_not_applicable() (+5 more)
 
 ### Community 151 - "Community 151"
-Cohesion: 0.19
-Nodes (36): `chat.with_structured_output(method="json_schema", include_raw=True)` for any pr, StructuredChatLLM, StructuredLLM, Any, ActiveModels, Any, BaseChatModel, CredentialChecker (+28 more)
+Cohesion: 0.17
+Nodes (42): `chat.with_structured_output(method="json_schema", include_raw=True)` for any pr, StructuredChatLLM, StructuredLLM, ActiveModels, Any, BaseChatModel, CredentialChecker, KnowledgeService (+34 more)
 
 ### Community 152 - "Community 152"
 Cohesion: 0.14
@@ -847,8 +847,8 @@ Cohesion: 0.15
 Nodes (12): Customer Frontend Maintainability Implementation Plan, Global Constraints, Review Focus, Task 1: Cleanup-first removal of reference-verified dead code and dependencies, Task 2: Make standalone typechecking and root test execution real, Task 3: Centralize test cleanup and shared intake fixtures mechanically, Task 4: Make pending operations discriminated and use one request identity, Task 5: Add complete dependency-free API and persisted-session guards (+4 more)
 
 ### Community 157 - "Community 157"
-Cohesion: 0.21
-Nodes (13): langchain_typesafe_client, call_context(), CallContext, embedder(), test_draft_search_embedding_is_recorded_with_tokens_and_estimate(), test_indexing_and_provider_cost(), test_local_embedder_and_failures(), transport() (+5 more)
+Cohesion: 0.17
+Nodes (16): httpx, langchain_typesafe_client, call_context(), CallContext, drafter(), test_each_model_response_is_a_draft_row(), test_local_draft_model_is_free(), embedder() (+8 more)
 
 ### Community 158 - "Community 158"
 Cohesion: 0.45
@@ -891,8 +891,8 @@ Cohesion: 0.18
 Nodes (10): Arabic at 390×844, starting from the vague message, English at 1280×900, with the complete message, Existing-test expectation changes from Task 1, Final automated checks, Guided intake interview verification — 2026-11-13, Live browser run, Live probe output (facts only), Live transfer probe (+2 more)
 
 ### Community 169 - "Community 169"
-Cohesion: 0.20
-Nodes (13): assert_completed_evidence(), faulty_knowledge(), PaidEmbeddings, Real LangGraph + agent/tools + API runner; only providers and storage IO are fak, runner_env(), test_concurrent_timeout_and_success_do_not_share_handoff(), test_exhausted_draft_budget_does_not_start_paid_work(), test_genuine_runner_cancellation_propagates_without_terminal_persistence() (+5 more)
+Cohesion: 0.15
+Nodes (21): asyncio, BaseChatModel, _tool_chat(), call(), Script only the external model/retrieval boundaries; run the real agent/tools., script(), ScriptedChat, assert_completed_evidence() (+13 more)
 
 ### Community 170 - "Community 170"
 Cohesion: 0.20
@@ -903,44 +903,40 @@ Cohesion: 0.20
 Nodes (9): Global Constraints, Per-model Evaluation Implementation Plan — Part 1 of 3 (backend foundations), Review Focus, Task 1: Provider adapters (OpenRouter, Ollama) and Ollama setup docs, Task 2: Usage metering (tokens, latency, cost per call), Task 3: `LlmClassifier` and pluggable classifier in `build_pipeline`, Task 4: Evaluation model list, prices and availability, Task 5: Dataset scenarios, transactions, gold labels and split (+1 more)
 
 ### Community 172 - "Community 172"
-Cohesion: 0.38
-Nodes (4): concurrent_futures, _payload(), test_second_request_id_reuses_the_approved_review(), test_submission_replay_creates_one_ticket()
+Cohesion: 0.25
+Nodes (7): Approaches, Design, Goals, Left to the builder, Non-goals and anti-goals, Show the transactions the drafting agent found, Why
 
 ### Community 173 - "Community 173"
 Cohesion: 0.20
 Nodes (9): Global Constraints, Per-model Evaluation Implementation Plan — Part 3 of 3 (frontend, translations, verification), Task 12: Locale parity test and translated Runs pages, Task 13: Evaluation types, API client, formatters, copy and report import, Task 14: Evaluation view helpers, Task 15: Provenance, headline metrics, comparison table and empty state, Task 16: Model detail, confusion matrix and predictions drawer, Task 17: Run dialog, progress, page assembly, route and styles (+1 more)
 
 ### Community 174 - "Community 174"
-Cohesion: 0.29
-Nodes (8): CitationSource, _Draft, draft_evidence(), _Guardrail, Validate historical trace fragments without consulting mutable knowledge tables., Old/corrupt fields are unknown, never inferred as a successful guardrail.      F, _TraceModel, _validated()
+Cohesion: 0.38
+Nodes (6): ImageInput, Session, UUID, employee_attachment(), intake_result_view(), Employee-facing intake evidence. Draft attachments are never served from a resul
 
 ### Community 175 - "Community 175"
-Cohesion: 0.11
-Nodes (21): fake_call(), RecordingClassifier, graph(), start(), test_batch_writes_calls_with_run_and_ticket(), test_failed_ticket_keeps_its_calls(), test_ledger_failure_does_not_fail_the_result(), test_run_batch_attaches_each_tickets_calls() (+13 more)
+Cohesion: 0.12
+Nodes (19): fake_call(), RecordingClassifier, graph(), start(), test_batch_writes_calls_with_run_and_ticket(), test_failed_ticket_keeps_its_calls(), test_ledger_failure_does_not_fail_the_result(), test_run_batch_attaches_each_tickets_calls() (+11 more)
 
 ### Community 176 - "Community 176"
-Cohesion: 0.20
-Nodes (4): SelectContent(), SelectItem(), SelectTrigger(), SelectValue()
+Cohesion: 0.40
+Nodes (6): OpenRouter Provider Migration, Cascade Mode, Gemini 3.8 Flash, Jev, Plan 1 Live Smoke, OpenRouter
 
 ### Community 177 - "Community 177"
 Cohesion: 0.20
 Nodes (9): Artifacts, servers and remaining concerns, Citation IDs and provider evidence, Commands and automated verification — historical Task 8, Corpus and actual retrieval, Current final verification and review closure, Environment and isolation, Live browser and persistence evidence, RAG drafting verification — 2026-10-17 (+1 more)
-
-### Community 178 - "Community 178"
-Cohesion: 0.50
-Nodes (4): Session, UploadedDocument, document_view(), Project old sources and real lifecycle metadata without source bytes/vectors.
 
 ### Community 179 - "Community 179"
 Cohesion: 0.31
 Nodes (6): PassageBody(), concisePassage(), directionOf(), PassageReading, sentences(), refund
 
 ### Community 180 - "Community 180"
-Cohesion: 0.38
-Nodes (9): _client(), _documents(), test_failed_documents_are_listed(), test_run_start_locks_the_switch_table_before_its_first_write(), test_runs_are_blocked_while_a_switch_runs_and_restart_recovers(), test_start_updates_the_cache_without_reloading_from_the_database(), test_switch_is_refused_while_a_run_is_running(), test_switch_reindexes_every_document_with_the_new_model() (+1 more)
+Cohesion: 0.21
+Nodes (13): fastapi_testclient, Real support_test fixtures for intake. Never resets the development database., reviewed(), _client(), _documents(), test_failed_documents_are_listed(), test_run_start_locks_the_switch_table_before_its_first_write(), test_runs_are_blocked_while_a_switch_runs_and_restart_recovers() (+5 more)
 
 ### Community 181 - "Community 181"
-Cohesion: 0.46
-Nodes (7): _provider(), test_chat_catalog_maps_capabilities_and_prices(), test_chat_model_disables_sdk_retries_and_maps_thinking(), test_embedder_estimates_only_with_a_known_price(), test_embedder_posts_to_openrouter_with_dimensions(), test_embedding_catalog_uses_the_embedding_listing(), test_status_reports_missing_key()
+Cohesion: 0.39
+Nodes (8): _provider(), test_chat_catalog_maps_capabilities_and_prices(), test_chat_model_disables_sdk_retries_and_maps_thinking(), test_embedder_estimates_only_with_a_known_price(), test_embedder_posts_to_openrouter_with_dimensions(), test_embedding_catalog_uses_the_embedding_listing(), test_status_reports_missing_key(), test_typesafe_status_and_unsupported_chat()
 
 ### Community 182 - "Community 182"
 Cohesion: 0.22
@@ -955,12 +951,12 @@ Cohesion: 0.25
 Nodes (7): Global Constraints, Task 1: Sentence catalog, Task 2: Which step is open, Task 3: Received, produced, and drafting events, Task 4: Mermaid source, Task 5: Draw the charts on the ticket page, Ticket Flow Charts Implementation Plan
 
 ### Community 185 - "Community 185"
-Cohesion: 0.27
-Nodes (10): make_gemini_llm(), The .env-configured extraction model (CLI and tests)., _llm(), _S, test_draft_model_uses_millisecond_timeout_and_disables_sdk_retries(), test_openrouter_reported_cost_takes_precedence_over_token_estimate(), test_openrouter_retry_budget_is_bounded(), test_openrouter_structured_samples_use_configured_key_and_validate_output() (+2 more)
+Cohesion: 0.50
+Nodes (3): FieldPick, NormalizedTicket, FieldExtractor
 
 ### Community 186 - "Community 186"
-Cohesion: 0.50
-Nodes (7): Real ChatOpenRouter + create_agent; only HTTP and external retrieval are faked., response_payload(), run_provider_pipeline(), search_response(), test_empty_choices_escalates_and_keeps_paid_response_usage(), test_failed_response_id_is_deduplicated_against_earlier_success(), test_other_conversion_value_errors_remain_unexpected()
+Cohesion: 0.42
+Nodes (8): json, Real ChatOpenRouter + create_agent; only HTTP and external retrieval are faked., response_payload(), run_provider_pipeline(), search_response(), test_empty_choices_escalates_and_keeps_paid_response_usage(), test_failed_response_id_is_deduplicated_against_earlier_success(), test_other_conversion_value_errors_remain_unexpected()
 
 ### Community 187 - "Community 187"
 Cohesion: 0.25
@@ -1007,32 +1003,32 @@ Cohesion: 0.40
 Nodes (9): _criteria(), _run(), test_low_top_probability_is_uncertain(), test_one_main_call_with_all_questions(), test_order_check_uses_reversed_options(), test_order_disagreement_is_uncertain(), test_priority_level_maps_to_p_label(), test_state_is_truncated() (+1 more)
 
 ### Community 241 - "Community 241"
-Cohesion: 0.33
-Nodes (5): Embedder, EmbeddingBatch, Passage, SearchResult, TextChunk
+Cohesion: 0.09
+Nodes (17): contextvars, dataclasses, Embedder, EmbeddingBatch, Passage, SearchResult, TextChunk, langchain_agents (+9 more)
 
 ## Ambiguous Edges - Review These
 - `Fraud Report` → `Plan 1 Live Smoke`  [AMBIGUOUS]
   README.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **917 isolated node(s):** `Request`, `TextChunk`, `Passage`, `SearchResult`, `BaseException` (+912 more)
+- **926 isolated node(s):** `Request`, `TextChunk`, `Passage`, `SearchResult`, `BaseException` (+921 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **42 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **43 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Fraud Report` and `Plan 1 Live Smoke`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `Settings` connect `Community 28` to `Community 1`, `Community 2`, `Community 133`, `Community 6`, `Community 136`, `Community 137`, `Community 9`, `Community 11`, `Community 10`, `Community 142`, `Community 143`, `Community 16`, `Community 19`, `Community 151`, `Community 25`, `Community 34`, `Community 38`, `Community 40`, `Community 169`, `Community 181`, `Community 185`, `Community 58`, `Community 186`, `Community 63`, `Community 72`, `Community 73`, `Community 76`, `Community 77`, `Community 78`, `Community 80`, `Community 82`, `Community 90`, `Community 94`, `Community 100`, `Community 111`, `Community 120`, `Community 122`?**
-  _High betweenness centrality (0.078) - this node is a cross-community bridge._
-- **Why does `datetime` connect `Community 83` to `Community 131`, `Community 4`, `Community 5`, `Community 133`, `Community 136`, `Community 10`, `Community 143`, `Community 151`, `Community 25`, `Community 157`, `Community 30`, `Community 34`, `Community 40`, `Community 175`, `Community 58`, `Community 61`, `Community 65`, `Community 71`, `Community 72`, `Community 82`, `Community 87`, `Community 91`, `Community 98`, `Community 103`, `Community 110`, `Community 111`, `Community 118`, `Community 122`, `Community 125`, `Community 126`, `Community 127`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
-- **Why does `ActiveModels` connect `Community 77` to `Community 1`, `Community 185`, `Community 73`, `Community 110`, `Community 80`, `Community 82`, `Community 151`, `Community 25`, `Community 58`, `Community 28`, `Community 125`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `Settings` connect `Community 28` to `Community 1`, `Community 2`, `Community 6`, `Community 136`, `Community 137`, `Community 9`, `Community 11`, `Community 10`, `Community 143`, `Community 16`, `Community 19`, `Community 151`, `Community 25`, `Community 157`, `Community 34`, `Community 38`, `Community 40`, `Community 169`, `Community 181`, `Community 58`, `Community 186`, `Community 72`, `Community 76`, `Community 77`, `Community 78`, `Community 80`, `Community 82`, `Community 90`, `Community 94`, `Community 110`, `Community 115`, `Community 122`, `Community 125`?**
+  _High betweenness centrality (0.079) - this node is a cross-community bridge._
+- **Why does `datetime` connect `Community 83` to `Community 131`, `Community 4`, `Community 5`, `Community 133`, `Community 143`, `Community 151`, `Community 25`, `Community 157`, `Community 30`, `Community 34`, `Community 40`, `Community 175`, `Community 58`, `Community 61`, `Community 65`, `Community 71`, `Community 73`, `Community 74`, `Community 78`, `Community 80`, `Community 82`, `Community 87`, `Community 91`, `Community 98`, `Community 103`, `Community 110`, `Community 111`, `Community 118`, `Community 120`, `Community 122`, `Community 125`, `Community 126`, `Community 127`?**
+  _High betweenness centrality (0.063) - this node is a cross-community bridge._
+- **Why does `ProviderRegistry` connect `Community 82` to `Community 96`, `Community 38`, `Community 137`, `Community 77`, `Community 25`, `Community 122`, `Community 28`, `Community 125`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Are the 263 inferred relationships involving `datetime` (e.g. with `alias` and `BatchInput`) actually correct?**
   _`datetime` has 263 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 155 inferred relationships involving `Settings` (e.g. with `Mode` and `Path`) actually correct?**
   _`Settings` has 155 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 107 inferred relationships involving `Step` (e.g. with `ChoiceInput` and `ModelOptions`) actually correct?**
-  _`Step` has 107 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 112 inferred relationships involving `Step` (e.g. with `ChoiceInput` and `ModelOptions`) actually correct?**
+  _`Step` has 112 INFERRED edges - model-reasoned connections that need verification._

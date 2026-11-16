@@ -1,5 +1,6 @@
 import "@fontsource/tajawal/arabic-400.css"
 import "@fontsource/tajawal/arabic-500.css"
+import { Check, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   ThoughtChain,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/components-ai-thought-chain"
 import { useLocale } from "@/lib/locale"
 import type { Result } from "@/lib/types"
-import { buildTicketFlow, type FlowStep } from "./ticket-flow"
+import { buildTicketFlow, type FlowStep, type TicketFlow as TicketFlowModel } from "./ticket-flow"
 
 function statusFor(step: FlowStep, result: Result, steps: FlowStep[]) {
   if (result.status === "processing") {
@@ -25,37 +26,88 @@ function linesFor(step: FlowStep) {
   return [step.received, ...step.events].filter((line) => line.trim() && line !== step.produced)
 }
 
-export function TicketFlow({ result }: { result: Result }) {
+function StepMark({ status }: { status: "done" | "active" | "pending" }) {
+  if (status === "active") {
+    return (
+      <span className="flow-rail-mark" data-status="active">
+        <Loader2 size={15} />
+      </span>
+    )
+  }
+  if (status === "pending") return <span className="flow-rail-mark" data-status="pending" />
+  return (
+    <span className="flow-rail-mark" data-status="done">
+      <Check size={11} strokeWidth={3} />
+    </span>
+  )
+}
+
+function HorizontalFlow({ result, flow }: { result: Result; flow: TicketFlowModel }) {
+  const steps = flow.steps.filter((step) => step.state === "used")
+  const progressLabel = flow.arabic ? "قيد التنفيذ" : "In progress"
+  return (
+    <ol className="flow-rail">
+      {steps.map((step, index) => {
+        const status = statusFor(step, result, flow.steps)
+        const detail = status === "active" ? `${progressLabel} · ${step.produced}` : step.produced
+        return (
+          <li key={step.id} data-status={status} aria-current={status === "active" ? "step" : undefined}>
+            <div className="flow-rail-top">
+              <StepMark status={status} />
+              <strong className="flow-rail-name">{step.name}</strong>
+              {index < steps.length - 1 && <span className="flow-rail-line" aria-hidden="true" />}
+            </div>
+            <small className="flow-rail-detail" title={detail}>
+              {detail}
+            </small>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+export function TicketFlow({
+  result,
+  layout = "vertical",
+}: {
+  result: Result
+  layout?: "vertical" | "horizontal"
+}) {
   const { locale } = useLocale()
   const flow = buildTicketFlow(result, locale === "ar")
   const font = flow.arabic ? 'Tajawal, "Plus Jakarta Sans Variable", sans-serif' : undefined
   return (
-    <Card>
-      <CardContent className="path-card" style={{ fontFamily: font }}>
-        <ThoughtChain key={result.id}>
-          {flow.steps.filter((step) => step.state === "used").map((step) => {
-            const status = statusFor(step, result, flow.steps)
-            return (
-              <ThoughtChainStep
-                key={`${step.id}-${status}`}
-                status={status}
-                defaultOpen={status === "active"}
-              >
-                <ThoughtChainTrigger
-                  detail={step.produced}
-                  progressLabel={flow.arabic ? "قيد التنفيذ" : "In progress"}
+    <Card size={layout === "horizontal" ? "sm" : "default"}>
+      <CardContent className={layout === "horizontal" ? "path-card path-card-row" : "path-card"} style={{ fontFamily: font }}>
+        {layout === "horizontal" ? (
+          <HorizontalFlow result={result} flow={flow} />
+        ) : (
+          <ThoughtChain key={result.id}>
+            {flow.steps.filter((step) => step.state === "used").map((step) => {
+              const status = statusFor(step, result, flow.steps)
+              return (
+                <ThoughtChainStep
+                  key={`${step.id}-${status}`}
+                  status={status}
+                  defaultOpen={status === "active"}
                 >
-                  {step.name}
-                </ThoughtChainTrigger>
-                <ThoughtChainContent>
-                  {linesFor(step).map((line, index) => (
-                    <ThoughtChainItem key={`${step.id}-${index}`}>{line}</ThoughtChainItem>
-                  ))}
-                </ThoughtChainContent>
-              </ThoughtChainStep>
-            )
-          })}
-        </ThoughtChain>
+                  <ThoughtChainTrigger
+                    detail={step.produced}
+                    progressLabel={flow.arabic ? "قيد التنفيذ" : "In progress"}
+                  >
+                    {step.name}
+                  </ThoughtChainTrigger>
+                  <ThoughtChainContent>
+                    {linesFor(step).map((line, index) => (
+                      <ThoughtChainItem key={`${step.id}-${index}`}>{line}</ThoughtChainItem>
+                    ))}
+                  </ThoughtChainContent>
+                </ThoughtChainStep>
+              )
+            })}
+          </ThoughtChain>
+        )}
       </CardContent>
     </Card>
   )

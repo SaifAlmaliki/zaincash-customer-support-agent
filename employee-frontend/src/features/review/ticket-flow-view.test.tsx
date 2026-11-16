@@ -90,6 +90,18 @@ it("marks the latest used step as in progress while the run is still processing"
   expect(html).toContain("قيد التنفيذ")
 })
 
+it("lays a batch pipeline out as one horizontal rail", () => {
+  const html = renderToStaticMarkup(<TicketFlow result={result()} layout="horizontal" />)
+  expect(html).toContain("flow-rail")
+  expect(html).toContain("تجهيز")
+  expect(html).toContain("تصنيف")
+  expect(html).toContain("قُرئت رسالة تطبيق زين كاش")
+  const prepare = html.indexOf("تجهيز")
+  const classify = html.indexOf("تصنيف")
+  expect(prepare).toBeGreaterThan(-1)
+  expect(classify).toBeGreaterThan(prepare)
+})
+
 it("renders retained citations and valid tools while excluding malformed entries and secrets", () => {
   const rawTrace = [
     null,

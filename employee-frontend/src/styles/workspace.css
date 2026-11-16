@@ -1511,6 +1511,79 @@ html[lang="ar"] .brand > div {
     transition: background-color 120ms linear, box-shadow 120ms linear;
   }
 }
+.path-card-row {
+  padding-top: 2px;
+}
+.flow-rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0;
+  padding: 2px 0 0;
+  list-style: none;
+  overflow-x: auto;
+}
+.flow-rail > li {
+  flex: 1 1 0;
+  min-width: 9.25rem;
+  max-width: 16rem;
+}
+.flow-rail-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.flow-rail-mark {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #16a34a;
+}
+.flow-rail-mark[data-status="active"] {
+  background: transparent;
+  color: #3b82f6;
+}
+.flow-rail-mark[data-status="pending"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px #b0b6c0;
+}
+.flow-rail-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.flow-rail-line {
+  flex: 1 1 auto;
+  height: 1px;
+  min-width: 12px;
+  background: #d7dbe3;
+}
+.flow-rail-detail {
+  display: block;
+  margin-top: 4px;
+  padding-inline-start: 26px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .flow-rail-mark[data-status="active"] svg {
+    animation: flow-rail-spin 0.75s linear infinite;
+  }
+}
+@keyframes flow-rail-spin {
+  to { transform: rotate(360deg); }
+}
 .stage-trace {
   margin-top: 18px;
 }
@@ -1632,14 +1705,14 @@ html[lang="ar"] .brand > div {
 }
 .run-flows {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   margin-top: 22px;
 }
 .run-flow-ticket {
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 .simple-breakdown > div {
   display: flex;
