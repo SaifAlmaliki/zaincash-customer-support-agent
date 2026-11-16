@@ -71,6 +71,9 @@ _REASONS = frozenset(CURRENT_REASON_TEXT) | {
 }
 
 
+_TRANSACTION_TOOLS = frozenset({"lookup_transaction", "search_transactions", "get_customer_recent_transactions"})
+
+
 class _Flag(_Input):
     reason: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
         json_schema_extra={"enum": sorted(_REASONS)}, description="Existing escalation reason ID")
@@ -169,6 +172,9 @@ def build_tools(context: DraftContext, knowledge: KnowledgeService,
                     if name == "search_knowledge_base":
                         # Independent of returned mutable data, exact Passage snapshots.
                         entry["retrieved_passages"] = deepcopy(result)
+                    if name in _TRANSACTION_TOOLS:
+                        # Reviewer evidence must not be cut by the display bound; at most 10 rows.
+                        entry["transactions"] = deepcopy(result)
                     if terminal:
                         entry["internal_note"] = context.submission.internal_note
                     return result

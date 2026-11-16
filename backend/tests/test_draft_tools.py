@@ -280,6 +280,24 @@ async def test_recent_and_history_anchor_receipt_exclude_current_future_and_limi
     assert [r["txn_ref"] for r in short] == ["ZC2410000001"]
 
 
+async def test_transaction_results_keep_a_full_snapshot_beyond_the_display_bound(api, state, sf, settings):
+    reason, merchant = "ر" * 128, "م" * 128  # column maximums; ten such rows exceed the trace budget
+    with sf.begin() as s:
+        s.add_all([replace_reason(transaction(f"ZC241000{i:04d}", when=NOW - timedelta(days=i)), reason, merchant)
+                   for i in range(1, 11)])
+    context, tools, _ = tools_for(api, state, sf, settings)
+    await tools["get_customer_recent_transactions"].ainvoke({"phone": PHONE})
+    entry = context.trace[-1]
+    assert [r.get("failure_reason") for r in entry["result"]] != [reason] * 10
+    assert [r["failure_reason"] for r in entry["transactions"]] == [reason] * 10
+    assert json.loads(json.dumps(entry["transactions"])) == entry["transactions"]
+
+
+def replace_reason(row, reason, merchant):
+    row.failure_reason, row.receiver_name = reason, merchant
+    return row
+
+
 async def test_incident_windows_are_inclusive_bounded_and_read_only(api, state, sf, settings):
     with sf.begin() as s:
         s.add_all([IncidentRow(id=name, service=service, started_at=start,

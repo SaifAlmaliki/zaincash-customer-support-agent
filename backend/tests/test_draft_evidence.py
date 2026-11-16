@@ -50,5 +50,18 @@ def test_malformed_rows_are_dropped():
     assert [r["txn_ref"] for r in rows] == ["OK"]
 
 
+def test_full_snapshot_wins_over_the_bounded_display_result():
+    full = row("A", "2026-10-06T20:00:00+03:00", failure_reason="سبب كامل للرفض")
+    cut = {**full, "failure_reason": "سبب"}
+    event = {**tool("get_customer_recent_transactions", [cut]), "transactions": [full]}
+    assert found([event]) == [full]
+
+
+def test_rows_missing_any_field_are_dropped():
+    partial = row("A", "2026-10-06T20:00:00+03:00")
+    del partial["failure_reason"]
+    assert found([tool("get_customer_recent_transactions", [partial])]) == []
+
+
 def test_other_tools_are_ignored():
     assert found([tool("search_knowledge_base", [row("A", "2026-10-06T20:00:00+03:00")])]) == []

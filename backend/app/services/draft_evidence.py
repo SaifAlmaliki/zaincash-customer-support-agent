@@ -34,17 +34,18 @@ class CitationSource(_TraceModel):
 class InvestigatedTransaction(_TraceModel):
     """A row a drafting tool returned: a candidate for the reviewer, never a confirmed match."""
 
+    # Every field is required: a row the trace bound cut short must be dropped, not shown as partial.
     txn_ref: str = Field(min_length=1, max_length=32)
     sender_phone: str = Field(max_length=32)
-    receiver_phone: str | None = Field(default=None, max_length=32)
-    receiver_name: str | None = Field(default=None, max_length=2000)
+    receiver_phone: str | None = Field(max_length=32)
+    receiver_name: str | None = Field(max_length=2000)
     amount_iqd: int = Field(ge=0)
     type: str = Field(max_length=64)
     status: str = Field(max_length=64)
     created_at: str = Field(max_length=40)
-    biller: str | None = Field(default=None, max_length=2000)
-    agent_id: str | None = Field(default=None, max_length=64)
-    failure_reason: str | None = Field(default=None, max_length=2000)
+    biller: str | None = Field(max_length=2000)
+    agent_id: str | None = Field(max_length=64)
+    failure_reason: str | None = Field(max_length=2000)
 
     @field_validator("created_at")
     @classmethod
@@ -56,7 +57,8 @@ class InvestigatedTransaction(_TraceModel):
 def _transactions(event):
     if event.get("kind") != "tool" or event.get("status") != "ok" or event.get("tool") not in TRANSACTION_TOOLS:
         return []
-    result = event.get("result")
+    # Prefer the full snapshot; older traces only have the display-bounded result.
+    result = event["transactions"] if "transactions" in event else event.get("result")
     rows = result if isinstance(result, list) else [result]
     return [txn for item in rows if (txn := _validated(InvestigatedTransaction, item)) is not None]
 
