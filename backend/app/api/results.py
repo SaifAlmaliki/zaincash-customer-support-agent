@@ -1,14 +1,19 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from fastapi.responses import Response
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from app.api.dependencies import SessionDep
 from app.api.schemas import ReviewInput
 from app.customers.phone import customer_phone_or_none
 from app.db.models import TicketResultRow, TicketRow
 from app.intake.projection import employee_attachment
+from app.models_config.db_models import EmbeddingSwitchRow
+from app.models_config.types import Step
+from app.pipeline.stage3_extract.prompts import PROMPT_VERSION
+from app.services.batch_jobs import run_job
+from app.services.reprocess import ReprocessBusy, ReprocessNotFound, start_reprocess
 from app.services.reviews import (
     InvalidReviewTeam,
     ReviewCommand,
@@ -64,6 +69,32 @@ def get_result(result_id: int, session: SessionDep):
 def read_intake_attachment(result_id: int, attachment_id: UUID, request: Request, session: SessionDep):
     image = employee_attachment(session, result_id, attachment_id, request.app.state.intake_store)
     return Response(content=image.data, media_type=image.mime_type, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/{result_id}/reprocess", status_code=202)
+def reprocess_result(result_id: int, background: BackgroundTasks, request: Request, session: SessionDep):
+    if getattr(request.app.state, "embedding_switches", None) is not None:
+        session.execute(text("LOCK TABLE embedding_switch IN SHARE MODE"))
+        if session.scalar(select(EmbeddingSwitchRow.id).where(EmbeddingSwitchRow.status == "running").limit(1)) is not None:
+            raise HTTPException(409, "knowledge_switch_in_progress")
+    models = request.app.state.model_store.active()
+    if not request.app.state.testing_pipeline:
+        missing = []
+        if not models.ready(Step.CLASSIFY):
+            missing.append("TYPESAFE_API_KEY")
+        if missing:
+            raise HTTPException(503, f"Configure {' and '.join(missing)} in the backend .env, then restart the API.")
+    try:
+        placeholder, ticket = start_reprocess(
+            session, result_id, mode="jev", prompt_version=PROMPT_VERSION, model_ids=models.model_ids(),
+        )
+    except ReprocessNotFound as exc:
+        raise HTTPException(404, str(exc)) from None
+    except ReprocessBusy as exc:
+        raise HTTPException(409, str(exc)) from None
+    session.commit()
+    background.add_task(run_job, request.app, placeholder.run_id, [ticket], "jev", models)
+    return result_view(session, placeholder, detail=True)
 
 
 @router.post("/{result_id}/reviews")

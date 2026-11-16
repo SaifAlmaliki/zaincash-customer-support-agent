@@ -99,6 +99,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify(review),
     }),
+  reprocess: (id: number) =>
+    request<Result>(`/results/${id}/reprocess`, { method: "POST" }),
   uploadDocument: (file: File, signal?: AbortSignal) => {
     const body = new FormData()
     body.append("file", file)

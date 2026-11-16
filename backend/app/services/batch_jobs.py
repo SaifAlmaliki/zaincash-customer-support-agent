@@ -12,7 +12,7 @@ from app.models_config.types import Step
 from app.pipeline.contracts import DraftResult, TicketOutcome
 from app.pipeline.execution import TicketExecution, ticket_execution
 from app.pipeline.graph import outcome_from_state, summarize
-from app.services.intake_recovery import fail_intake_placeholders, reconcile_intake_run
+from app.services.intake_recovery import close_unfinished_results
 from app.telemetry.calls import call_context
 
 logger = logging.getLogger(__name__)
@@ -107,10 +107,10 @@ async def process_batch(app, run_id, tickets, mode, models=None):
         run.total_cost_usd = summary.total_cost_usd
         run.degraded = summary.degraded
         run.finished_at = datetime.now(UTC)
-        if persistence_failed and fail_intake_placeholders(
-            session, run_id, "Some results could not be saved. Durable results were retained; retry this batch."
-        ):
-            reconcile_intake_run(session, run)
+        if persistence_failed:
+            close_unfinished_results(
+                session, run, "Some results could not be saved. Durable results were retained; retry this batch."
+            )
         session.commit()
 
 
@@ -124,6 +124,5 @@ def run_job(app, run_id, tickets, mode, models=None):
             run.status = "failed"
             run.finished_at = datetime.now(UTC)
             run.counts = run.counts | {"error": "Batch interrupted. Completed results were retained."}
-            if fail_intake_placeholders(session, run_id, "Batch interrupted. Completed results were retained."):
-                reconcile_intake_run(session, run)
+            close_unfinished_results(session, run, "Batch interrupted. Completed results were retained.")
             session.commit()

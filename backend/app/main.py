@@ -21,11 +21,7 @@ from app.models_config.catalog import CatalogCache
 from app.models_config.embedding_switch import EmbeddingSwitches
 from app.models_config.store import ModelSettingsStore
 from app.pipeline.factory import build_pipeline
-from app.services.intake_recovery import (
-    fail_intake_placeholders,
-    reconcile_intake_run,
-    recover_intake_processing,
-)
+from app.services.intake_recovery import close_unfinished_results, recover_intake_processing
 from app.services.intake_runtime import dispatch_intake, make_intake_service
 from app.services.knowledge_runtime import IndexJobs, make_knowledge_service
 from app.taxonomy import load_taxonomy
@@ -77,8 +73,7 @@ def create_app(settings=None, *, session_factory=None, pipeline_builder=None, kn
                         run.status = "failed"
                         run.finished_at = datetime.now(UTC)
                         run.counts = run.counts | {"error": "API restarted during processing. Start a new run."}
-                        if fail_intake_placeholders(session, run.id, "API restarted during processing. Start a new run."):
-                            reconcile_intake_run(session, run)
+                        close_unfinished_results(session, run, "API restarted during processing. Start a new run.")
                     session.commit()
                 recover_intake_processing(app.state.session_factory)
                 app.state.intake.turns.recover_interrupted()
