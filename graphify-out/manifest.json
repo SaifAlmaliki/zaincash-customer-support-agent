@@ -782,8 +782,8 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/TicketReviewPage.tsx": {
-    "mtime": 1794835556.9517546,
-    "ast_hash": "9d6e9cf98a6028ac7945ac3d88719927",
+    "mtime": 1794837225.2429397,
+    "ast_hash": "88b9821208df42add6e13b9f46380ffe",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/malformed-trace.test.tsx": {
@@ -1482,8 +1482,8 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/TicketFlow.tsx": {
-    "mtime": 1794835614.0589185,
-    "ast_hash": "19c20b68c265bcfe005c345fcd2c01c9",
+    "mtime": 1794837003.1334722,
+    "ast_hash": "dfa7a0c5b72e3b3111b895de4eef2137",
     "semantic_hash": ""
   },
   "employee-frontend/src/components/ui/collapsible.tsx": {
@@ -1502,8 +1502,8 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/ticket-flow-view.test.tsx": {
-    "mtime": 1794835622.5797896,
-    "ast_hash": "050a400c50d080838845d8dd0e5496e8",
+    "mtime": 1794837003.6906378,
+    "ast_hash": "016898c7084ded923007b4eb03772bc0",
     "semantic_hash": ""
   },
   "users-frontend/apps/web/src/components/ui/agent-chat.tsx": {
@@ -1677,8 +1677,8 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/runs/RunDetailPage.tsx": {
-    "mtime": 1794786122.490949,
-    "ast_hash": "88fc82be359eb7cfe57f87e693fb6758",
+    "mtime": 1794837003.0144749,
+    "ast_hash": "c18c8813ba16c3dd2b3c142a3f0d499d",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/runs/run-results.test.ts": {

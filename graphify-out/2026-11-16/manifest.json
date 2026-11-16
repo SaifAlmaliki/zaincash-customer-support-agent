@@ -777,8 +777,8 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/SourceEvidence.tsx": {
-    "mtime": 1794788264.7273576,
-    "ast_hash": "2a25d1aee1627bb65ac4c8d67eeeb98e",
+    "mtime": 1794836792.2837372,
+    "ast_hash": "6beb5c4bf23a5244803a2d1a8f72b629",
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/TicketReviewPage.tsx": {
@@ -3042,8 +3042,8 @@
     "semantic_hash": ""
   },
   "employee-frontend/src/features/review/transaction-card.test.tsx": {
-    "mtime": 1794788264.7273576,
-    "ast_hash": "3dea95093b9ed78f9c431fb087584449",
+    "mtime": 1794836804.2362187,
+    "ast_hash": "92946b458527429d6f411b12a10f387b",
     "semantic_hash": ""
   },
   "backend/app/pipeline/stage6_draft/prompts/draft_v2.md": {
