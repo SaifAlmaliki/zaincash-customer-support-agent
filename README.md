@@ -4,6 +4,10 @@ Back-office automation for Iraqi Arabic support tickets. Each ticket is classifi
 
 Built for the **Agentic AI Challenge Iraq, Topic 06: Support Pipeline Automation**.
 
+
+## DEMO URL: 
+https://drive.google.com/file/d/1eys4qHBMehOuh6QrK8jhWbC3PbGBYeg4/view
+
 ## Authors
 
 - **Saif Almaliki** — saif.wsm@gmail.com
